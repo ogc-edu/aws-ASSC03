@@ -3,6 +3,37 @@
 
 Welcome to the AWS SAA-C03 Exam Preparation Repository! This repository is designed to help you prepare for the AWS Certified Solutions Architect - Associate (SAA-C03) exam by providing a comprehensive set of Multiple Choice Questions (MCQs) along with their solutions. Please note that while this resource can be a valuable part of your preparation, it's crucial to cross-check the solutions and not solely rely on them.
 
+
+## 🚀 Interactive Practice Website (React + Express)
+
+A local web application is built to practice and study all 684 exam questions with explanations:
+
+### Quick Start
+```bash
+# Start the application
+npm start
+```
+Then open your browser at **`http://localhost:5001`**.
+
+### Key Features
+- **Zero Authentication / 100% Local**: Works offline without any external database.
+- **Auto-Save Left-Off Position**: Automatically saves where you left off and opens your last attempted question every time you return.
+- **Single & Multi-Select Support**:
+  - Single-choice questions provide instant feedback upon clicking an option.
+  - Multi-choice questions (`Choose two`, `Choose three`) let you pick multiple options with a selection counter and submit button.
+- **Instant Solution & Architecture Notes**:
+  - Highlights correct choices in green and incorrect choices in red.
+  - Reveals the in-depth solution rationale and architectural breakdown directly below the question.
+- **Highlighted Questions Section**:
+  - Bookmark tricky questions with the Star/Highlight button or key `H`.
+  - Filter or open the Highlights modal to review all bookmarked questions.
+- **Question Matrix Grid (684 Questions)**:
+  - Visual color-coded grid (🟢 Correct, 🔴 Missed, ⚪ Unattempted, ⭐️ Highlighted).
+- **Keyboard Navigation**:
+  - `←` / `→` : Previous / Next Question
+  - `1-5` or `A-E` : Select options
+  - `H` : Toggle question highlight
+
 ## Contents
 
 - **650+ MCQs:** This repository includes a diverse set of over 650 multiple-choice questions covering various aspects of the AWS SAA-C03 exam.

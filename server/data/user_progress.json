@@ -1,0 +1,133 @@
+{
+  "lastLeftOff": 76,
+  "highlights": [
+    64,
+    65,
+    67,
+    72,
+    73
+  ],
+  "attempts": {
+    "1": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-09-30T13:07:19.479Z"
+    },
+    "60": {
+      "selected": [
+        "C"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-09-30T13:07:47.196Z"
+    },
+    "61": {
+      "selected": [
+        "C"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-09-30T13:35:36.308Z"
+    },
+    "62": {
+      "selected": [
+        "D"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-09-30T13:39:22.076Z"
+    },
+    "63": {
+      "selected": [
+        "A"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-09-30T16:20:33.694Z"
+    },
+    "64": {
+      "selected": [
+        "D"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-09-30T16:21:47.153Z"
+    },
+    "65": {
+      "selected": [
+        "C"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-09-30T16:22:27.934Z"
+    },
+    "66": {
+      "selected": [
+        "A"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-09-30T16:25:54.436Z"
+    },
+    "67": {
+      "selected": [
+        "A"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-09-30T16:27:19.249Z"
+    },
+    "68": {
+      "selected": [
+        "A"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-09-30T16:31:25.481Z"
+    },
+    "69": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-09-30T16:33:46.914Z"
+    },
+    "70": {
+      "selected": [
+        "C"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-09-30T16:35:19.296Z"
+    },
+    "71": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-09-30T16:37:00.714Z"
+    },
+    "72": {
+      "selected": [
+        "D"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-09-30T16:38:01.117Z"
+    },
+    "73": {
+      "selected": [
+        "C",
+        "E"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-09-30T16:40:57.163Z"
+    },
+    "74": {
+      "selected": [
+        "A",
+        "C"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-09-30T16:43:11.277Z"
+    },
+    "75": {
+      "selected": [
+        "A"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-09-30T16:44:31.111Z"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "aws-saa-c03-practice-website",
+  "version": "1.0.0",
+  "description": "Interactive local study platform for AWS Certified Solutions Architect Associate (SAA-C03)",
+  "scripts": {
+    "start": "node server/index.js",
+    "server": "node server/index.js",
+    "client": "npm --prefix client run dev",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "build": "npm --prefix client run build",
+    "setup": "npm --prefix server install && npm --prefix client install && npm run build"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.4"
+  }
+}
