@@ -390,6 +390,20 @@ app.post('/api/progress/reset', (req, res) => {
   res.json({ success: true, progress, stats: calculateStats(progress) });
 });
 
+// 9. Sync full progress from client (localStorage sync)
+app.post('/api/progress/sync', (req, res) => {
+  const incoming = req.body;
+  if (!incoming) return res.status(400).json({ error: 'No data' });
+  const current = getProgress();
+  const merged = {
+    lastLeftOff: incoming.lastLeftOff || current.lastLeftOff || 1,
+    highlights: Array.isArray(incoming.highlights) ? incoming.highlights : (current.highlights || []),
+    attempts: { ...(current.attempts || {}), ...(incoming.attempts || {}) }
+  };
+  saveProgress(merged);
+  res.json({ success: true, progress: merged, stats: calculateStats(merged) });
+});
+
 // Serve client static files if built
 const clientDistPath = path.join(__dirname, '..', 'client', 'dist');
 if (fs.existsSync(clientDistPath)) {

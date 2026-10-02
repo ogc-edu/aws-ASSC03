@@ -5,6 +5,17 @@ import PaginationBar from './components/PaginationBar.jsx';
 import QuestionGridModal from './components/QuestionGridModal.jsx';
 import HighlightsModal from './components/HighlightsModal.jsx';
 import ResetConfirmModal from './components/ResetConfirmModal.jsx';
+import {
+  initQuestions,
+  getLocalProgress,
+  computeStats,
+  buildMatrix,
+  getHydratedQuestion,
+  recordAttempt,
+  toggleHighlight,
+  saveLeftOff,
+  resetLocalProgress
+} from './services/dataService.js';
 
 export default function App() {
   const [currentId, setCurrentId] = useState(1);
@@ -33,26 +44,42 @@ export default function App() {
   const [isHighlightsOpen, setIsHighlightsOpen] = useState(false);
   const [isResetOpen, setIsResetOpen] = useState(false);
 
-  // Load progress and matrix on mount
+  // Load question by ID
+  const loadQuestion = useCallback((id, curProgress = progress) => {
+    try {
+      const q = getHydratedQuestion(id, curProgress);
+      if (q) {
+        setCurrentQuestion(q);
+        setCurrentId(id);
+        const updated = saveLeftOff(id, curProgress);
+        setProgress(updated);
+      }
+    } catch (err) {
+      console.error(`Error loading question ${id}:`, err);
+    }
+  }, [progress]);
+
+  // Load questions and initialize on mount
   useEffect(() => {
     async function init() {
       try {
         setLoading(true);
-        // 1. Fetch user progress
-        const pRes = await fetch('/api/progress');
-        const pData = await pRes.json();
-        setProgress(pData);
-        setStats(pData.stats);
+        const qs = await initQuestions();
+        const initialProgress = getLocalProgress();
+        const initialStats = computeStats(initialProgress, qs.length);
+        const initialMatrix = buildMatrix(qs, initialProgress);
 
-        // 2. Fetch matrix
-        const mRes = await fetch('/api/questions-matrix');
-        const mData = await mRes.json();
-        setMatrix(mData);
+        setProgress(initialProgress);
+        setStats(initialStats);
+        setMatrix(initialMatrix);
 
-        // Automatically resume where user left off!
-        const initialId = pData.lastLeftOff || 1;
-        setCurrentId(initialId);
-        await loadQuestion(initialId);
+        // Resume where user left off
+        const resumeId = initialProgress.lastLeftOff || 1;
+        const initialQ = getHydratedQuestion(resumeId, initialProgress);
+        if (initialQ) {
+          setCurrentQuestion(initialQ);
+          setCurrentId(resumeId);
+        }
       } catch (err) {
         console.error('Initialization error:', err);
       } finally {
@@ -61,29 +88,6 @@ export default function App() {
     }
     init();
   }, []);
-
-  // Fetch question by ID
-  const loadQuestion = async (id) => {
-    try {
-      const res = await fetch(`/api/questions/${id}`);
-      if (!res.ok) throw new Error('Question not found');
-      const data = await res.json();
-      setCurrentQuestion(data);
-      setCurrentId(id);
-
-      // Save as left-off on backend
-      fetch('/api/progress/leftoff', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ questionId: id })
-      });
-
-      // Update progress state locally
-      setProgress(prev => ({ ...prev, lastLeftOff: id }));
-    } catch (err) {
-      console.error(`Error loading question ${id}:`, err);
-    }
-  };
 
   // Filtered list of question IDs based on current activeFilter
   const filteredQuestionIds = useMemo(() => {
@@ -113,7 +117,7 @@ export default function App() {
       const prevId = filteredQuestionIds[currentFilteredIndex - 1];
       loadQuestion(prevId);
     }
-  }, [canPrev, filteredQuestionIds, currentFilteredIndex]);
+  }, [canPrev, filteredQuestionIds, currentFilteredIndex, loadQuestion]);
 
   // Navigate to next question
   const handleNext = useCallback(() => {
@@ -121,48 +125,33 @@ export default function App() {
       const nextId = filteredQuestionIds[currentFilteredIndex + 1];
       loadQuestion(nextId);
     }
-  }, [canNext, filteredQuestionIds, currentFilteredIndex]);
+  }, [canNext, filteredQuestionIds, currentFilteredIndex, loadQuestion]);
 
   // Handle Answer Attempt
-  const handleAttempt = async (qId, selectedAnswers) => {
+  const handleAttempt = (qId, selectedAnswers) => {
     try {
-      const res = await fetch('/api/progress/attempt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ questionId: qId, selectedAnswers })
-      });
-      const data = await res.json();
+      const res = recordAttempt(qId, selectedAnswers, progress);
 
       // Update question state
       setCurrentQuestion(prev => ({
         ...prev,
         attempt: {
-          selected: data.selected,
-          isCorrect: data.isCorrect,
+          selected: res.selected,
+          isCorrect: res.isCorrect,
           timestamp: new Date().toISOString()
         }
       }));
 
       // Update progress & stats
-      setProgress(prev => ({
-        ...prev,
-        lastLeftOff: qId,
-        attempts: {
-          ...prev.attempts,
-          [qId]: {
-            selected: data.selected,
-            isCorrect: data.isCorrect
-          }
-        }
-      }));
-      setStats(data.stats);
+      setProgress(res.progress);
+      setStats(res.stats);
 
-      // Update matrix
+      // Update matrix status
       setMatrix(prev => prev.map(item => {
         if (item.id === qId) {
           return {
             ...item,
-            status: data.isCorrect ? 'correct' : 'incorrect'
+            status: res.isCorrect ? 'correct' : 'incorrect'
           };
         }
         return item;
@@ -174,28 +163,23 @@ export default function App() {
   };
 
   // Toggle Highlight
-  const handleToggleHighlight = async (qId) => {
+  const handleToggleHighlight = (qId) => {
     try {
-      const res = await fetch('/api/progress/highlight', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ questionId: qId })
-      });
-      const data = await res.json();
+      const res = toggleHighlight(qId, progress);
 
-      // Update current question
+      // Update current question if it matches
       if (currentQuestion && currentQuestion.id === qId) {
-        setCurrentQuestion(prev => ({ ...prev, isHighlighted: data.isHighlighted }));
+        setCurrentQuestion(prev => ({ ...prev, isHighlighted: res.isHighlighted }));
       }
 
-      // Update progress
-      setProgress(prev => ({ ...prev, highlights: data.highlights }));
-      setStats(prev => ({ ...prev, highlightCount: data.highlights.length }));
+      // Update progress & stats
+      setProgress(res.progress);
+      setStats(res.stats);
 
       // Update matrix
       setMatrix(prev => prev.map(item => {
         if (item.id === qId) {
-          return { ...item, isHighlighted: data.isHighlighted };
+          return { ...item, isHighlighted: res.isHighlighted };
         }
         return item;
       }));
@@ -205,26 +189,14 @@ export default function App() {
   };
 
   // Reset Single Question Attempt (Try Again)
-  const handleResetQuestion = async (qId) => {
+  const handleResetQuestion = (qId) => {
     try {
-      await fetch('/api/progress/reset', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'question', questionId: qId })
-      });
+      const res = resetLocalProgress('question', qId, progress);
 
       setCurrentQuestion(prev => ({ ...prev, attempt: null }));
-      setProgress(prev => {
-        const nextAttempts = { ...prev.attempts };
-        delete nextAttempts[qId];
-        return { ...prev, attempts: nextAttempts };
-      });
+      setProgress(res.progress);
+      setStats(res.stats);
       setMatrix(prev => prev.map(m => m.id === qId ? { ...m, status: 'unattempted' } : m));
-
-      // Refresh stats
-      const pRes = await fetch('/api/progress');
-      const pData = await pRes.json();
-      setStats(pData.stats);
     } catch (err) {
       console.error('Error resetting question:', err);
     }
@@ -233,20 +205,13 @@ export default function App() {
   // Confirm Full Reset
   const handleConfirmReset = async (type) => {
     try {
-      const res = await fetch('/api/progress/reset', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type })
-      });
-      const data = await res.json();
-      setProgress(data.progress);
-      setStats(data.stats);
+      const res = resetLocalProgress(type, null, progress);
+      setProgress(res.progress);
+      setStats(res.stats);
 
-      // Re-fetch matrix and reload question 1
-      const mRes = await fetch('/api/questions-matrix');
-      const mData = await mRes.json();
-      setMatrix(mData);
-      loadQuestion(1);
+      const qs = await initQuestions();
+      setMatrix(buildMatrix(qs, res.progress));
+      loadQuestion(1, res.progress);
     } catch (err) {
       console.error('Error resetting progress:', err);
     }
@@ -272,7 +237,7 @@ export default function App() {
           handleToggleHighlight(currentQuestion.id);
         }
       } else if (!currentQuestion?.attempt && !currentQuestion?.isMulti) {
-        // Quick select for single-choice questions (1-4 or a-d)
+        // Quick select for single-choice questions (1-5 or a-e)
         const keyMap = {
           '1': 'A', 'a': 'A', 'A': 'A',
           '2': 'B', 'b': 'B', 'B': 'B',
@@ -289,17 +254,20 @@ export default function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentQuestion, handlePrev, handleNext]);
+  }, [currentQuestion, handlePrev, handleNext, progress]);
 
   // List of highlighted questions for the modal
   const highlightedList = useMemo(() => {
     const hlSet = new Set(progress.highlights || []);
-    return matrix.filter(m => hlSet.has(m.id)).map(m => ({
-      id: m.id,
-      prompt: `Question #${m.id}`,
-      isMulti: m.isMulti
-    }));
-  }, [matrix, progress.highlights]);
+    return matrix.filter(m => hlSet.has(m.id)).map(m => {
+      const fullQ = getHydratedQuestion(m.id, progress);
+      return {
+        id: m.id,
+        prompt: fullQ?.prompt ? fullQ.prompt.slice(0, 140) + '...' : `Question #${m.id}`,
+        isMulti: m.isMulti
+      };
+    });
+  }, [matrix, progress]);
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col selection:bg-amber-100">
@@ -323,7 +291,7 @@ export default function App() {
         {/* Navigation & Practice Mode Controls */}
         <PaginationBar
           currentQuestionId={currentId}
-          totalQuestions={684}
+          totalQuestions={stats.totalQuestions || 684}
           onNavigate={(targetId) => loadQuestion(targetId)}
           onPrev={handlePrev}
           onNext={handleNext}
@@ -332,7 +300,6 @@ export default function App() {
           activeFilter={activeFilter}
           onFilterChange={(filter) => {
             setActiveFilter(filter);
-            // If current question not in new filter, jump to first in new filter
             setTimeout(() => {
               const matched = matrix.filter(m => {
                 if (filter === 'highlighted') return m.isHighlighted;
@@ -374,7 +341,7 @@ export default function App() {
 
       {/* Footer */}
       <footer className="py-6 border-t border-slate-200/80 text-center text-xs text-slate-400">
-        AWS Certified Solutions Architect – Associate (SAA-C03) Exam Practice System • Local Offline Study Engine
+        AWS Certified Solutions Architect – Associate (SAA-C03) Exam Practice System • Static S3 Serverless Engine
       </footer>
 
       {/* Modals */}
