@@ -27,29 +27,11 @@ export default function QuestionCard({
 }) {
   const [selected, setSelected] = useState([]);
   const [showFullExplanation, setShowFullExplanation] = useState(true);
-  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [localExplanation, setLocalExplanation] = useState(question?.explanation);
 
   useEffect(() => {
     setLocalExplanation(question?.explanation);
   }, [question?.id, question?.explanation]);
-
-  const handleGenerateAIDeepDive = async (e) => {
-    e.stopPropagation();
-    try {
-      setIsGeneratingAI(true);
-      const res = await fetch(`/api/questions/${question.id}/ai-explain`, { method: 'POST' });
-      const data = await res.json();
-      if (data.explanation) {
-        setLocalExplanation(data.explanation);
-        question.explanation = data.explanation;
-      }
-    } catch (err) {
-      console.error('Failed to generate AI deep dive:', err);
-    } finally {
-      setIsGeneratingAI(false);
-    }
-  };
 
   // Sync selected answers with question's attempt state
   useEffect(() => {
@@ -307,35 +289,14 @@ export default function QuestionCard({
                 <div className="flex items-center space-x-2">
                   <Sparkles className="w-4 h-4 text-amber-400" />
                   <span className="font-semibold text-sm text-slate-200">
-                    Architectural Solution & Concepts
+                    Architectural Solution & Option Analysis
                   </span>
-                  {localExplanation?.includes('Why Option') && (
-                    <span className="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                      Option-by-Option Deep Dive
-                    </span>
-                  )}
+                  <span className="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    Detailed Option Breakdown
+                  </span>
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <button
-                    onClick={handleGenerateAIDeepDive}
-                    disabled={isGeneratingAI}
-                    className="flex items-center space-x-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition"
-                    title="Generate an exhaustive option-by-option architectural breakdown"
-                  >
-                    {isGeneratingAI ? (
-                      <>
-                        <div className="w-3 h-3 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
-                        <span>Analyzing All Options...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                        <span>Deep Dive Analysis</span>
-                      </>
-                    )}
-                  </button>
-
                   <button className="text-slate-400 hover:text-slate-200">
                     {showFullExplanation ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                   </button>
