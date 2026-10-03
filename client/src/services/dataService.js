@@ -38,7 +38,62 @@ export async function initQuestions() {
   }
 }
 
-// 2. Progress Storage with localStorage
+// 2. Progress Storage with localStorage and automatic server migration
+export async function initProgress() {
+  let localData = null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      localData = JSON.parse(raw);
+    }
+  } catch (e) {
+    console.warn('Error reading localStorage:', e);
+  }
+
+  // If localStorage already has attempts or highlights, use it!
+  const hasLocalAttempts = localData && Object.keys(localData.attempts || {}).length > 0;
+  const hasLocalHighlights = localData && (localData.highlights || []).length > 0;
+
+  if (hasLocalAttempts || hasLocalHighlights) {
+    return {
+      lastLeftOff: localData.lastLeftOff || 1,
+      highlights: Array.isArray(localData.highlights) ? localData.highlights : [],
+      attempts: localData.attempts || {}
+    };
+  }
+
+  // First time or empty localStorage: import all existing progress from server or user_progress.json!
+  try {
+    let res = await fetch('/api/progress');
+    if (!res.ok) {
+      res = await fetch('./user_progress.json');
+    }
+    if (res.ok) {
+      const serverData = await res.json();
+      if (serverData && (serverData.attempts || serverData.highlights)) {
+        const imported = {
+          lastLeftOff: serverData.lastLeftOff || 100,
+          highlights: Array.isArray(serverData.highlights) ? serverData.highlights : [],
+          attempts: serverData.attempts || {}
+        };
+        // Save to localStorage immediately
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(imported));
+        } catch (err) {}
+        return imported;
+      }
+    }
+  } catch (e) {
+    console.log('No remote progress to import:', e);
+  }
+
+  return {
+    lastLeftOff: 1,
+    highlights: [],
+    attempts: {}
+  };
+}
+
 export function getLocalProgress() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -51,7 +106,7 @@ export function getLocalProgress() {
       };
     }
   } catch (e) {
-    console.warn('Error reading from localStorage, using fresh progress:', e);
+    console.warn('Error reading from localStorage:', e);
   }
 
   return {

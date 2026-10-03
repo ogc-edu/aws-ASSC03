@@ -395,10 +395,17 @@ app.post('/api/progress/sync', (req, res) => {
   const incoming = req.body;
   if (!incoming) return res.status(400).json({ error: 'No data' });
   const current = getProgress();
+
+  const incomingHighlightsCount = (incoming.highlights || []).length;
+  const mergedAttempts = { ...(current.attempts || {}), ...(incoming.attempts || {}) };
+  const mergedHighlights = incomingHighlightsCount > 0 
+    ? incoming.highlights 
+    : (current.highlights || []);
+
   const merged = {
     lastLeftOff: incoming.lastLeftOff || current.lastLeftOff || 1,
-    highlights: Array.isArray(incoming.highlights) ? incoming.highlights : (current.highlights || []),
-    attempts: { ...(current.attempts || {}), ...(incoming.attempts || {}) }
+    highlights: mergedHighlights,
+    attempts: mergedAttempts
   };
   saveProgress(merged);
   res.json({ success: true, progress: merged, stats: calculateStats(merged) });

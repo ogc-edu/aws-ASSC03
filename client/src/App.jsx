@@ -7,6 +7,7 @@ import HighlightsModal from './components/HighlightsModal.jsx';
 import ResetConfirmModal from './components/ResetConfirmModal.jsx';
 import {
   initQuestions,
+  initProgress,
   getLocalProgress,
   computeStats,
   buildMatrix,
@@ -65,7 +66,7 @@ export default function App() {
       try {
         setLoading(true);
         const qs = await initQuestions();
-        const initialProgress = getLocalProgress();
+        const initialProgress = await initProgress();
         const initialStats = computeStats(initialProgress, qs.length);
         const initialMatrix = buildMatrix(qs, initialProgress);
 
