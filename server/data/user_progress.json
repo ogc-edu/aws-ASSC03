@@ -1,5 +1,5 @@
 {
-  "lastLeftOff": 113,
+  "lastLeftOff": 116,
   "highlights": [
     64,
     65,
@@ -101,7 +101,7 @@
       "selected": [
         "C"
       ],
-      "isCorrect": false,
+      "isCorrect": true,
       "timestamp": "2026-09-30T16:35:19.296Z"
     },
     "71": {
@@ -387,7 +387,7 @@
         "C",
         "D"
       ],
-      "isCorrect": false,
+      "isCorrect": true,
       "timestamp": "2026-10-05T13:23:15.948Z"
     },
     "111": {
@@ -403,6 +403,35 @@
       ],
       "isCorrect": true,
       "timestamp": "2026-10-05T13:25:33.115Z"
+    },
+    "113": {
+      "selected": [
+        "C"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-05T13:27:14.782Z"
+    },
+    "114": {
+      "selected": [
+        "C"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-05T13:29:37.464Z"
+    },
+    "115": {
+      "selected": [
+        "D"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-05T13:30:51.297Z"
+    },
+    "116": {
+      "selected": [
+        "D",
+        "C"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-05T13:35:35.197Z"
     }
   }
 }
