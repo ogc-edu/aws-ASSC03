@@ -135,11 +135,26 @@ export function saveLocalProgress(progress) {
   }
 }
 
-// 3. Calculate statistics
+// 3. Calculate statistics dynamically checking against authoritative answer keys
 export function computeStats(progress, totalCount = 684) {
-  const attempts = Object.values(progress.attempts || {});
-  const totalAttempted = attempts.length;
-  const totalCorrect = attempts.filter(a => a.isCorrect).length;
+  const attemptsEntries = Object.entries(progress.attempts || {});
+  const totalAttempted = attemptsEntries.length;
+  let totalCorrect = 0;
+
+  for (const [qid, att] of attemptsEntries) {
+    const q = questionMap.get(Number(qid));
+    if (q && q.correctAnswers) {
+      const normUser = [...(att.selected || [])].map(s => s.trim().toUpperCase()).sort();
+      const normCorrect = [...q.correctAnswers].map(s => s.trim().toUpperCase()).sort();
+      if (normUser.length === normCorrect.length && normUser.every((v, i) => v === normCorrect[i])) {
+        totalCorrect++;
+        continue;
+      }
+    } else if (att.isCorrect) {
+      totalCorrect++;
+    }
+  }
+
   const totalIncorrect = totalAttempted - totalCorrect;
   const accuracy = totalAttempted > 0 ? Math.round((totalCorrect / totalAttempted) * 100) : 0;
   const highlightCount = (progress.highlights || []).length;
@@ -163,7 +178,11 @@ export function buildMatrix(questions, progress) {
     const att = attempts[q.id];
     let status = 'unattempted';
     if (att) {
-      status = att.isCorrect ? 'correct' : 'incorrect';
+      const normUser = [...(att.selected || [])].map(s => s.trim().toUpperCase()).sort();
+      const normCorrect = [...(q.correctAnswers || [])].map(s => s.trim().toUpperCase()).sort();
+      const isCorrect = normUser.length === normCorrect.length &&
+        normUser.every((val, idx) => val === normCorrect[idx]);
+      status = isCorrect ? 'correct' : 'incorrect';
     }
     return {
       id: q.id,
@@ -180,7 +199,19 @@ export function getHydratedQuestion(id, progress) {
   if (!base) return null;
 
   const isHighlighted = (progress.highlights || []).includes(base.id);
-  const attempt = (progress.attempts || {})[base.id] || null;
+  const rawAttempt = (progress.attempts || {})[base.id] || null;
+  let attempt = rawAttempt;
+
+  if (rawAttempt && base.correctAnswers) {
+    const normUser = [...(rawAttempt.selected || [])].map(s => s.trim().toUpperCase()).sort();
+    const normCorrect = [...base.correctAnswers].map(s => s.trim().toUpperCase()).sort();
+    const isCorrect = normUser.length === normCorrect.length &&
+      normUser.every((val, idx) => val === normCorrect[idx]);
+    attempt = {
+      ...rawAttempt,
+      isCorrect
+    };
+  }
 
   return {
     ...base,
