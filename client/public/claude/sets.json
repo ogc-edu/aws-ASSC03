@@ -1,0 +1,92 @@
+{
+  "examFormat": {
+    "examCode": "SAA-C03",
+    "verifiedOn": "2026-10-20",
+    "totalQuestions": 65,
+    "scoredQuestions": 50,
+    "unscoredQuestions": 15,
+    "durationMinutes": 130,
+    "passingScore": 720,
+    "scoreRange": "100-1000",
+    "approxPassingPercent": 72,
+    "responseTypes": [
+      "Multiple choice: one correct response and three distractors",
+      "Multiple response: two or more correct responses out of five or more options"
+    ],
+    "domains": [
+      {
+        "id": 1,
+        "name": "Design Secure Architectures",
+        "weight": 30
+      },
+      {
+        "id": 2,
+        "name": "Design Resilient Architectures",
+        "weight": 26
+      },
+      {
+        "id": 3,
+        "name": "Design High-Performing Architectures",
+        "weight": 24
+      },
+      {
+        "id": 4,
+        "name": "Design Cost-Optimized Architectures",
+        "weight": 20
+      }
+    ]
+  },
+  "sources": [
+    {
+      "title": "AWS Certified Solutions Architect - Associate (SAA-C03) Exam Guide",
+      "url": "https://docs.aws.amazon.com/aws-certification/latest/examguides/solutions-architect-associate-03.html"
+    }
+  ],
+  "sets": [
+    {
+      "id": "1",
+      "title": "Claude Mock Exam — Set 1",
+      "description": "Full-length 65-question mock exam weighted to the current SAA-C03 domain blueprint, written for 2025-2026 AWS services and defaults.",
+      "questionCount": 65,
+      "multiCount": 10,
+      "domainCounts": [
+        20,
+        17,
+        15,
+        13
+      ],
+      "path": "/claude/1",
+      "file": "claude/set-1.json"
+    },
+    {
+      "id": "2",
+      "title": "Claude Mock Exam — Set 2",
+      "description": "A second, non-overlapping 65-question mock exam with different scenarios across all four domains.",
+      "questionCount": 65,
+      "multiCount": 10,
+      "domainCounts": [
+        20,
+        17,
+        15,
+        13
+      ],
+      "path": "/claude/2",
+      "file": "claude/set-2.json"
+    },
+    {
+      "id": "3",
+      "title": "Claude & Gemini Mock Exam — Set 3",
+      "description": "Identity-heavy security (permissions boundaries, ABAC, Cognito, WAF), messaging resilience and storage/compute performance tuning.",
+      "questionCount": 65,
+      "multiCount": 10,
+      "domainCounts": [
+        20,
+        17,
+        15,
+        13
+      ],
+      "path": "/claude/3",
+      "file": "claude/set-3.json"
+    }
+  ]
+}

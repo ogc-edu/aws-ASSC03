@@ -8,7 +8,8 @@ import {
   XCircle, 
   Layers, 
   HelpCircle,
-  ExternalLink
+  ExternalLink,
+  Sparkles
 } from 'lucide-react';
 
 export default function Header({ 
@@ -89,6 +90,16 @@ export default function Header({
                 Resume Q#{lastLeftOff}
               </button>
             )}
+
+            {/* Claude-generated practice sets (/claude) */}
+            <a
+              href="/claude"
+              className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium bg-violet-500/15 border border-violet-400/30 text-violet-300 hover:bg-violet-500/25 hover:text-violet-200 transition"
+              title="Open the Claude-generated SAA-C03 practice sets"
+            >
+              <Sparkles className="w-4 h-4 mr-1.5" />
+              <span className="hidden sm:inline">Claude</span>&nbsp;Sets
+            </a>
 
             {/* Highlights Section Button */}
             <button

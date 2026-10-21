@@ -1,5 +1,5 @@
 {
-  "lastLeftOff": 116,
+  "lastLeftOff": 230,
   "highlights": [
     64,
     65,
@@ -17,7 +17,58 @@
     105,
     108,
     109,
-    110
+    110,
+    116,
+    117,
+    119,
+    120,
+    121,
+    123,
+    126,
+    127,
+    129,
+    131,
+    135,
+    136,
+    139,
+    142,
+    148,
+    150,
+    151,
+    152,
+    153,
+    156,
+    157,
+    162,
+    165,
+    170,
+    172,
+    177,
+    180,
+    182,
+    183,
+    184,
+    185,
+    193,
+    196,
+    198,
+    199,
+    200,
+    202,
+    204,
+    205,
+    206,
+    207,
+    208,
+    209,
+    212,
+    216,
+    218,
+    219,
+    222,
+    223,
+    226,
+    230
   ],
   "attempts": {
     "1": {
@@ -101,7 +152,7 @@
       "selected": [
         "C"
       ],
-      "isCorrect": true,
+      "isCorrect": false,
       "timestamp": "2026-09-30T16:35:19.296Z"
     },
     "71": {
@@ -387,7 +438,7 @@
         "C",
         "D"
       ],
-      "isCorrect": true,
+      "isCorrect": false,
       "timestamp": "2026-10-05T13:23:15.948Z"
     },
     "111": {
@@ -432,6 +483,821 @@
       ],
       "isCorrect": false,
       "timestamp": "2026-10-05T13:35:35.197Z"
+    },
+    "117": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-05T13:39:18.479Z"
+    },
+    "118": {
+      "selected": [
+        "D"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-05T14:13:23.143Z"
+    },
+    "119": {
+      "selected": [
+        "A"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-05T14:13:44.426Z"
+    },
+    "120": {
+      "selected": [
+        "A"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-05T14:15:51.308Z"
+    },
+    "121": {
+      "selected": [
+        "A"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-05T14:20:12.375Z"
+    },
+    "122": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-05T14:21:46.557Z"
+    },
+    "123": {
+      "selected": [
+        "D"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-05T14:22:27.273Z"
+    },
+    "124": {
+      "selected": [
+        "A"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-05T14:59:13.896Z"
+    },
+    "125": {
+      "selected": [
+        "D",
+        "A"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-05T15:00:10.229Z"
+    },
+    "126": {
+      "selected": [
+        "D"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-05T15:03:07.795Z"
+    },
+    "127": {
+      "selected": [
+        "A"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-05T15:06:21.261Z"
+    },
+    "128": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-05T15:07:03.061Z"
+    },
+    "129": {
+      "selected": [
+        "A",
+        "E"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-05T15:08:28.627Z"
+    },
+    "130": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-05T15:09:41.677Z"
+    },
+    "131": {
+      "selected": [
+        "D"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-05T15:10:24.427Z"
+    },
+    "132": {
+      "selected": [
+        "A"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-05T15:11:25.843Z"
+    },
+    "133": {
+      "selected": [
+        "C"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-05T15:12:40.310Z"
+    },
+    "134": {
+      "selected": [
+        "C"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-05T15:27:05.372Z"
+    },
+    "135": {
+      "selected": [
+        "D"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-05T15:28:08.055Z"
+    },
+    "136": {
+      "selected": [
+        "A",
+        "C"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-05T15:30:36.688Z"
+    },
+    "137": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-05T15:31:20.388Z"
+    },
+    "138": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-05T15:33:48.804Z"
+    },
+    "139": {
+      "selected": [
+        "C"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-05T15:34:33.670Z"
+    },
+    "140": {
+      "selected": [
+        "A",
+        "C"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-05T15:37:28.353Z"
+    },
+    "141": {
+      "selected": [
+        "A"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-05T15:39:21.586Z"
+    },
+    "142": {
+      "selected": [
+        "C"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-05T15:40:49.186Z"
+    },
+    "143": {
+      "selected": [
+        "D"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-05T15:42:05.135Z"
+    },
+    "144": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-06T02:17:46.885Z"
+    },
+    "145": {
+      "selected": [
+        "D"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-06T02:24:37.701Z"
+    },
+    "146": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-06T02:25:36.317Z"
+    },
+    "147": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-06T02:26:22.766Z"
+    },
+    "148": {
+      "selected": [
+        "D"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-06T02:26:57.633Z"
+    },
+    "149": {
+      "selected": [
+        "A"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-06T02:29:10.799Z"
+    },
+    "150": {
+      "selected": [
+        "D"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-06T02:29:40.498Z"
+    },
+    "151": {
+      "selected": [
+        "C",
+        "E"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-06T02:40:59.779Z"
+    },
+    "152": {
+      "selected": [
+        "A"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-06T02:57:18.476Z"
+    },
+    "153": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-06T02:58:31.976Z"
+    },
+    "154": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-06T03:00:47.826Z"
+    },
+    "155": {
+      "selected": [
+        "C"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-06T03:01:17.159Z"
+    },
+    "156": {
+      "selected": [
+        "A",
+        "D"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-06T03:02:07.525Z"
+    },
+    "157": {
+      "selected": [
+        "B",
+        "D"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-06T03:03:28.108Z"
+    },
+    "158": {
+      "selected": [
+        "A"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-06T03:04:27.141Z"
+    },
+    "159": {
+      "selected": [
+        "C",
+        "A"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-06T13:13:16.305Z"
+    },
+    "160": {
+      "selected": [
+        "C"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-06T13:13:45.755Z"
+    },
+    "161": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-06T13:26:45.420Z"
+    },
+    "162": {
+      "selected": [
+        "A"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-06T13:29:32.070Z"
+    },
+    "163": {
+      "selected": [
+        "A"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-06T13:33:11.536Z"
+    },
+    "164": {
+      "selected": [
+        "C"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-06T13:34:33.070Z"
+    },
+    "165": {
+      "selected": [
+        "D"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-06T13:36:10.286Z"
+    },
+    "166": {
+      "selected": [
+        "D"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-07T13:07:32.106Z"
+    },
+    "167": {
+      "selected": [
+        "C"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-07T13:08:04.955Z"
+    },
+    "168": {
+      "selected": [
+        "D"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-07T13:27:45.118Z"
+    },
+    "169": {
+      "selected": [
+        "C"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-09T04:34:12.305Z"
+    },
+    "170": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-09T08:54:11.592Z"
+    },
+    "171": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-09T11:57:44.177Z"
+    },
+    "172": {
+      "selected": [
+        "D"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-09T11:58:49.276Z"
+    },
+    "173": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-09T12:48:29.876Z"
+    },
+    "174": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-09T13:31:44.914Z"
+    },
+    "175": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-09T13:32:12.779Z"
+    },
+    "176": {
+      "selected": [
+        "A"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-09T13:36:55.911Z"
+    },
+    "177": {
+      "selected": [
+        "D"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-09T13:42:31.810Z"
+    },
+    "178": {
+      "selected": [
+        "A"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-09T13:47:00.176Z"
+    },
+    "179": {
+      "selected": [
+        "A"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-09T13:48:25.792Z"
+    },
+    "180": {
+      "selected": [
+        "B",
+        "C"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-09T14:39:07.467Z"
+    },
+    "181": {
+      "selected": [
+        "A"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-09T14:39:35.434Z"
+    },
+    "182": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-09T14:40:06.917Z"
+    },
+    "183": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-09T14:42:24.617Z"
+    },
+    "184": {
+      "selected": [
+        "C"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-09T14:44:22.166Z"
+    },
+    "185": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-10T07:21:10.262Z"
+    },
+    "186": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-10T07:25:10.962Z"
+    },
+    "187": {
+      "selected": [
+        "A",
+        "D"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-10T07:26:03.228Z"
+    },
+    "188": {
+      "selected": [
+        "A"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-10T07:26:42.678Z"
+    },
+    "189": {
+      "selected": [
+        "B",
+        "D"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-10T07:37:50.375Z"
+    },
+    "190": {
+      "selected": [
+        "D"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-10T13:16:15.719Z"
+    },
+    "191": {
+      "selected": [
+        "A"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-10T13:21:17.251Z"
+    },
+    "192": {
+      "selected": [
+        "B",
+        "E"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-10T13:23:11.950Z"
+    },
+    "193": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-10T13:24:27.100Z"
+    },
+    "194": {
+      "selected": [
+        "A"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-10T13:40:33.063Z"
+    },
+    "195": {
+      "selected": [
+        "C"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-10T13:41:26.479Z"
+    },
+    "196": {
+      "selected": [
+        "C"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-10T13:42:17.296Z"
+    },
+    "197": {
+      "selected": [
+        "B",
+        "E"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-10T13:45:39.011Z"
+    },
+    "198": {
+      "selected": [
+        "D"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-10T13:47:51.861Z"
+    },
+    "199": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-10T13:48:25.528Z"
+    },
+    "200": {
+      "selected": [
+        "D"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-10T13:49:03.744Z"
+    },
+    "201": {
+      "selected": [
+        "A"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-11T11:25:30.953Z"
+    },
+    "202": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-13T10:12:52.445Z"
+    },
+    "203": {
+      "selected": [
+        "D"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-13T10:14:06.146Z"
+    },
+    "204": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-13T10:15:12.095Z"
+    },
+    "205": {
+      "selected": [
+        "C"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-13T10:16:40.378Z"
+    },
+    "206": {
+      "selected": [
+        "C"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-13T10:18:58.278Z"
+    },
+    "207": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-13T10:19:56.160Z"
+    },
+    "208": {
+      "selected": [
+        "D"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-13T10:21:05.926Z"
+    },
+    "209": {
+      "selected": [
+        "A"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-13T10:23:36.109Z"
+    },
+    "210": {
+      "selected": [
+        "D"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-13T10:42:24.354Z"
+    },
+    "211": {
+      "selected": [
+        "D"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-19T13:19:50.613Z"
+    },
+    "212": {
+      "selected": [
+        "C"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-19T13:20:51.847Z"
+    },
+    "213": {
+      "selected": [
+        "A"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-19T13:24:36.780Z"
+    },
+    "214": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-19T13:25:21.696Z"
+    },
+    "215": {
+      "selected": [
+        "A"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-19T13:27:05.978Z"
+    },
+    "216": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-19T13:28:14.378Z"
+    },
+    "217": {
+      "selected": [
+        "A"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-19T13:31:42.811Z"
+    },
+    "218": {
+      "selected": [
+        "A",
+        "D"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-19T13:35:09.228Z"
+    },
+    "219": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-19T13:36:26.693Z"
+    },
+    "220": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-19T13:50:04.224Z"
+    },
+    "221": {
+      "selected": [
+        "D"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-19T13:50:31.674Z"
+    },
+    "222": {
+      "selected": [
+        "D"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-19T13:51:02.141Z"
+    },
+    "223": {
+      "selected": [
+        "D",
+        "C"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-19T13:53:02.524Z"
+    },
+    "224": {
+      "selected": [
+        "E",
+        "C"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-19T13:56:19.673Z"
+    },
+    "225": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-19T14:07:37.437Z"
+    },
+    "226": {
+      "selected": [
+        "D",
+        "C"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-19T14:14:54.869Z"
+    },
+    "227": {
+      "selected": [
+        "B"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-19T14:20:24.734Z"
+    },
+    "228": {
+      "selected": [
+        "C"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-19T14:20:57.434Z"
+    },
+    "229": {
+      "selected": [
+        "A"
+      ],
+      "isCorrect": true,
+      "timestamp": "2026-10-19T14:21:33.184Z"
+    },
+    "230": {
+      "selected": [
+        "D"
+      ],
+      "isCorrect": false,
+      "timestamp": "2026-10-19T14:22:45.467Z"
     }
   }
 }
