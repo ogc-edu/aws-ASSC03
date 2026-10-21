@@ -1,0 +1,388 @@
+[
+  {
+    "domain": 2,
+    "task": "2.1",
+    "topics": [
+      "Amazon API Gateway",
+      "API caching",
+      "AWS Lambda"
+    ],
+    "prompt": "A company runs a product-catalog REST API on Amazon API Gateway with AWS Lambda integrations that query an Amazon Aurora database. More than 90% of requests are GET requests for the same few thousand products, and product data changes only a few times each hour. During marketing campaigns, the backend database becomes overloaded. The company wants to reduce load on the backend and improve response times with the least change to the application. Which solution meets these requirements?",
+    "options": {
+      "A": "Configure usage plans with throttling limits on the API stage so that excess GET requests are rejected with HTTP 429 errors during campaigns.",
+      "B": "Configure provisioned concurrency on the Lambda functions so that enough execution environments are initialized before each campaign begins.",
+      "C": "Enable API Gateway caching on the production stage, include the product ID path parameter in the cache key, and set a TTL of a few minutes.",
+      "D": "Place an Application Load Balancer in front of the Lambda functions and enable sticky sessions so that repeat clients reuse the same execution environment."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Caching at the API layer:** API Gateway REST API stage caching returns cached responses for identical requests without invoking the Lambda integration, so repeated GETs never reach Aurora.\n* **Correct cache key:** Including the product ID parameter in the cache key ensures each product is cached separately, and a TTL of a few minutes matches data that changes only a few times per hour (the TTL can be 0-3600 seconds).\n* **Least change:** Caching is a stage setting; no application code changes are needed.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Throttling protects the backend by rejecting legitimate customer requests; it does not improve response times or serve the repeated reads.\n* **Option B is incorrect:** Provisioned concurrency reduces Lambda cold starts but every request still queries Aurora, so database load is unchanged.\n* **Option D is incorrect:** Lambda functions do not have sticky execution environments behind an ALB, and adding an ALB does not reduce database queries.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Read-heavy, rarely changing API responses:** Enable API Gateway (REST API) caching with an appropriate TTL and cache key parameters.\n2. **Throttling vs caching:** Throttling sheds load by rejecting requests; caching absorbs load by answering them from cache."
+  },
+  {
+    "domain": 2,
+    "task": "2.1",
+    "topics": [
+      "AWS Lambda",
+      "Reserved concurrency",
+      "Amazon EventBridge"
+    ],
+    "prompt": "An Amazon EventBridge rule invokes an AWS Lambda function asynchronously for each shipment event. The function calls a third-party carrier API that allows a maximum of 20 concurrent connections from the company; additional connections are rejected and the carrier temporarily blocks the company. During peak periods, the Lambda function scales to several hundred concurrent executions. The company must stay within the carrier's limit without losing events. Which solution meets these requirements with the LEAST operational overhead?",
+    "options": {
+      "A": "Set reserved concurrency of 20 on the Lambda function so that excess asynchronous invocations are throttled and retried by Lambda.",
+      "B": "Configure provisioned concurrency of 20 on the Lambda function so that only 20 execution environments are available to process events.",
+      "C": "Increase the Lambda function timeout to 15 minutes and add exponential backoff in the code when the carrier API rejects a connection.",
+      "D": "Increase the memory of the Lambda function so that each invocation completes faster and fewer executions run at the same time."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Hard concurrency cap:** Reserved concurrency sets the maximum number of concurrent executions for the function, so no more than 20 instances can call the carrier at once.\n* **No lost events:** For asynchronous invocations, Lambda keeps throttled events in its internal queue and retries them for up to 6 hours, so events are delayed rather than lost.\n* **Configuration only:** A single function setting enforces the limit without new infrastructure or code.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Provisioned concurrency pre-initializes environments but does not cap scaling; the function can still scale beyond 20 using on-demand concurrency.\n* **Option C is incorrect:** Backoff in the code does not stop hundreds of concurrent executions from opening connections, so the carrier would still block the company, and long timeouts increase cost.\n* **Option D is incorrect:** Faster executions may reduce concurrency somewhat but provide no guarantee that the limit of 20 is never exceeded.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **\"Downstream system supports only N concurrent calls\":** Use Lambda reserved concurrency to cap the function at N.\n2. **Reserved vs provisioned concurrency:** Reserved = maximum (and guaranteed) concurrency for a function; provisioned = pre-warmed environments to remove cold starts."
+  },
+  {
+    "domain": 2,
+    "task": "2.1",
+    "topics": [
+      "Amazon Kinesis Data Streams",
+      "On-demand capacity mode"
+    ],
+    "prompt": "A media company ingests player telemetry into an Amazon Kinesis Data Streams stream in provisioned capacity mode. Traffic is unpredictable and can increase tenfold within minutes when a popular live event starts. Producers frequently receive ProvisionedThroughputExceededException errors during these spikes. Several custom consumer applications read from the stream and must keep working unchanged. The operations team does not want to plan or manage shard capacity. Which solution meets these requirements?",
+    "options": {
+      "A": "Enable enhanced fan-out for each consumer application so that every consumer receives its own 2 MB per second of read throughput per shard.",
+      "B": "Increase the data retention period of the stream to 7 days so that producers can retry rejected records later without data loss.",
+      "C": "Replace the stream with an Amazon Data Firehose stream that delivers records to Amazon S3, and have the consumers read the objects from S3.",
+      "D": "Switch the stream to on-demand capacity mode so that Kinesis Data Streams automatically scales write and read capacity with the traffic."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Automatic capacity:** On-demand mode automatically accommodates workload growth (scaling to double the previous peak write throughput observed in the last 30 days), so the team does not manage shards.\n* **Same API:** The stream remains a Kinesis data stream, so existing producers and consumer applications continue to work unchanged.\n* **Targets the error:** ProvisionedThroughputExceededException on writes is caused by insufficient shard write capacity, which on-demand mode removes for unpredictable spikes.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Enhanced fan-out increases read throughput for consumers; it does nothing for producer write throttling.\n* **Option B is incorrect:** Retention controls how long records are kept after they are written; it does not add write capacity.\n* **Option C is incorrect:** Firehose is a delivery service; the custom consumers would have to be rewritten and would lose real-time stream semantics.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Unpredictable streaming traffic, no capacity planning:** Kinesis Data Streams on-demand mode.\n2. **Write throttling vs read throttling:** Producer throttling = add shards/on-demand; consumer contention = enhanced fan-out."
+  },
+  {
+    "domain": 2,
+    "task": "2.1",
+    "topics": [
+      "Amazon ECS",
+      "AWS Fargate",
+      "Fargate Spot",
+      "Capacity providers"
+    ],
+    "prompt": "A company runs a stateless, fault-tolerant image-processing service as an Amazon ECS service on AWS Fargate. The company wants to reduce compute cost by using spare capacity, but at least two tasks must always run on capacity that cannot be interrupted. Beyond those two tasks, the company wants about 75% of additional tasks to run on spare capacity. Which solution meets these requirements?",
+    "options": {
+      "A": "Create two ECS services: one on Fargate with a desired count of 2, and one on EC2 Spot Instances in an Auto Scaling group with a mixed instances policy.",
+      "B": "Use a capacity provider strategy with FARGATE (base 2, weight 1) and FARGATE_SPOT (base 0, weight 3) for the service.",
+      "C": "Use a capacity provider strategy with FARGATE_SPOT (base 2, weight 3) and FARGATE (base 0, weight 1) for the service.",
+      "D": "Configure the service to use only FARGATE_SPOT and set the minimum healthy percent of the deployment configuration to 200%."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Base:** The base value guarantees the minimum number of tasks placed on that capacity provider first, so two tasks always run on regular (non-interruptible) Fargate.\n* **Weight:** After the base is satisfied, tasks are distributed by weight: 1 FARGATE to 3 FARGATE_SPOT, so about 75% of additional tasks use Spot capacity.\n* **Managed by ECS:** A single service with a capacity provider strategy handles placement automatically.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Splitting into two services with self-managed EC2 Spot capacity adds operational overhead and does not provide a single scaling policy for the workload.\n* **Option C is incorrect:** This places the guaranteed base of two tasks on Fargate Spot, which can be interrupted, violating the requirement.\n* **Option D is incorrect:** Using only Fargate Spot means every task can be interrupted; the minimum healthy percent only affects deployments.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Capacity provider strategy:** base = guaranteed minimum on one provider; weight = ratio for the remaining tasks.\n2. **Fault-tolerant containers + cost:** Mix FARGATE and FARGATE_SPOT; Spot tasks receive a 2-minute interruption warning."
+  },
+  {
+    "domain": 2,
+    "task": "2.1",
+    "topics": [
+      "Stateless architecture",
+      "Amazon DynamoDB",
+      "Session management",
+      "Elastic Load Balancing"
+    ],
+    "prompt": "A company runs a web application on Amazon EC2 instances in an Auto Scaling group behind an Application Load Balancer. User session data is stored in memory on each instance, so the company enabled sticky sessions on the ALB. When the group scales in or an instance fails, users on that instance are logged out, and new instances receive little traffic after scale-out because existing users stay bound to their instances. The company wants instances to be stateless so that any instance can serve any request. Which solution meets these requirements?",
+    "options": {
+      "A": "Store session data in an Amazon DynamoDB table keyed by session ID with a TTL attribute for expiration, and disable sticky sessions on the ALB.",
+      "B": "Increase the stickiness duration of the ALB cookie to 7 days so that users are rarely moved to a different instance.",
+      "C": "Store session data on an Amazon EBS volume attached to each instance and create hourly snapshots of the volumes.",
+      "D": "Replace the ALB with a Network Load Balancer and enable source IP affinity so that each client is always routed to the same instance."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Externalized state:** Keeping sessions in DynamoDB instead of instance memory makes the web tier stateless; any instance can read a user's session.\n* **Even load and safe scale-in:** Without sticky sessions, the ALB balances requests across all instances, including new ones, and terminating an instance no longer logs users out.\n* **Automatic cleanup:** DynamoDB TTL deletes expired sessions at no extra cost. (Amazon ElastiCache is an equally common session store.)\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Longer stickiness makes load imbalance worse and still loses sessions when an instance is terminated.\n* **Option C is incorrect:** An EBS volume is attached to one instance, so other instances cannot read the sessions, and snapshots do not help live failover.\n* **Option D is incorrect:** Source IP affinity is another form of stickiness; sessions are still lost when an instance fails, and clients behind shared NAT addresses overload single instances.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **\"Users logged out on scale-in\" / sticky sessions:** Move session state to DynamoDB or ElastiCache to make the tier stateless.\n2. **Stateless vs stateful:** Stateless instances scale horizontally and can be replaced at any time."
+  },
+  {
+    "domain": 2,
+    "task": "2.1",
+    "topics": [
+      "Amazon SQS",
+      "Delay queues",
+      "Message timers"
+    ],
+    "prompt": "An online food-ordering company sends each new order to an Amazon SQS standard queue that is consumed by a kitchen-dispatch service. Customers are allowed to cancel an order within 5 minutes of placing it, so no order should become visible to the dispatch service until 5 minutes after it is sent. Cancellation is handled by a separate process. The company wants the simplest solution that does not require changes to the consumer code. Which solution meets these requirements?",
+    "options": {
+      "A": "Set the visibility timeout of the queue to 5 minutes so that messages are hidden from the dispatch service for that period.",
+      "B": "Add a sleep of 5 minutes in the dispatch service after it receives each message and before it processes the order.",
+      "C": "Configure the queue as a delay queue by setting its delivery delay (DelaySeconds) to 300 seconds.",
+      "D": "Set the message retention period of the queue to 5 minutes so that orders are kept for the cancellation window."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Delivery delay:** A delay queue keeps every new message invisible to consumers for the configured delay (0-900 seconds) after it is sent.\n* **No consumer changes:** The delay is a queue attribute; the dispatch service receives messages normally once the delay expires.\n* **Per-message option:** For standard queues, message timers can set a different delay for individual messages if needed.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Visibility timeout applies only after a consumer receives a message; new messages are visible immediately.\n* **Option B is incorrect:** Sleeping in the consumer requires code changes, wastes compute, and holds messages in flight.\n* **Option D is incorrect:** Retention controls how long unconsumed messages are kept; a 5-minute retention would delete orders, not delay them.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **\"Postpone delivery of new messages\":** SQS delay queue (queue-level) or message timers (per message, standard queues), up to 15 minutes.\n2. **Delay vs visibility timeout:** Delay hides a message before first receive; visibility timeout hides it after a receive."
+  },
+  {
+    "domain": 2,
+    "task": "2.1",
+    "topics": [
+      "Amazon EFS",
+      "Amazon ECS",
+      "AWS Fargate",
+      "Storage types"
+    ],
+    "prompt": "A company is moving a content-management application into containers on Amazon ECS with AWS Fargate. The service runs multiple tasks across three Availability Zones. All tasks must read and write the same set of uploaded files through a POSIX-compliant file system, and the files must remain available if a task or an Availability Zone fails. Which storage solution meets these requirements?",
+    "options": {
+      "A": "Attach an Amazon EBS gp3 volume to each task through the ECS service configuration and synchronize the volumes with a sidecar container.",
+      "B": "Create an Amazon EFS file system with mount targets in each Availability Zone and mount it as a volume in the task definition.",
+      "C": "Use the ephemeral storage of each Fargate task, increased to 200 GiB, and replicate files between tasks with a scheduled job.",
+      "D": "Create an Amazon FSx for Lustre Scratch file system and mount it in the task definition for all tasks in the service."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Shared file system:** Amazon EFS provides a POSIX-compliant NFS file system that many tasks can read and write concurrently.\n* **Multi-AZ durability:** EFS Regional file systems store data redundantly across multiple AZs, and mount targets in each AZ keep the file system reachable if one AZ fails.\n* **Supported on Fargate:** ECS task definitions on Fargate natively support EFS volumes.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** An EBS volume attached to an ECS task is dedicated to that task and bound to one AZ; synchronizing volumes with a sidecar is complex and not consistent.\n* **Option C is incorrect:** Fargate ephemeral storage is deleted when the task stops, so files would be lost, and replication jobs add complexity.\n* **Option D is incorrect:** Fargate does not support mounting FSx for Lustre, and Scratch file systems do not replicate data and are not designed for durable shared storage.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Shared storage for containers across AZs:** Amazon EFS (Fargate and EC2 launch types).\n2. **Storage types:** Block (EBS) = single instance/task, single AZ; File (EFS/FSx) = shared; Object (S3) = API access."
+  },
+  {
+    "domain": 2,
+    "task": "2.1",
+    "topics": [
+      "Amazon Kinesis Data Streams",
+      "AWS Lambda",
+      "Event source mapping"
+    ],
+    "prompt": "An AWS Lambda function processes records from an Amazon Kinesis Data Streams stream through an event source mapping. Occasionally a malformed record causes the function to throw an exception. When this happens, the same batch is retried repeatedly and processing of that shard stops until the record expires, which delays all later records. The company wants healthy records to continue to be processed and wants to keep details of failed records for investigation. Which combination of actions will meet these requirements? (Select TWO.)",
+    "options": {
+      "A": "Increase the data retention period of the stream to 365 days.",
+      "B": "Enable BisectBatchOnFunctionError on the event source mapping.",
+      "C": "Configure a dead-letter queue in the Lambda function's asynchronous invocation settings.",
+      "D": "Increase the parallelization factor of the event source mapping to 10.",
+      "E": "Set MaximumRetryAttempts on the event source mapping and configure an on-failure destination such as an Amazon SQS queue."
+    },
+    "isMulti": true,
+    "requiredCount": 2,
+    "correctAnswers": [
+      "B",
+      "E"
+    ],
+    "explanation": "### ✅ Why Options B & E are Correct\n\n* **Bisect on error (B):** Splitting a failed batch in half and retrying each half isolates the malformed record, so the healthy records in the batch are processed.\n* **Bounded retries + on-failure destination (E):** Limiting retries stops the shard from being blocked indefinitely, and the on-failure destination receives metadata about the discarded batch (shard, sequence numbers) for investigation.\n* **Together:** Bisecting narrows the failure to the bad record, and bounded retries let the shard move past it.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Longer retention only means the blocking record would be retried for longer; it makes the problem worse.\n* **Option C is incorrect:** Asynchronous-invocation dead-letter queues do not apply to stream event source mappings, which invoke the function synchronously.\n* **Option D is incorrect:** A higher parallelization factor processes more batches concurrently per shard, but records with the same partition key still wait behind the failing record.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Poison records in Kinesis/DynamoDB Streams with Lambda:** BisectBatchOnFunctionError + MaximumRetryAttempts/MaximumRecordAgeInSeconds + on-failure destination.\n2. **SQS vs stream sources:** SQS sources use a redrive policy DLQ on the queue; stream sources use on-failure destinations on the event source mapping."
+  },
+  {
+    "domain": 2,
+    "task": "2.2",
+    "topics": [
+      "Amazon EBS",
+      "Amazon Data Lifecycle Manager",
+      "Cross-Region snapshot copy"
+    ],
+    "prompt": "A company runs a self-managed database on Amazon EC2 instances that use Amazon EBS volumes in ap-southeast-1. The company needs EBS snapshots of the tagged database volumes every 6 hours, a copy of each snapshot in ap-southeast-2 for disaster recovery, and automatic deletion of snapshots older than 14 days in both Regions. The company wants an automated solution with the LEAST operational overhead and no custom code. Which solution meets these requirements?",
+    "options": {
+      "A": "Create a cron job on each instance that runs AWS CLI commands to create snapshots, copy them to ap-southeast-2, and delete old snapshots.",
+      "B": "Enable Amazon EBS Multi-Attach on the volumes and attach them to standby instances in ap-southeast-2.",
+      "C": "Create an Amazon EventBridge Scheduler schedule that invokes an AWS Lambda function every 6 hours to snapshot, copy, and clean up the volumes.",
+      "D": "Create an Amazon Data Lifecycle Manager snapshot policy that targets the volume tag, runs every 6 hours, retains snapshots for 14 days, and includes a cross-Region copy rule to ap-southeast-2 with 14-day retention."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Policy-based automation:** Data Lifecycle Manager creates snapshots of tagged volumes on a schedule and deletes them according to a retention rule.\n* **Cross-Region copy:** A cross-Region copy rule copies each snapshot to the DR Region with its own retention (and optional encryption), without code.\n* **Least overhead:** No servers, scripts, or functions to maintain.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Cron scripts on the database instances are custom code, fail if the instance fails, and must handle cleanup and errors.\n* **Option B is incorrect:** Multi-Attach works only within a single AZ for io1/io2 volumes; it cannot attach volumes across Regions.\n* **Option C is incorrect:** A Lambda-based solution works but is custom code to build and maintain when a managed policy feature exists.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Scheduled EBS snapshots with retention and DR copies:** Amazon Data Lifecycle Manager (or AWS Backup for multi-service policies).\n2. **Snapshots are Regional:** Copy snapshots (and AMIs) to the DR Region to be able to recover there."
+  },
+  {
+    "domain": 2,
+    "task": "2.2",
+    "topics": [
+      "Amazon EC2",
+      "Simplified automatic recovery",
+      "Legacy applications"
+    ],
+    "prompt": "A company runs a legacy licensing server on a single Amazon EC2 instance that uses only Amazon EBS volumes. The vendor license is bound to the instance ID and private IP address, so the instance cannot be replaced by a new one, and the application cannot be modified. The company wants the instance to come back automatically with the same instance ID, private IP address, Elastic IP address, and EBS data if the underlying AWS hardware fails. Which solution meets these requirements with the LEAST operational overhead?",
+    "options": {
+      "A": "Use a supported instance type and keep its automatic recovery behavior set to the default so that simplified automatic recovery recovers the instance after a system status check failure.",
+      "B": "Create an Auto Scaling group with a minimum, maximum, and desired capacity of 1 that launches a replacement from an AMI of the instance.",
+      "C": "Place the instance behind an Application Load Balancer and enable health checks so that unhealthy targets are deregistered.",
+      "D": "Use AWS Backup to take hourly AMIs of the instance and restore the latest AMI to a new instance when the hardware fails."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Same instance identity:** Automatic recovery migrates the instance to new hardware while keeping its instance ID, private IP addresses, Elastic IP addresses, metadata, and attached EBS volumes.\n* **On by default:** Simplified automatic recovery is enabled by default on supported instance types and triggers on underlying hardware problems (system status check failures).\n* **No application change:** The license stays valid because the instance identity does not change.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** An Auto Scaling group launches a new instance with a new instance ID and private IP, which breaks the license.\n* **Option C is incorrect:** An ALB only stops sending traffic to an unhealthy target; it does not recover the instance.\n* **Option D is incorrect:** Restoring from an AMI creates a new instance with a new ID and loses data written since the last backup.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Must keep instance ID/IP on hardware failure:** EC2 automatic recovery (simplified automatic recovery or a CloudWatch alarm recover action).\n2. **Reliability for legacy apps:** Use AWS features such as automatic recovery when application changes are not possible."
+  },
+  {
+    "domain": 2,
+    "task": "2.2",
+    "topics": [
+      "Amazon S3",
+      "S3 Cross-Region Replication",
+      "S3 Replication Time Control"
+    ],
+    "prompt": "A financial company stores trade confirmation documents in an Amazon S3 bucket in us-east-1. A regulator requires that a copy of every new document exist in a bucket in us-west-2 within 15 minutes of upload, and the company must be able to monitor replication latency and be alerted about objects that do not replicate within that time. Which solution meets these requirements with the LEAST operational overhead?",
+    "options": {
+      "A": "Configure S3 event notifications to invoke an AWS Lambda function that copies each new object to the bucket in us-west-2 and publishes a custom metric.",
+      "B": "Configure S3 Cross-Region Replication with S3 Replication Time Control (S3 RTC) enabled, and use replication metrics and S3 event notifications for threshold misses.",
+      "C": "Enable S3 Transfer Acceleration on both buckets and schedule an S3 Batch Operations copy job every 10 minutes.",
+      "D": "Configure S3 Cross-Region Replication without additional options, and run a daily S3 Inventory report to compare the two buckets."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Predictable replication time:** S3 RTC is designed to replicate 99.99% of new objects within 15 minutes and is backed by a service level agreement.\n* **Monitoring and alerting:** S3 RTC enables replication metrics (latency, bytes and operations pending) in CloudWatch and S3 event notifications such as s3:Replication:OperationMissedThreshold.\n* **Managed:** Only replication rule configuration is required; no custom code.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** A custom Lambda copier adds code to maintain and has no replication SLA; large objects or throttling can delay copies.\n* **Option C is incorrect:** Transfer Acceleration speeds client uploads over long distances; scheduled batch copies add overhead and cannot guarantee 15 minutes.\n* **Option D is incorrect:** Standard CRR replicates most objects within seconds but has no time guarantee, and a daily inventory cannot alert within 15 minutes.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Replication SLA / compliance time bound:** S3 Replication Time Control (15-minute SLA).\n2. **S3 replication options:** CRR/SRR for new objects, RTC for a time guarantee, Batch Replication for existing objects."
+  },
+  {
+    "domain": 2,
+    "task": "2.2",
+    "topics": [
+      "Amazon Aurora",
+      "Aurora Backtrack",
+      "Data recovery"
+    ],
+    "prompt": "A company is creating a new Amazon Aurora MySQL-Compatible DB cluster for an order application. In the past, operators have occasionally run incorrect UPDATE or DELETE statements. For such errors, the company wants to rewind the database to a point just before the mistake within minutes, without restoring to a new DB cluster or changing application endpoints. The company needs to be able to rewind up to 24 hours. Which solution meets these requirements?",
+    "options": {
+      "A": "Enable automated backups with a 35-day retention period and use point-in-time restore when an error occurs.",
+      "B": "Add an Aurora Replica in another Availability Zone and promote it when an incorrect statement is run.",
+      "C": "Enable Aurora Backtrack on the DB cluster with a target backtrack window of 24 hours.",
+      "D": "Convert the cluster to an Aurora Global Database and fail over to the secondary Region when an error occurs."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Rewind in place:** Backtrack rewinds the existing Aurora MySQL cluster to a specified time without creating a new cluster, so endpoints do not change.\n* **Fast:** A backtrack typically completes in minutes, much faster than a restore.\n* **Window:** The target backtrack window can be up to 72 hours; 24 hours meets the requirement. Backtrack is enabled when creating (or restoring) the cluster.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Point-in-time restore always creates a new DB cluster, which takes longer and requires changing application endpoints.\n* **Option B is incorrect:** Aurora Replicas share the same storage volume, so the incorrect changes are present on the replica too.\n* **Option D is incorrect:** The secondary Region replicates the incorrect changes within about a second, so failing over does not undo them.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Undo a bad change on Aurora MySQL quickly, in place:** Aurora Backtrack.\n2. **Replication is not backup:** Replicas, Multi-AZ, and global databases copy logical errors."
+  },
+  {
+    "domain": 2,
+    "task": "2.2",
+    "topics": [
+      "Amazon Application Recovery Controller (ARC)",
+      "Amazon Route 53",
+      "Multi-Region failover"
+    ],
+    "prompt": "A company runs an application in two AWS Regions in an active-passive configuration with Amazon Route 53 DNS records pointing to an Application Load Balancer in each Region. Automated health-check failover previously caused an unwanted failover during a brief network issue, so the company wants operators to make the failover decision. The failover mechanism must be highly reliable during a Regional impairment, must not depend on making changes to DNS records during the event, and must prevent operators from accidentally turning off both Regions at once. Which solution meets these requirements?",
+    "options": {
+      "A": "Write a runbook that uses the AWS CLI to change the Route 53 record values from the primary ALB to the secondary ALB when operators decide to fail over.",
+      "B": "Use AWS Global Accelerator with an endpoint group per Region, and set the traffic dial of the primary endpoint group to 0% to fail over.",
+      "C": "Use Route 53 failover routing records with health checks that have a higher failure threshold so that brief network issues do not trigger failover.",
+      "D": "Use Amazon Application Recovery Controller (ARC) routing controls tied to Route 53 health checks on the failover records, with a safety rule that keeps at least one routing control on."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Operator-controlled switches:** Routing controls are on/off switches that change the state of associated health checks, which move traffic through pre-created failover records.\n* **Highly reliable data plane:** Routing control state is changed through a highly available cluster of endpoints in five Regions; no DNS records are edited during the event.\n* **Safety rules:** Assertion rules can require that at least one routing control is on, preventing both Regions from being disabled.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Editing DNS records during an event depends on the Route 53 control plane and manual scripts, which is what the company wants to avoid.\n* **Option B is incorrect:** Global Accelerator traffic dials can shift traffic, but there are no safety rules to prevent disabling both Regions, and the change is a control plane update.\n* **Option C is incorrect:** This is still automatic failover based on health checks, not an operator decision.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Manual, reliable, multi-Region failover with guardrails:** Amazon Application Recovery Controller (ARC) routing controls and safety rules.\n2. **Static stability:** Recover using data plane operations (health checks, routing controls) rather than control plane changes during an outage."
+  },
+  {
+    "domain": 2,
+    "task": "2.2",
+    "topics": [
+      "Amazon MQ",
+      "Apache ActiveMQ",
+      "High availability"
+    ],
+    "prompt": "A company runs a legacy Java application that sends and receives messages through a self-managed Apache ActiveMQ broker on a single on-premises server by using JMS and the OpenWire protocol. The company is migrating to AWS and wants a managed message broker that keeps working if an Availability Zone fails. The application code cannot be changed, but its connection configuration can be updated. Which solution meets these requirements?",
+    "options": {
+      "A": "Replace the broker with Amazon SQS standard queues and use the Amazon SQS Java Messaging Library in the application.",
+      "B": "Create an Amazon MQ for ActiveMQ active/standby broker across two Availability Zones and configure the application with the failover transport URL.",
+      "C": "Create an Amazon MQ for RabbitMQ cluster deployment across three Availability Zones and point the application at the cluster endpoint.",
+      "D": "Create an Amazon MQ for ActiveMQ single-instance broker and use Amazon EC2 Auto Scaling to replace it if it fails."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Protocol compatibility:** Amazon MQ for ActiveMQ supports JMS and OpenWire, so the application works without code changes.\n* **Multi-AZ high availability:** An active/standby deployment runs brokers in two AZs with shared durable storage; if the active broker fails, the standby takes over.\n* **Client failover:** The ActiveMQ failover transport URL lists both broker endpoints so clients reconnect automatically.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Moving to SQS requires application code changes to use a different client library and semantics.\n* **Option C is incorrect:** RabbitMQ uses AMQP 0-9-1 and does not support OpenWire, so the application would not work without changes.\n* **Option D is incorrect:** A single-instance broker is a single point of failure in one AZ, and Amazon MQ brokers are not managed with EC2 Auto Scaling.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Lift-and-shift of JMS/AMQP/MQTT/STOMP/OpenWire apps:** Amazon MQ; new cloud-native apps use SQS/SNS.\n2. **Amazon MQ HA:** ActiveMQ active/standby (2 AZs) or RabbitMQ cluster deployment (3 nodes across AZs)."
+  },
+  {
+    "domain": 2,
+    "task": "2.2",
+    "topics": [
+      "Amazon Aurora",
+      "Aurora Global Database",
+      "Switchover"
+    ],
+    "prompt": "A company uses an Amazon Aurora PostgreSQL global database with the primary cluster in eu-west-1 and a secondary cluster in eu-central-1. To meet an audit requirement, the company must move the primary Region to eu-central-1 for one month every year as a planned exercise. The move must cause no data loss and must keep the global database replication topology intact so that eu-west-1 becomes the new secondary automatically. Which solution meets these requirements?",
+    "options": {
+      "A": "Perform an Aurora Global Database switchover to the secondary cluster in eu-central-1.",
+      "B": "Perform an Aurora Global Database managed failover with data loss allowed to the secondary cluster in eu-central-1.",
+      "C": "Detach the secondary cluster from the global database, promote it to a standalone cluster, and then add eu-west-1 back as a new secondary.",
+      "D": "Take a manual snapshot in eu-west-1, copy it to eu-central-1, and restore it as a new primary cluster for the global database."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Planned operation:** Switchover (formerly managed planned failover) is designed for planned events such as Region rotation and DR drills.\n* **RPO of 0:** Aurora waits for the secondary to fully synchronize with the primary before changing roles, so no data is lost.\n* **Topology preserved:** The old primary becomes a secondary of the same global database automatically, with no rebuild required.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Failover (with data loss allowed) is for unplanned outages; it can lose data that had not replicated yet.\n* **Option C is incorrect:** Detach and promote breaks the global database, can lose unreplicated writes, and requires rebuilding the secondary, which is slow and manual.\n* **Option D is incorrect:** Snapshot-and-restore loses all writes after the snapshot and requires recreating the global database.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Aurora Global Database:** Switchover = planned, RPO 0; failover = unplanned Regional outage, possible data loss.\n2. **Planned Region rotation or DR drill:** Use switchover to keep the topology and avoid data loss."
+  },
+  {
+    "domain": 2,
+    "task": "2.2",
+    "topics": [
+      "Static stability",
+      "Amazon Application Recovery Controller (ARC)",
+      "Zonal shift",
+      "Amazon EC2 Auto Scaling"
+    ],
+    "prompt": "A company runs a latency-sensitive web application on Amazon EC2 instances in an Auto Scaling group across three Availability Zones behind an Application Load Balancer. During a recent partial impairment in one AZ, instances there passed health checks but responded slowly, and the remaining AZs did not have enough capacity until scale-out completed 15 minutes later. The company wants to quickly move traffic away from an impaired AZ and keep serving full peak load without depending on launching new instances during the event. Which combination of actions will meet these requirements? (Select TWO.)",
+    "options": {
+      "A": "Set the Auto Scaling group capacity so that any two AZs can serve full peak load (about 150% of peak capacity spread across three AZs).",
+      "B": "Configure a target tracking scaling policy with a lower CPU target so that new instances are launched in the healthy AZs during the event.",
+      "C": "Move all instances into a single AZ and use a cluster placement group to reduce latency between instances.",
+      "D": "Enable Amazon Application Recovery Controller zonal shift (and zonal autoshift) for the Application Load Balancer.",
+      "E": "Create a cross-Region read replica and an Amazon Route 53 latency-based routing policy to a second Region."
+    },
+    "isMulti": true,
+    "requiredCount": 2,
+    "correctAnswers": [
+      "A",
+      "D"
+    ],
+    "explanation": "### ✅ Why Options A & D are Correct\n\n* **Static stability (A):** Pre-provisioning enough capacity that the loss of one AZ still leaves 100% of peak capacity means no instances must be launched during the event.\n* **Zonal shift (D):** Zonal shift moves traffic away from an impaired AZ for an ALB in minutes, even when health checks still pass (gray failure); zonal autoshift lets AWS do this automatically.\n* **Together:** Zonal shift removes the bad AZ, and the pre-provisioned remaining AZs absorb the shifted traffic.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Scaling out during the event depends on the control plane and instance launch time, which is exactly what caused the 15-minute capacity gap.\n* **Option C is incorrect:** A single AZ creates a single point of failure and removes AZ fault isolation.\n* **Option E is incorrect:** A multi-Region design is far more complex and does not address quickly moving traffic away from one impaired AZ.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Static stability:** Design so that the system keeps working through an AZ failure without needing to make changes (pre-provisioned N+1 AZ capacity).\n2. **Gray failures in one AZ:** Use Amazon Application Recovery Controller zonal shift/zonal autoshift for ALB/NLB."
+  },
+  {
+    "domain": 2,
+    "task": "2.2",
+    "topics": [
+      "Amazon EKS",
+      "Managed node groups",
+      "Availability Zones",
+      "Amazon EBS"
+    ],
+    "prompt": "A company runs an Amazon EKS cluster with a single managed node group whose nodes all run in one Availability Zone. The workloads include stateless web pods exposed to the internet and stateful pods that use Amazon EBS-backed persistent volumes. The company wants the application to survive the loss of an AZ, and it wants the Cluster Autoscaler to add nodes in the correct AZ when stateful pods are rescheduled. Which combination of actions will meet these requirements? (Select THREE.)",
+    "options": {
+      "A": "Create one managed node group per Availability Zone across three AZs for the stateful workloads that use EBS volumes.",
+      "B": "Enable EBS Multi-Attach on the persistent volumes so that pods in any Availability Zone can mount them.",
+      "C": "Add topology spread constraints on topology.kubernetes.io/zone to the web Deployments so that replicas are distributed across AZs.",
+      "D": "Provision additional Kubernetes control plane nodes in the other two AZs to make the control plane highly available.",
+      "E": "Expose the web pods through an Application Load Balancer created by the AWS Load Balancer Controller with subnets in all three AZs.",
+      "F": "Replace the node group with larger instances in the same AZ and use a cluster placement group for the nodes."
+    },
+    "isMulti": true,
+    "requiredCount": 3,
+    "correctAnswers": [
+      "A",
+      "C",
+      "E"
+    ],
+    "explanation": "### ✅ Why Options A, C & E are Correct\n\n* **Node group per AZ (A):** EBS volumes are AZ-scoped. AWS recommends a node group per AZ for EBS-backed workloads so that the Cluster Autoscaler can scale the node group in the AZ where the volume lives.\n* **Spread pods (C):** Topology spread constraints ensure that web replicas run in multiple AZs, so losing one AZ does not take down the service.\n* **Multi-AZ ingress (E):** An ALB with subnets in all AZs routes internet traffic to healthy pods in the surviving AZs.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** EBS Multi-Attach works only for io1/io2 volumes attached to instances in the same AZ; it cannot share a volume across AZs.\n* **Option D is incorrect:** The EKS control plane is managed by AWS and already runs across multiple AZs; customers cannot add control plane nodes.\n* **Option F is incorrect:** Keeping all nodes in one AZ preserves the single point of failure.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **EKS high availability:** Spread nodes across AZs (managed node groups), spread pods with topology constraints, and use multi-AZ load balancers.\n2. **EBS is AZ-scoped:** Stateful pods on EBS must be rescheduled in the same AZ; use per-AZ node groups or a shared file system (EFS) for cross-AZ access."
+  }
+]

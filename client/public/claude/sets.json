@@ -87,6 +87,81 @@
       ],
       "path": "/claude/3",
       "file": "claude/set-3.json"
+    },
+    {
+      "id": "4",
+      "title": "Claude Mock Exam — Set 4",
+      "description": "Fresh scenarios on KMS and network controls, event-driven fault tolerance, database performance and compute pricing models.",
+      "questionCount": 65,
+      "multiCount": 10,
+      "domainCounts": [
+        20,
+        17,
+        15,
+        13
+      ],
+      "path": "/claude/4",
+      "file": "claude/set-4.json"
+    },
+    {
+      "id": "5",
+      "title": "Claude Mock Exam — Set 5",
+      "description": "Multi-account governance (Organizations, Control Tower, Identity Center), disaster recovery strategies and storage cost tiers.",
+      "questionCount": 65,
+      "multiCount": 10,
+      "domainCounts": [
+        20,
+        17,
+        15,
+        13
+      ],
+      "path": "/claude/5",
+      "file": "claude/set-5.json"
+    },
+    {
+      "id": "6",
+      "title": "Claude Mock Exam — Set 6",
+      "description": "Detective controls and compliance, cross-Region recovery, networking and analytics performance, database and network cost.",
+      "questionCount": 65,
+      "multiCount": 10,
+      "domainCounts": [
+        20,
+        17,
+        15,
+        13
+      ],
+      "path": "/claude/6",
+      "file": "claude/set-6.json"
+    },
+    {
+      "id": "7",
+      "title": "Claude Mock Exam — Set 7",
+      "description": "A final mixed mock: data-level access controls, static stability and recovery automation, streaming analytics and cost governance.",
+      "questionCount": 65,
+      "multiCount": 10,
+      "domainCounts": [
+        20,
+        17,
+        15,
+        13
+      ],
+      "path": "/claude/7",
+      "file": "claude/set-7.json"
+    },
+    {
+      "id": "8",
+      "title": "Claude Mock Exam — Set 8",
+      "description": "Comprehensive scenarios on IAM trust policies, cross-Region Aurora and DynamoDB replication, event-driven microservices, and compute optimization.",
+      "questionCount": 65,
+      "multiCount": 10,
+      "domainCounts": [
+        20,
+        17,
+        15,
+        13
+      ],
+      "path": "/claude/8",
+      "file": "claude/set-8.json"
     }
   ]
 }

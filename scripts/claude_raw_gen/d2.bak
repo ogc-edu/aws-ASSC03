@@ -1,0 +1,758 @@
+{
+  "set1": [
+    {
+      "domain": 2,
+      "task": "2.1",
+      "topics": [
+        "Amazon SQS",
+        "Amazon EC2 Auto Scaling",
+        "Amazon CloudWatch"
+      ],
+      "prompt": "A company runs an order-processing application on Amazon EC2 instances. A web tier receives orders and sends them directly to a fleet of backend worker instances over HTTP. During flash sales, the backend cannot keep up, requests time out, and orders are lost. The company needs to ensure that no orders are lost and that the worker fleet scales in proportion to the amount of pending work. Which solution meets these requirements?",
+      "options": {
+        "A": "Place a Network Load Balancer in front of the worker fleet and configure an Auto Scaling group that scales on the NLB ActiveFlowCount metric.",
+        "B": "Have the web tier send orders to an Amazon SQS queue, and scale the worker Auto Scaling group with target tracking on a custom backlog-per-instance metric.",
+        "C": "Have the web tier publish orders to an Amazon SNS topic with an HTTPS subscription for each worker instance, and configure the worker Auto Scaling group to scale on average CPU utilization.",
+        "D": "Move the worker fleet to larger EC2 instance types and configure a scheduled scaling action that adds instances before each planned flash sale."
+      },
+      "isMulti": false,
+      "requiredCount": 1,
+      "correctAnswers": [
+        "B"
+      ],
+      "explanation": "### ✅ Why Option B is Correct\n\n* **Durable buffer:** Amazon SQS stores each order durably until a worker successfully processes and deletes it, so traffic spikes are absorbed instead of dropped.\n* **Scaling on actual work:** A backlog-per-instance metric (visible messages divided by running instances) with target tracking is the AWS-recommended way to scale queue consumers in proportion to pending work.\n* **Loose coupling:** The web tier and workers no longer depend on each other's availability or speed, so each tier scales independently.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** A load balancer still delivers requests synchronously. If workers are saturated, requests still time out and orders are lost; there is no persistence layer.\n* **Option C is incorrect:** SNS is push-based and does not hold messages for consumers that are busy. HTTPS delivery retries are limited, so orders can still be lost, and CPU does not reflect the amount of pending work.\n* **Option D is incorrect:** Vertical scaling and scheduled actions do not handle unplanned spikes, and there is still no buffer to prevent lost orders.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **\"Orders must not be lost\" + spiky load:** Put an SQS queue between producer and consumer to decouple the tiers.\n2. **Scaling queue consumers:** Scale on backlog per instance (ApproximateNumberOfMessagesVisible / InService instances) rather than CPU."
+    },
+    {
+      "domain": 2,
+      "task": "2.1",
+      "topics": [
+        "Amazon SNS",
+        "Amazon SQS"
+      ],
+      "prompt": "A retail company has an inventory service that emits an event every time stock levels change. Three downstream microservices must each receive a copy of every relevant event: the reorder service only needs events where the quantity drops below a threshold, the analytics service needs all events, and the pricing service only needs events for the electronics category. Each consumer must be able to process events at its own pace and be taken offline for maintenance without losing events. Which solution meets these requirements with the LEAST development effort?",
+      "options": {
+        "A": "Publish all events to a single Amazon SQS standard queue that the three microservices poll concurrently, and have each microservice discard any messages that it does not need to process.",
+        "B": "Write events to an Amazon DynamoDB table and have each microservice scan the table on a schedule for new items that match its criteria.",
+        "C": "Have the inventory service call each microservice's REST API directly and retry failed calls with exponential backoff.",
+        "D": "Publish events to an Amazon SNS topic. Subscribe a separate Amazon SQS queue for each microservice, and apply an SNS subscription filter policy to the reorder and pricing subscriptions."
+      },
+      "isMulti": false,
+      "requiredCount": 1,
+      "correctAnswers": [
+        "D"
+      ],
+      "explanation": "### ✅ Why Option D is Correct\n\n* **Fan-out (pub/sub):** SNS delivers a copy of every published message to every subscribed SQS queue, so each consumer gets its own independent stream.\n* **Buffering per consumer:** Each SQS queue retains messages (up to 14 days) while its consumer is slow or offline for maintenance.\n* **Filtering without code:** Subscription filter policies on message attributes or the message body let SNS deliver only matching events to the reorder and pricing queues, with no filtering logic in the consumers.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** With a single queue, consumers compete for messages; once one consumer deletes a message, the others never receive it. This does not give each service a copy.\n* **Option B is incorrect:** Scanning a table on a schedule is inefficient, adds latency, and requires custom tracking of which items each consumer has already processed.\n* **Option C is incorrect:** Point-to-point synchronous calls tightly couple the producer to every consumer, and events are lost if a consumer is offline longer than the retry window.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **\"Multiple consumers each need a copy\":** SNS topic fan-out to multiple SQS queues.\n2. **\"Consumers only need a subset\":** Use SNS subscription filter policies instead of filtering in application code."
+    },
+    {
+      "domain": 2,
+      "task": "2.1",
+      "topics": [
+        "AWS Step Functions",
+        "AWS Lambda"
+      ],
+      "prompt": "A financial services company is building a loan-approval process. The workflow runs several AWS Lambda functions in sequence, branches based on a credit score, retries transient failures automatically, and must pause until a human underwriter approves or rejects the application through an internal web portal. Underwriter approval can take up to 5 days. The company wants a fully managed solution with built-in visual tracking of each application's progress. Which solution meets these requirements?",
+      "options": {
+        "A": "Use an AWS Step Functions Standard workflow with Choice and Retry states and a .waitForTaskToken task whose token the portal returns when the underwriter decides.",
+        "B": "Use an AWS Step Functions Express workflow with Choice and Retry states, and add a Wait state loop that polls an Amazon DynamoDB table every hour for the underwriter's decision.",
+        "C": "Chain the Lambda functions together by having each function invoke the next one asynchronously, and store the application state in an Amazon S3 object between steps.",
+        "D": "Use a single Lambda function that orchestrates all steps and sleeps until the underwriter's decision is written to an Amazon DynamoDB table."
+      },
+      "isMulti": false,
+      "requiredCount": 1,
+      "correctAnswers": [
+        "A"
+      ],
+      "explanation": "### ✅ Why Option A is Correct\n\n* **Long-running orchestration:** Standard workflows can run for up to one year, so a 5-day human approval step is supported.\n* **Callback pattern:** The .waitForTaskToken integration pauses the execution until the portal calls SendTaskSuccess or SendTaskFailure with the task token, with no polling required.\n* **Built-in resilience and visibility:** Retry/Catch and Choice states are declarative, and the console shows a visual execution history for every application.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Express workflows have a maximum duration of 5 minutes and do not support the .waitForTaskToken callback pattern, so they cannot wait days for a human decision.\n* **Option C is incorrect:** Chaining functions manually tightly couples them, requires custom retry and state handling, and provides no centralized visual tracking.\n* **Option D is incorrect:** Lambda functions have a maximum timeout of 15 minutes, so a single function cannot wait days for approval.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Human approval / external callback:** Step Functions Standard workflow + .waitForTaskToken.\n2. **Standard vs Express:** Standard = long-running (up to 1 year), exactly-once, auditable. Express = high-volume, short (up to 5 minutes) event processing."
+    },
+    {
+      "domain": 2,
+      "task": "2.1",
+      "topics": [
+        "Amazon RDS",
+        "Read replicas"
+      ],
+      "prompt": "A company runs an Amazon RDS for PostgreSQL DB instance that supports an online order system. The business intelligence team runs long, read-only reporting queries against the same database during business hours, which increases latency for customer transactions. The reports can tolerate data that is a few seconds old. The company wants to resolve the performance impact with minimal changes to the order system. Which solution meets these requirements?",
+      "options": {
+        "A": "Convert the DB instance to a Multi-AZ deployment and point the reporting tools at the standby instance.",
+        "B": "Increase the allocated storage and switch the DB instance to Provisioned IOPS so that both workloads have more I/O capacity.",
+        "C": "Create an RDS read replica of the DB instance and configure the reporting tools to use the read replica's endpoint.",
+        "D": "Take a manual snapshot each morning, restore it to a new DB instance, and have the reporting tools query the restored instance."
+      },
+      "isMulti": false,
+      "requiredCount": 1,
+      "correctAnswers": [
+        "C"
+      ],
+      "explanation": "### ✅ Why Option C is Correct\n\n* **Offload read traffic:** A read replica receives asynchronous updates from the primary and serves read-only queries, removing the reporting load from the primary.\n* **Near-real-time data:** Replication lag is typically seconds, which meets the stated tolerance.\n* **Minimal change:** Only the reporting tools' connection string changes; the order system continues to use the primary endpoint.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** In a Multi-AZ DB instance deployment, the standby cannot serve read traffic. Multi-AZ provides high availability, not read scaling.\n* **Option B is incorrect:** More I/O capacity does not isolate the workloads; long reporting queries still compete for CPU, memory, and locks on the primary.\n* **Option D is incorrect:** A daily restore produces data that is up to a day old, which does not meet the requirement for data that is only seconds old, and adds operational work.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **\"Read-heavy / reporting queries slowing the primary\":** Use read replicas (RDS or Aurora).\n2. **Multi-AZ vs read replica:** Multi-AZ DB instance = synchronous standby for failover (not readable). Read replica = asynchronous copy for read scaling."
+    },
+    {
+      "domain": 2,
+      "task": "2.1",
+      "topics": [
+        "Amazon ECS",
+        "AWS Fargate",
+        "Elastic Load Balancing",
+        "Amazon ECR"
+      ],
+      "prompt": "A company wants to migrate a monolithic Java web application from on-premises virtual machines to containers on AWS. The operations team is small and does not want to patch, scale, or manage servers or a container control plane. The application must scale horizontally based on load and must be reachable over HTTPS. Which solution meets these requirements with the LEAST operational overhead?",
+      "options": {
+        "A": "Build a container image, store it in Amazon ECR, and run it as an Amazon ECS service on AWS Fargate behind an Application Load Balancer with ECS Service Auto Scaling.",
+        "B": "Build a container image, store it in Amazon ECR, and deploy it to a self-managed Kubernetes cluster on Amazon EC2 instances behind an Application Load Balancer.",
+        "C": "Run the container image with Docker on Amazon EC2 instances in an Auto Scaling group behind an Application Load Balancer, and use user data scripts to pull and start the container.",
+        "D": "Rewrite the application as AWS Lambda functions and expose them through Amazon API Gateway."
+      },
+      "isMulti": false,
+      "requiredCount": 1,
+      "correctAnswers": [
+        "A"
+      ],
+      "explanation": "### ✅ Why Option A is Correct\n\n* **Serverless containers:** With Fargate, AWS provisions and patches the underlying compute; the team manages only task definitions.\n* **Managed orchestration:** Amazon ECS has no control plane to operate, and ECS Service Auto Scaling adds or removes tasks based on metrics such as CPU or ALB request count.\n* **HTTPS access:** An Application Load Balancer with an ACM certificate terminates HTTPS and distributes traffic across tasks in multiple Availability Zones.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** A self-managed Kubernetes cluster requires the team to operate the control plane and worker nodes, which is the opposite of the requirement.\n* **Option C is incorrect:** The team must still patch and manage EC2 instances and build its own container lifecycle management.\n* **Option D is incorrect:** Rewriting a monolith into Lambda functions is a re-architecture, not a container migration, and requires significant development effort.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **\"Containers without managing servers\":** Amazon ECS (or EKS) on AWS Fargate.\n2. **Least overhead for containers:** ECS on Fargate is typically the lowest-overhead choice unless the scenario explicitly requires Kubernetes, in which case use Amazon EKS."
+    },
+    {
+      "domain": 2,
+      "task": "2.1",
+      "topics": [
+        "Amazon CloudFront",
+        "Amazon S3",
+        "Elastic Load Balancing"
+      ],
+      "prompt": "A media company serves a global audience from a single AWS Region. Static assets (images, JavaScript, CSS) are stored in an Amazon S3 bucket, and dynamic API requests are served by Amazon EC2 instances behind an Application Load Balancer. Users far from the Region report slow page loads, and the company wants to reduce load on the origin. The S3 bucket must not be publicly accessible. Which solution meets these requirements?",
+      "options": {
+        "A": "Enable S3 Transfer Acceleration on the bucket and configure AWS Global Accelerator in front of the Application Load Balancer.",
+        "B": "Enable static website hosting on the S3 bucket with a public bucket policy, and create a CloudFront distribution with the ALB as its only origin.",
+        "C": "Create a CloudFront distribution with the ALB as the default origin and a /static/* behavior that uses the S3 bucket as an origin with origin access control (OAC).",
+        "D": "Configure S3 Cross-Region Replication to buckets in three other Regions, make those buckets publicly readable, and use Amazon Route 53 latency-based routing to send users to the closest bucket."
+      },
+      "isMulti": false,
+      "requiredCount": 1,
+      "correctAnswers": [
+        "C"
+      ],
+      "explanation": "### ✅ Why Option C is Correct\n\n* **Edge caching:** CloudFront caches static content at edge locations close to users, reducing latency and origin load, and accelerates dynamic requests over the AWS backbone.\n* **Multiple origins:** Cache behaviors route path patterns to different origins, so one distribution serves both the S3 assets and the ALB API.\n* **Private bucket:** Origin access control (OAC) signs requests to S3 so the bucket can stay private with Block Public Access enabled; OAC is the recommended replacement for the legacy origin access identity (OAI).\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Transfer Acceleration speeds up uploads and downloads over long distances but does not cache content, and Global Accelerator does not cache either, so origin load is not reduced.\n* **Option B is incorrect:** Making the bucket public violates the requirement, and the static assets would not be served through CloudFront.\n* **Option D is incorrect:** Replicating to multiple Regions adds cost and complexity, still requires public or separately secured buckets, and does not cache content or accelerate the dynamic API.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **\"Global users + static content + reduce origin load\":** Amazon CloudFront.\n2. **Private S3 origin for CloudFront:** Use origin access control (OAC), not public buckets and not the legacy OAI."
+    },
+    {
+      "domain": 2,
+      "task": "2.1",
+      "topics": [
+        "Amazon API Gateway"
+      ],
+      "prompt": "A company exposes a public REST API through Amazon API Gateway for third-party partners. Each partner has a contract that defines a maximum request rate and a monthly request quota. The company must enforce these limits per partner and identify which partner sent each request, without writing custom throttling code. Which solution meets these requirements?",
+      "options": {
+        "A": "Create an API Gateway HTTP API and configure route-level throttling for each route.",
+        "B": "Create an API Gateway REST API. Issue an API key to each partner and associate the keys with usage plans that define the throttling limits and quotas for each contract tier.",
+        "C": "Attach an AWS WAF web ACL with a rate-based rule to the API stage for each partner.",
+        "D": "Configure a Lambda authorizer that records each partner's request count in an Amazon DynamoDB table and denies requests from partners that exceed their contracted rate or monthly quota."
+      },
+      "isMulti": false,
+      "requiredCount": 1,
+      "correctAnswers": [
+        "B"
+      ],
+      "explanation": "### ✅ Why Option B is Correct\n\n* **Usage plans:** API Gateway REST API usage plans define a throttle (rate and burst) and a quota (requests per day, week, or month).\n* **Per-client identification:** API keys associate each request with a specific partner and the usage plan that applies to that partner.\n* **No custom code:** Throttling and quota enforcement are handled by API Gateway, which returns HTTP 429 when limits are exceeded.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** HTTP APIs do not support API keys or usage plans. Route-level throttling applies to all callers, not to each partner.\n* **Option C is incorrect:** WAF rate-based rules limit requests per aggregation key over a short window; they do not provide monthly quotas or per-partner contract tiers.\n* **Option D is incorrect:** This requires custom code and adds latency and cost, which the requirement explicitly wants to avoid.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **\"Per-customer throttling and quotas\":** API Gateway REST API + API keys + usage plans.\n2. **REST API vs HTTP API:** HTTP APIs are cheaper and simpler, but features such as usage plans, API keys, and request validation require REST APIs."
+    },
+    {
+      "domain": 2,
+      "task": "2.1",
+      "topics": [
+        "AWS Transfer Family",
+        "Amazon S3"
+      ],
+      "prompt": "A logistics company receives shipment files from dozens of external partners who upload them with SFTP to a server in the company's data center. The company is moving to AWS and wants the files to land directly in Amazon S3 for downstream processing. Partners must continue to use their existing SFTP clients and hostnames with no changes on their side, other than an updated DNS record managed by the company. The company wants to avoid managing servers. Which solution meets these requirements?",
+      "options": {
+        "A": "Deploy an SFTP server on Amazon EC2 instances in an Auto Scaling group behind a Network Load Balancer, and use a cron job on each instance to copy uploaded files to Amazon S3.",
+        "B": "Deploy AWS Storage Gateway S3 File Gateway on premises and have partners upload to the gateway through SMB.",
+        "C": "Keep the on-premises SFTP server and use AWS DataSync to copy its upload directory, shared over NFS, to Amazon S3 on a schedule.",
+        "D": "Create an AWS Transfer Family SFTP server with Amazon S3 as the storage backend, configure partner users, and point the company's custom hostname to the server endpoint."
+      },
+      "isMulti": false,
+      "requiredCount": 1,
+      "correctAnswers": [
+        "D"
+      ],
+      "explanation": "### ✅ Why Option D is Correct\n\n* **Fully managed SFTP:** AWS Transfer Family provides a managed, highly available SFTP endpoint, so there are no servers to patch or scale.\n* **Direct to S3:** Uploaded files are written directly to the S3 bucket, where they can trigger downstream processing through S3 Event Notifications or EventBridge.\n* **No partner changes:** Partners keep using SFTP; the company points its custom DNS name at the Transfer Family endpoint.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Self-managed EC2 SFTP servers require patching, scaling, and custom copy scripts.\n* **Option B is incorrect:** Partners would have to switch from SFTP to SMB and reach an on-premises appliance, which violates the requirement.\n* **Option C is incorrect:** This keeps the on-premises SFTP server in place, so the company does not leave its data center, and files arrive in S3 only on a schedule.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **\"SFTP / FTPS / FTP / AS2 into S3 or EFS\":** AWS Transfer Family.\n2. **Managed services over self-managed:** When a scenario says to avoid managing servers, prefer the purpose-built managed service."
+    },
+    {
+      "domain": 2,
+      "task": "2.1",
+      "topics": [
+        "Amazon EC2 Auto Scaling",
+        "Amazon ElastiCache",
+        "Amazon S3",
+        "Elastic Load Balancing"
+      ],
+      "prompt": "A company runs a web application on a fixed group of four Amazon EC2 instances behind an Application Load Balancer with sticky sessions enabled. User session data is stored in each instance's memory, and user-uploaded profile images are written to each instance's local disk. When instances are replaced, users are logged out and images disappear. The company wants to make the web tier stateless so that it can scale horizontally in an Auto Scaling group. Which combination of steps should a solutions architect take? (Select TWO.)",
+      "options": {
+        "A": "Increase the sticky session duration on the target group to 7 days.",
+        "B": "Store session data in an Amazon ElastiCache cluster that all instances share.",
+        "C": "Store user-uploaded images on an Amazon EBS volume attached to the first instance and share it with the other instances through NFS.",
+        "D": "Move the instances to a cluster placement group so they can share memory more efficiently.",
+        "E": "Store user-uploaded images in Amazon S3 and save the object key in the application database."
+      },
+      "isMulti": true,
+      "requiredCount": 2,
+      "correctAnswers": [
+        "B",
+        "E"
+      ],
+      "explanation": "### ✅ Why Options B & E are Correct\n\n* **Externalize session state (B):** A shared in-memory store such as ElastiCache (Valkey, Redis OSS, or Memcached) lets any instance serve any request, so instances can be added or terminated without logging users out.\n* **Externalize files (E):** Amazon S3 provides durable, shared object storage that is independent of any instance's lifecycle.\n* **Stateless design:** With no state on the instances, sticky sessions are no longer needed and the Auto Scaling group can scale in and out freely.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Longer stickiness keeps state on individual instances; sessions are still lost when an instance is terminated.\n* **Option C is incorrect:** This creates a single point of failure on one instance in one Availability Zone and does not scale.\n* **Option D is incorrect:** Placement groups affect network latency between instances; they do not share memory or externalize state.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Stateless web tier:** Move sessions to ElastiCache or DynamoDB and files to S3 or EFS.\n2. **Sticky sessions:** Sticky sessions are a workaround for stateful apps; for horizontal scaling and resilience, externalize state instead."
+    },
+    {
+      "domain": 2,
+      "task": "2.2",
+      "topics": [
+        "Amazon Aurora",
+        "Aurora Global Database"
+      ],
+      "prompt": "A gaming company runs its player-profile database on Amazon Aurora PostgreSQL in us-east-1. The company's DR policy requires that, if the entire Region becomes unavailable, the database must be available in us-west-2 with an RPO of about 1 second and an RTO of less than 1 minute. Players in us-west-2 should also be able to read profile data with low latency during normal operation. Which solution meets these requirements?",
+      "options": {
+        "A": "Convert the cluster to an Aurora Global Database with a secondary cluster in us-west-2, and use a managed failover to promote the secondary cluster during a Regional outage.",
+        "B": "Enable automated backups and copy snapshots to us-west-2 every hour with AWS Backup. Restore the latest snapshot during an outage.",
+        "C": "Add two Aurora Replicas in different Availability Zones in us-east-1 and enable Multi-AZ failover.",
+        "D": "Use AWS DMS with ongoing replication to an Amazon RDS for PostgreSQL DB instance in us-west-2, and update the application connection string during an outage."
+      },
+      "isMulti": false,
+      "requiredCount": 1,
+      "correctAnswers": [
+        "A"
+      ],
+      "explanation": "### ✅ Why Option A is Correct\n\n* **Storage-level replication:** Aurora Global Database replicates using dedicated infrastructure with typical lag under 1 second, meeting an RPO of about 1 second.\n* **Fast cross-Region recovery:** A secondary cluster can be promoted in under a minute, and managed failover handles the promotion and topology changes.\n* **Local reads:** The secondary cluster in us-west-2 serves low-latency reads during normal operation.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Hourly snapshot copies give an RPO of up to an hour, and restoring a snapshot takes far longer than 1 minute.\n* **Option C is incorrect:** Aurora Replicas in one Region protect against instance or AZ failure, not against the loss of an entire Region.\n* **Option D is incorrect:** DMS replication lag is typically higher, and promoting a different engine target plus manual connection changes will not reliably meet a sub-minute RTO.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **\"Cross-Region, RPO ~1 s, RTO < 1 min, relational\":** Aurora Global Database.\n2. **Scope of protection:** Aurora Replicas / Multi-AZ = AZ failure. Global Database = Regional failure."
+    },
+    {
+      "domain": 2,
+      "task": "2.2",
+      "topics": [
+        "Disaster recovery",
+        "Amazon RDS",
+        "AWS CloudFormation"
+      ],
+      "prompt": "A company runs a three-tier application in a single AWS Region with an Amazon RDS for MySQL database. The company needs a disaster recovery plan for a Regional outage with an RPO of 1 minute and an RTO of 4 hours. To minimize cost, no application or web servers may run in the recovery Region until a disaster is declared. Which DR strategy meets these requirements MOST cost-effectively?",
+      "options": {
+        "A": "Backup and restore: take daily automated snapshots, copy them to the recovery Region, and rebuild the environment from the snapshots during a disaster.",
+        "B": "Warm standby: run a scaled-down but fully functional copy of the web and application tiers, plus a replicated copy of the database, in the recovery Region, and scale the tiers up when a disaster is declared.",
+        "C": "Pilot light: keep a cross-Region read replica of the database plus AMIs and AWS CloudFormation templates in the recovery Region; launch the application tiers and promote the replica in a disaster.",
+        "D": "Multi-site active-active: run the full application in both Regions behind Amazon Route 53 latency-based routing with bidirectional database replication."
+      },
+      "isMulti": false,
+      "requiredCount": 1,
+      "correctAnswers": [
+        "C"
+      ],
+      "explanation": "### ✅ Why Option C is Correct\n\n* **Core data always on:** In a pilot light strategy, only the data tier is continuously replicated, so the RPO is limited to replication lag (well under 1 minute).\n* **Compute off until needed:** Application servers are not running; they are provisioned from AMIs and infrastructure as code when a disaster is declared, which fits within a 4-hour RTO.\n* **Lowest cost meeting the RPO:** Paying only for the replica and stored artifacts is cheaper than warm standby or active-active.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Daily snapshots give an RPO of up to 24 hours, which does not meet the 1-minute RPO.\n* **Option B is incorrect:** Warm standby runs application servers in the recovery Region at all times, which violates the requirement and costs more.\n* **Option D is incorrect:** Active-active is the most expensive strategy and runs full capacity in both Regions, far exceeding the stated RTO and cost requirements.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **DR strategies by cost and RTO/RPO:** Backup & restore (hours) < Pilot light (core data live, compute off) < Warm standby (scaled-down copy running) < Multi-site active-active (near zero).\n2. **Pilot light keyword:** \"Data replicated, servers not running until failover\" indicates pilot light."
+    },
+    {
+      "domain": 2,
+      "task": "2.2",
+      "topics": [
+        "Amazon RDS Proxy",
+        "AWS Lambda",
+        "Amazon Aurora"
+      ],
+      "prompt": "A company has a serverless API built with AWS Lambda functions that query an Amazon Aurora MySQL DB cluster. During traffic bursts, thousands of concurrent Lambda invocations open new database connections, causing \"too many connections\" errors. During a recent Aurora failover, the application also experienced several minutes of errors because clients cached the old writer's DNS address. Which solution addresses both problems with the LEAST application change?",
+      "options": {
+        "A": "Increase the max_connections parameter in the DB cluster parameter group and reduce the DNS TTL in the Lambda function code.",
+        "B": "Create an Amazon RDS Proxy for the Aurora cluster and configure the Lambda functions to connect to the proxy endpoint.",
+        "C": "Set reserved concurrency on the Lambda functions to 10 and add Aurora Replicas to absorb the load.",
+        "D": "Place an Amazon SQS queue between Amazon API Gateway and the Lambda functions so that requests are processed one at a time."
+      },
+      "isMulti": false,
+      "requiredCount": 1,
+      "correctAnswers": [
+        "B"
+      ],
+      "explanation": "### ✅ Why Option B is Correct\n\n* **Connection pooling:** RDS Proxy maintains a pool of database connections and multiplexes many Lambda client connections over them, preventing connection exhaustion.\n* **Faster failover:** The proxy detects failover and routes to the new writer without relying on client DNS caching, reducing failover time for Aurora and RDS (by up to 66% according to AWS).\n* **Minimal change:** The only application change is the connection endpoint; the proxy can also use Secrets Manager or IAM authentication.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Raising max_connections consumes more memory and still has a ceiling, and changing DNS behavior in code does not reliably fix failover handling.\n* **Option C is incorrect:** Heavily limiting concurrency throttles the API and causes errors for users; Aurora Replicas serve reads but do not reduce writer connections.\n* **Option D is incorrect:** Making a synchronous API asynchronous changes the API's behavior for clients and does not address failover.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **\"Lambda + relational DB + too many connections\":** Amazon RDS Proxy.\n2. **Proxy concepts:** RDS Proxy also improves availability by reducing failover time and preserving application connections."
+    },
+    {
+      "domain": 2,
+      "task": "2.2",
+      "topics": [
+        "Amazon Route 53",
+        "Amazon S3",
+        "Health checks"
+      ],
+      "prompt": "A company hosts its public website on Amazon EC2 instances behind an Application Load Balancer in one AWS Region. The company wants visitors to see a static \"maintenance\" page hosted in Amazon S3 automatically whenever the primary site is unhealthy, and to return to the primary site automatically when it recovers. Which solution meets these requirements?",
+      "options": {
+        "A": "Create Route 53 weighted records that send 90% of traffic to the ALB and 10% of traffic to the S3 website endpoint.",
+        "B": "Create a Route 53 latency-based routing policy with one record for the ALB and one record for the S3 website endpoint.",
+        "C": "Configure the ALB listener with a fixed-response action that returns the maintenance page whenever all registered targets are unhealthy, and store the maintenance page in Amazon S3.",
+        "D": "Create Route 53 failover routing records: a primary alias record for the ALB with Evaluate Target Health enabled, and a secondary alias record for the S3 static website endpoint."
+      },
+      "isMulti": false,
+      "requiredCount": 1,
+      "correctAnswers": [
+        "D"
+      ],
+      "explanation": "### ✅ Why Option D is Correct\n\n* **Active-passive failover:** Failover routing returns the primary record while it is healthy and the secondary record only when the primary is unhealthy.\n* **Automatic failback:** When health checks pass again, Route 53 automatically resumes answering with the primary record.\n* **Health evaluation:** With an alias record to the ALB, Evaluate Target Health makes the record healthy only when the ALB has healthy targets.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Weighted routing would send 10% of users to the maintenance page even when the primary site is healthy.\n* **Option B is incorrect:** Latency-based routing selects the lowest-latency record, not the healthy one, so users could reach the maintenance page while the primary is healthy.\n* **Option C is incorrect:** ALB fixed-response actions return a static string defined in the listener rule; they cannot fetch content from S3, and this does not help if the ALB itself is unavailable.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **\"Active-passive\" / \"failover to static site\":** Route 53 failover routing policy with health checks.\n2. **Routing policies:** Weighted = split traffic; latency = performance; geolocation = compliance/localization; failover = DR."
+    },
+    {
+      "domain": 2,
+      "task": "2.2",
+      "topics": [
+        "Amazon EC2 Auto Scaling",
+        "Availability Zones",
+        "Legacy applications"
+      ],
+      "prompt": "A company runs a legacy, stateless licensing service on a single Amazon EC2 instance. The vendor license allows only one running instance at a time, and the application code cannot be modified. The service must recover automatically if the instance fails or if its Availability Zone becomes unavailable. Which solution meets these requirements?",
+      "options": {
+        "A": "Create a launch template from the instance's AMI and an Auto Scaling group with minimum, maximum, and desired capacity of 1 that spans multiple Availability Zones.",
+        "B": "Create an Amazon CloudWatch alarm on the StatusCheckFailed_System metric with an EC2 recover action.",
+        "C": "Launch a second instance from the same AMI in another Availability Zone and keep it running as a hot standby behind a Network Load Balancer with cross-zone load balancing.",
+        "D": "Enable termination protection and take hourly EBS snapshots with Amazon Data Lifecycle Manager."
+      },
+      "isMulti": false,
+      "requiredCount": 1,
+      "correctAnswers": [
+        "A"
+      ],
+      "explanation": "### ✅ Why Option A is Correct\n\n* **Self-healing:** The Auto Scaling group replaces the instance automatically when it fails health checks, keeping exactly one instance running.\n* **AZ resilience:** Because the group spans multiple Availability Zones, a replacement instance is launched in a healthy AZ if the original AZ is impaired.\n* **No code change:** The same AMI is used, so the legacy application runs unchanged.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** EC2 automatic recovery keeps the instance in the same Availability Zone, so it does not protect against an AZ failure.\n* **Option C is incorrect:** Running a second instance violates the single-instance license.\n* **Option D is incorrect:** Snapshots protect data but do not recover the service automatically; termination protection does not prevent failures.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **\"Single instance must self-heal across AZs\":** Auto Scaling group with min = max = desired = 1 across multiple AZs.\n2. **Recover action scope:** CloudWatch/EC2 automatic recovery handles underlying host failures in the same AZ only."
+    },
+    {
+      "domain": 2,
+      "task": "2.2",
+      "topics": [
+        "Service Quotas",
+        "Disaster recovery",
+        "AWS Regions"
+      ],
+      "prompt": "A company uses a warm standby DR strategy. The production Region runs 400 vCPUs of On-Demand EC2 instances, while the standby Region runs only 32 vCPUs. During a recent DR test, the Auto Scaling group in the standby Region could not scale out because launches failed with a vCPU limit error. The company must ensure that the standby Region can scale to full production capacity during a failover. What should a solutions architect do?",
+      "options": {
+        "A": "Create an Auto Scaling group in the production Region that launches instances into the standby Region's subnets during failover.",
+        "B": "Purchase Compute Savings Plans for 400 vCPUs so that capacity is reserved in the standby Region.",
+        "C": "Use Service Quotas to request an increase of the relevant Running On-Demand instances vCPU quota in the standby Region to at least production levels, and verify it during DR tests.",
+        "D": "Enable AWS Organizations and apply a service control policy that removes the EC2 vCPU limit for the account."
+      },
+      "isMulti": false,
+      "requiredCount": 1,
+      "correctAnswers": [
+        "C"
+      ],
+      "explanation": "### ✅ Why Option C is Correct\n\n* **Quotas are Regional:** EC2 On-Demand vCPU quotas apply per Region per account, so a quota sufficient in production does not carry over to the standby Region.\n* **Plan ahead:** Requesting increases through Service Quotas before a disaster ensures the standby environment can scale to full capacity when needed.\n* **Validate:** Regular DR tests that scale to full capacity confirm the quota and the scaling configuration actually work.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Auto Scaling groups are Regional and cannot launch instances into subnets in another Region.\n* **Option B is incorrect:** Savings Plans are a pricing commitment; they do not reserve capacity or raise service quotas.\n* **Option D is incorrect:** SCPs can only restrict permissions; they cannot raise service quotas.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Standby environments and quotas:** Raise service quotas in the DR Region in advance; quotas are per account per Region.\n2. **Capacity vs pricing:** On-Demand Capacity Reservations reserve capacity; Savings Plans and Reserved Instances (Regional) only provide discounts."
+    },
+    {
+      "domain": 2,
+      "task": "2.2",
+      "topics": [
+        "Amazon VPC",
+        "NAT gateway",
+        "Amazon RDS Multi-AZ"
+      ],
+      "prompt": "A company runs an application on EC2 instances in private subnets in two Availability Zones behind an Application Load Balancer. All instances reach the internet for software updates through a single NAT gateway in the first AZ's public subnet, using a shared private route table. The application uses a Single-AZ Amazon RDS for MySQL DB instance in the first AZ. The company wants to remove single points of failure so that the application keeps working if either AZ fails. Which combination of steps should a solutions architect take? (Select TWO.)",
+      "options": {
+        "A": "Create a NAT gateway in a public subnet in each AZ, and give each AZ's private subnets their own route table that points to the NAT gateway in the same AZ.",
+        "B": "Replace the NAT gateway with a NAT instance on a larger EC2 instance type.",
+        "C": "Create an RDS read replica in the same Availability Zone as the primary DB instance.",
+        "D": "Convert the RDS DB instance to a Multi-AZ deployment.",
+        "E": "Place the EC2 instances in a spread placement group within the first Availability Zone."
+      },
+      "isMulti": true,
+      "requiredCount": 2,
+      "correctAnswers": [
+        "A",
+        "D"
+      ],
+      "explanation": "### ✅ Why Options A & D are Correct\n\n* **NAT gateways are zonal (A):** A NAT gateway is redundant only within its own AZ. One NAT gateway per AZ, with AZ-specific route tables, means an AZ outage affects only that AZ's traffic.\n* **Database failover (D):** A Multi-AZ deployment keeps a synchronous standby in another AZ and fails over automatically, typically within one to two minutes for a Multi-AZ DB instance.\n* **Remove SPOFs:** Together these changes ensure that both the egress path and the database survive the loss of either AZ.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** A NAT instance is a single EC2 instance in one AZ, so it is still a single point of failure and adds management overhead.\n* **Option C is incorrect:** A read replica in the same AZ is lost along with the primary if that AZ fails, and it is not an automatic failover target.\n* **Option E is incorrect:** Keeping all instances in one AZ increases exposure to an AZ failure; spread placement groups only separate instances across racks.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **NAT gateway HA:** Deploy one NAT gateway per AZ and route each AZ's private subnets to its local NAT gateway.\n2. **RDS HA vs scaling:** Multi-AZ for availability, read replicas for read scaling (a cross-AZ or cross-Region replica can be promoted manually for DR)."
+    },
+    {
+      "domain": 2,
+      "task": "2.2",
+      "topics": [
+        "Amazon S3",
+        "S3 Object Lock",
+        "S3 Cross-Region Replication",
+        "S3 Versioning"
+      ],
+      "prompt": "A healthcare company stores medical imaging files in an Amazon S3 bucket in eu-west-1. Compliance rules require that: previous versions of files can be recovered if they are overwritten; a copy of every file exists in a second AWS Region; and no user, including the root user, can delete or overwrite any file version for 7 years after it is written. Which combination of actions meets these requirements? (Select THREE.)",
+      "options": {
+        "A": "Enable S3 Versioning on the source bucket and on a destination bucket in another Region.",
+        "B": "Configure S3 Lifecycle rules to transition objects to S3 Glacier Deep Archive after 30 days.",
+        "C": "Configure S3 Cross-Region Replication from the source bucket to the destination bucket in the other Region.",
+        "D": "Enable S3 Object Lock in governance mode with a 7-year default retention period.",
+        "E": "Configure S3 Same-Region Replication to a second bucket in eu-west-1.",
+        "F": "Enable S3 Object Lock in compliance mode with a 7-year default retention period on both buckets."
+      },
+      "isMulti": true,
+      "requiredCount": 3,
+      "correctAnswers": [
+        "A",
+        "C",
+        "F"
+      ],
+      "explanation": "### ✅ Why Options A, C & F are Correct\n\n* **Versioning (A):** Versioning preserves every version of an object so overwritten data can be recovered, and it is a prerequisite for both replication and Object Lock.\n* **Cross-Region Replication (C):** CRR asynchronously copies new objects to a bucket in another Region, providing a geographically separate copy.\n* **Compliance mode (F):** In compliance mode, no user, including the root user, can overwrite or delete a protected object version or shorten its retention period until the retention period expires.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Storage class transitions reduce cost but do not provide versioning, Regional copies, or immutability.\n* **Option D is incorrect:** Governance mode can be bypassed by users with the s3:BypassGovernanceRetention permission, so it does not prevent all users from deleting objects.\n* **Option E is incorrect:** Same-Region Replication keeps the copy in the same Region, which does not satisfy the requirement for a copy in a second Region.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **WORM / immutable storage on S3:** Object Lock compliance mode = nobody can delete, including root; governance mode = privileged users can bypass.\n2. **Replication prerequisites:** CRR and SRR require versioning on both source and destination buckets."
+    }
+  ],
+  "set2": [
+    {
+      "domain": 2,
+      "task": "2.1",
+      "topics": [
+        "Amazon EventBridge",
+        "AWS Lambda",
+        "Amazon SQS"
+      ],
+      "prompt": "A company uses a SaaS customer-support platform that is an Amazon EventBridge partner. The company wants to react to ticket events in near real time: high-priority tickets must invoke an AWS Lambda function that pages the on-call engineer, and all ticket events must be sent to an Amazon SQS queue for analytics. The company wants to avoid writing and hosting integration code to receive events from the SaaS platform. Which solution meets these requirements with the LEAST operational overhead?",
+      "options": {
+        "A": "Create an Amazon API Gateway endpoint that receives webhooks from the SaaS platform and invokes a Lambda function that forwards events to the target Lambda function and the SQS queue.",
+        "B": "Write a scheduled Lambda function that polls the SaaS platform's API every minute and publishes new tickets to an Amazon SNS topic.",
+        "C": "Associate the SaaS partner event source with an EventBridge partner event bus, and create rules that match high-priority ticket events to the Lambda function and all ticket events to the SQS queue.",
+        "D": "Configure the SaaS platform to write events into an Amazon Kinesis Data Streams stream, and use Lambda consumers to filter and route the records."
+      },
+      "isMulti": false,
+      "requiredCount": 1,
+      "correctAnswers": [
+        "C"
+      ],
+      "explanation": "### ✅ Why Option C is Correct\n\n* **Native SaaS integration:** EventBridge partner event sources deliver events from supported SaaS providers directly to a partner event bus in the customer's account, with no integration code to host.\n* **Content-based routing:** Rules use event patterns to match fields such as priority and route matching events to targets such as Lambda functions and SQS queues.\n* **Loose coupling:** New consumers can be added later as new rules or targets without changing the producer.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** This requires building, securing, and maintaining a webhook endpoint and forwarding code.\n* **Option B is incorrect:** Polling adds latency, consumes API quotas, and requires custom code to track which tickets have already been processed.\n* **Option D is incorrect:** The SaaS platform would need custom code to write to Kinesis, and the Lambda consumers must implement routing logic.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **\"SaaS events into AWS\":** Amazon EventBridge partner event sources (or Amazon AppFlow for bulk data transfer).\n2. **Event-driven routing:** EventBridge rules with event patterns route events by content to many target types."
+    },
+    {
+      "domain": 2,
+      "task": "2.1",
+      "topics": [
+        "Amazon SQS FIFO"
+      ],
+      "prompt": "A bank processes account transactions through a queue. Transactions for the same account must be processed strictly in the order they were sent, and a transaction must never be processed twice even if the producer retries a send after a network timeout. Transactions for different accounts should be processed in parallel by multiple consumers to maximize throughput. Which solution meets these requirements?",
+      "options": {
+        "A": "Use an Amazon SQS FIFO queue, set the message group ID to the account ID, and supply a message deduplication ID (or enable content-based deduplication).",
+        "B": "Use an Amazon SQS standard queue and include a sequence number and a unique transaction ID in each message so that consumers can reorder and deduplicate messages.",
+        "C": "Use an Amazon SQS FIFO queue with a single message group ID for all messages so that ordering is preserved globally.",
+        "D": "Use an Amazon SNS standard topic with an SQS standard queue subscription and enable raw message delivery."
+      },
+      "isMulti": false,
+      "requiredCount": 1,
+      "correctAnswers": [
+        "A"
+      ],
+      "explanation": "### ✅ Why Option A is Correct\n\n* **Per-group ordering:** SQS FIFO guarantees strict ordering within a message group; using the account ID as the group ID orders each account's transactions.\n* **Parallelism across groups:** Different message groups can be consumed concurrently by multiple consumers, so throughput scales with the number of accounts.\n* **Deduplication:** A deduplication ID (or content-based deduplication) causes duplicate sends within the 5-minute deduplication interval to be accepted but not delivered again.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Standard queues provide at-least-once delivery and best-effort ordering, so duplicates can occur and consumers would need complex reordering logic.\n* **Option C is incorrect:** A single message group forces all messages to be processed one at a time, preventing parallel processing across accounts.\n* **Option D is incorrect:** Standard SNS topics and standard SQS queues do not guarantee ordering or exactly-once processing.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **\"Order matters + no duplicates\":** SQS FIFO (or SNS FIFO for fan-out).\n2. **Message group ID:** Choose a group ID that matches the ordering scope (for example, per customer or per account) to keep parallelism."
+    },
+    {
+      "domain": 2,
+      "task": "2.1",
+      "topics": [
+        "AWS Fargate",
+        "Amazon ECS",
+        "Amazon EventBridge Scheduler"
+      ],
+      "prompt": "A company has a containerized nightly batch job that reconciles financial records. The job runs for about 2 hours, needs 8 vCPUs and 32 GB of memory, and should run every night at 01:00 UTC. The company does not want to manage any servers or keep compute running between runs. Which solution meets these requirements with the LEAST operational overhead?",
+      "options": {
+        "A": "Package the job as an AWS Lambda function configured with the maximum 10,240 MB of memory and the maximum timeout, and invoke it nightly with an Amazon EventBridge Scheduler schedule.",
+        "B": "Run the job on an Amazon EC2 instance that is always on and use a cron entry to start the container each night.",
+        "C": "Package the job as an AWS Lambda container image with Lambda SnapStart enabled and invoke it from a Step Functions Express workflow.",
+        "D": "Create an Amazon ECS task definition for AWS Fargate with 8 vCPUs and 32 GB of memory, and use Amazon EventBridge Scheduler to run the task every night at 01:00 UTC."
+      },
+      "isMulti": false,
+      "requiredCount": 1,
+      "correctAnswers": [
+        "D"
+      ],
+      "explanation": "### ✅ Why Option D is Correct\n\n* **No time limit:** Fargate tasks can run for as long as needed, unlike Lambda's 15-minute maximum.\n* **Right-sized serverless compute:** Fargate supports task sizes up to 16 vCPUs and 120 GB of memory, and an 8 vCPU task can use 16-60 GB of memory in 4 GB increments, so 8 vCPUs and 32 GB is supported, and you pay only while the task runs.\n* **Managed scheduling:** EventBridge Scheduler can invoke the ECS RunTask API directly on a cron expression with built-in retries.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Lambda functions have a maximum timeout of 15 minutes, so a 2-hour job cannot run in Lambda.\n* **Option B is incorrect:** An always-on instance must be patched and managed and incurs cost between runs.\n* **Option C is incorrect:** SnapStart reduces cold-start latency but does not extend Lambda's 15-minute limit, and Express workflows have a 5-minute maximum duration.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Lambda vs Fargate:** Use Lambda for short (≤ 15 min) event-driven code; use Fargate for longer-running or larger containerized tasks without servers.\n2. **Scheduled jobs:** EventBridge Scheduler supports cron and rate expressions and many target types, including ECS tasks."
+    },
+    {
+      "domain": 2,
+      "task": "2.1",
+      "topics": [
+        "Amazon Kinesis Data Streams"
+      ],
+      "prompt": "An e-commerce company captures clickstream events from its website. Three independent applications (fraud detection, personalization, and a data lake loader) must each read every event with sub-second latency. Events for the same user session must be read in order, and any application must be able to reprocess the last 7 days of events after a bug fix. Which service should a solutions architect use to ingest the events?",
+      "options": {
+        "A": "An Amazon SQS standard queue that all three applications poll.",
+        "B": "Amazon Kinesis Data Streams with the session ID as the partition key and a data retention period of 7 days.",
+        "C": "Amazon Data Firehose delivering the events to an Amazon S3 bucket that all three applications read.",
+        "D": "An Amazon SNS standard topic with a separate Amazon SQS standard queue subscribed for each of the three applications."
+      },
+      "isMulti": false,
+      "requiredCount": 1,
+      "correctAnswers": [
+        "B"
+      ],
+      "explanation": "### ✅ Why Option B is Correct\n\n* **Multiple independent consumers:** Each application reads the stream independently with its own position (and can use enhanced fan-out for dedicated throughput).\n* **Ordering:** Records with the same partition key go to the same shard and are read in order.\n* **Replay:** Retention can be extended up to 365 days; consumers can re-read from any point in the retention window.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** SQS consumers compete for messages, so each event is processed by only one application, and processed messages are deleted and cannot be replayed.\n* **Option C is incorrect:** Firehose buffers data before delivery (seconds to minutes), so it does not meet sub-second latency, and it does not provide per-session ordering for consumers.\n* **Option D is incorrect:** SNS with SQS gives each application a copy, but standard queues do not guarantee ordering and messages cannot be replayed after they are deleted.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **\"Multiple consumers + ordering + replay\":** Amazon Kinesis Data Streams (or Amazon MSK).\n2. **SQS vs Kinesis:** SQS = per-message work queue, deleted after processing. Kinesis = ordered, replayable stream read by many consumers."
+    },
+    {
+      "domain": 2,
+      "task": "2.1",
+      "topics": [
+        "Amazon FSx for Windows File Server",
+        "Storage types"
+      ],
+      "prompt": "A company is migrating a .NET application that runs on Windows Server to Amazon EC2 instances in two Availability Zones. The application instances must share files through SMB, and file access must be controlled with the company's existing Microsoft Active Directory users and groups. The shared storage must remain available if one AZ fails. Which storage solution meets these requirements?",
+      "options": {
+        "A": "Amazon EFS with the Standard storage class mounted on every instance.",
+        "B": "Amazon FSx for Windows File Server with a Multi-AZ deployment joined to the Active Directory domain.",
+        "C": "An Amazon EBS io2 Block Express volume with Multi-Attach enabled and attached to all of the application instances.",
+        "D": "Amazon FSx for Lustre with a persistent deployment linked to an Amazon S3 bucket."
+      },
+      "isMulti": false,
+      "requiredCount": 1,
+      "correctAnswers": [
+        "B"
+      ],
+      "explanation": "### ✅ Why Option B is Correct\n\n* **Native SMB and NTFS:** FSx for Windows File Server provides fully managed Windows file shares with SMB access and NTFS ACLs.\n* **Active Directory integration:** The file system joins AWS Managed Microsoft AD or a self-managed AD, so existing users and groups control access.\n* **Multi-AZ:** A Multi-AZ deployment keeps a standby file server in another AZ and fails over automatically.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Amazon EFS uses the NFS protocol and is intended for Linux workloads; it does not provide SMB shares for Windows.\n* **Option C is incorrect:** EBS Multi-Attach volumes are limited to a single AZ, require a cluster-aware file system, and do not provide SMB or AD-based access control.\n* **Option D is incorrect:** FSx for Lustre is a high-performance file system for Linux compute workloads, not an SMB file share.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Storage by protocol:** SMB / Windows / AD = FSx for Windows File Server; NFS / Linux = EFS; HPC = FSx for Lustre; multiprotocol / NetApp = FSx for NetApp ONTAP.\n2. **Storage types:** Block = EBS (one AZ); file = EFS/FSx (shared); object = S3 (HTTP API)."
+    },
+    {
+      "domain": 2,
+      "task": "2.1",
+      "topics": [
+        "Amazon DynamoDB",
+        "DynamoDB Accelerator (DAX)",
+        "Caching strategies"
+      ],
+      "prompt": "A gaming company stores leaderboard and player data in Amazon DynamoDB. The workload is extremely read-heavy, with many repeated reads of the same items, and the company now needs response times in microseconds instead of single-digit milliseconds. The developers want to make as few application code changes as possible and do not want to write cache invalidation logic. Which solution meets these requirements?",
+      "options": {
+        "A": "Increase the table's provisioned read capacity and switch to strongly consistent reads.",
+        "B": "Create global secondary indexes for the most frequently read attributes.",
+        "C": "Add an Amazon ElastiCache cluster and modify the application code to implement lazy loading with a TTL for every cached item.",
+        "D": "Deploy a DynamoDB Accelerator (DAX) cluster and point the application's DynamoDB client to the DAX cluster endpoint."
+      },
+      "isMulti": false,
+      "requiredCount": 1,
+      "correctAnswers": [
+        "D"
+      ],
+      "explanation": "### ✅ Why Option D is Correct\n\n* **Microsecond reads:** DAX is an in-memory, write-through cache purpose-built for DynamoDB that delivers microsecond read latency for cached items.\n* **API compatible:** DAX is compatible with DynamoDB API calls, so the application uses the DAX client with the same operations and needs minimal code changes.\n* **Managed cache behavior:** DAX handles item and query caching and writes through to DynamoDB, so developers do not write invalidation logic.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** More capacity does not change DynamoDB's single-digit-millisecond latency, and strongly consistent reads do not reduce latency.\n* **Option B is incorrect:** Indexes support different access patterns but do not provide microsecond latency.\n* **Option C is incorrect:** ElastiCache can provide low latency but requires the developers to write and maintain caching and invalidation logic in the application.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **\"DynamoDB + microseconds + minimal code change\":** DynamoDB Accelerator (DAX).\n2. **Caching strategies:** Lazy loading = cache on read miss (can be stale); write-through = update cache on write (fresher, more writes)."
+    },
+    {
+      "domain": 2,
+      "task": "2.1",
+      "topics": [
+        "Amazon API Gateway",
+        "Amazon SQS",
+        "AWS Lambda"
+      ],
+      "prompt": "A company exposes an API through Amazon API Gateway for submitting document-conversion jobs. Each conversion takes 2 to 10 minutes. Clients must receive an immediate acknowledgment when a job is accepted, and jobs must not be lost if the conversion backend is temporarily unavailable or overwhelmed. The company wants to minimize custom code. Which solution meets these requirements?",
+      "options": {
+        "A": "Configure the REST API with a direct AWS service integration that sends each request to an Amazon SQS queue, and have an AWS Lambda function consume the queue.",
+        "B": "Configure API Gateway with a synchronous Lambda proxy integration that performs the conversion and returns the result in the response.",
+        "C": "Configure API Gateway with an HTTP proxy integration to an Application Load Balancer in front of EC2 instances that perform the conversion synchronously.",
+        "D": "Configure API Gateway to invoke a Lambda function that writes each job to an Amazon ElastiCache cluster, and have a fleet of EC2 worker instances poll the cache for new jobs."
+      },
+      "isMulti": false,
+      "requiredCount": 1,
+      "correctAnswers": [
+        "A"
+      ],
+      "explanation": "### ✅ Why Option A is Correct\n\n* **Asynchronous acknowledgment:** API Gateway returns as soon as SQS accepts the message, so clients get an immediate response.\n* **Durable buffering:** SQS stores jobs durably until they are processed, so nothing is lost if the backend is slow or unavailable.\n* **Minimal code:** The service integration needs no intermediary Lambda function, and the Lambda event source mapping handles polling, batching, and scaling.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** A synchronous integration makes clients wait for the entire conversion, which does not provide an immediate acknowledgment and fails if the backend is unavailable.\n* **Option C is incorrect:** Synchronous processing has the same problems, and requests are lost when the backend is overwhelmed.\n* **Option D is incorrect:** An in-memory cache is not a durable queue, and polling workers require custom code for locking and retries.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **\"Immediate response + long processing\":** Decouple with a queue (API Gateway → SQS → consumer).\n2. **Service integrations:** API Gateway REST APIs can integrate directly with services such as SQS, Step Functions, and DynamoDB without Lambda glue code."
+    },
+    {
+      "domain": 2,
+      "task": "2.1",
+      "topics": [
+        "Amazon EKS",
+        "Kubernetes autoscaling"
+      ],
+      "prompt": "A company runs a microservices application on an Amazon EKS cluster with managed node groups. During daily traffic peaks, pods become CPU-saturated, and when more pods are added manually, some remain in the Pending state because the nodes have no free capacity. The company wants the number of pods to adjust automatically to CPU load and the number of nodes to adjust automatically to the pods that need to be scheduled. Which combination of actions meets these requirements? (Select TWO.)",
+      "options": {
+        "A": "Deploy the Kubernetes Horizontal Pod Autoscaler with a target CPU utilization for each deployment.",
+        "B": "Deploy the Kubernetes Vertical Pod Autoscaler so that it adds pod replicas when CPU utilization is high.",
+        "C": "Deploy the Kubernetes Cluster Autoscaler so that it adjusts the size of the node groups' Auto Scaling groups based on pending pods.",
+        "D": "Configure Amazon ECS Service Auto Scaling with a target tracking policy on CPU utilization.",
+        "E": "Change the node groups to larger instance types each night by using a scheduled AWS Systems Manager Automation runbook."
+      },
+      "isMulti": true,
+      "requiredCount": 2,
+      "correctAnswers": [
+        "A",
+        "C"
+      ],
+      "explanation": "### ✅ Why Options A & C are Correct\n\n* **Pod scaling (A):** The Horizontal Pod Autoscaler increases or decreases the number of pod replicas based on observed metrics such as CPU utilization.\n* **Node scaling (C):** The Cluster Autoscaler watches for pods that cannot be scheduled and increases the node group's Auto Scaling group capacity, and removes underutilized nodes.\n* **Two layers of horizontal scaling:** Scaling pods and nodes together lets the cluster absorb peaks automatically.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** The Vertical Pod Autoscaler adjusts CPU and memory requests for pods; it does not add replicas.\n* **Option D is incorrect:** ECS Service Auto Scaling applies to Amazon ECS services, not to Kubernetes deployments on EKS.\n* **Option E is incorrect:** Scheduled vertical scaling is not responsive to actual load and requires node replacement.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **EKS scaling layers:** HPA scales pods; Cluster Autoscaler (or Karpenter, or EKS Auto Mode) scales nodes.\n2. **Horizontal vs vertical:** Horizontal scaling adds more units; vertical scaling makes each unit bigger and usually has an upper limit."
+    },
+    {
+      "domain": 2,
+      "task": "2.2",
+      "topics": [
+        "AWS Backup",
+        "AWS Organizations"
+      ],
+      "prompt": "A company runs workloads that use Amazon EC2 instances with EBS volumes, Amazon RDS databases, and Amazon EFS file systems across several accounts in AWS Organizations. The company needs centrally managed daily backups, a copy of every backup in a separate backup account in another AWS Region, and protection so that backups cannot be deleted before their retention period ends, even by an administrator in the source account. Which solution meets these requirements with the LEAST operational overhead?",
+      "options": {
+        "A": "Write AWS Lambda functions in every account that create EBS snapshots, RDS snapshots, and EFS backups each day, then copy them to the backup account and restrict deletion with IAM policies.",
+        "B": "Enable Amazon Data Lifecycle Manager policies for EBS snapshots and RDS automated backups with a 35-day retention period in each account.",
+        "C": "Use AWS Backup with organization-wide backup policies, cross-Region and cross-account copy rules to a vault in the backup account, and AWS Backup Vault Lock in compliance mode.",
+        "D": "Use AWS Backup in each account and replicate the backup vaults to Amazon S3 with S3 Cross-Region Replication."
+      },
+      "isMulti": false,
+      "requiredCount": 1,
+      "correctAnswers": [
+        "C"
+      ],
+      "explanation": "### ✅ Why Option C is Correct\n\n* **Centralized management:** AWS Backup policies in AWS Organizations apply consistent backup plans to EC2, EBS, RDS, EFS, and other supported resources across accounts.\n* **Cross-Region and cross-account copies:** Copy rules send recovery points to a vault in a separate backup account and Region, isolating them from the source account.\n* **Immutability:** Vault Lock in compliance mode prevents anyone from deleting recovery points or changing retention settings after the grace period.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Custom Lambda code across many accounts is high overhead, and IAM policies can be changed by an administrator, so they do not provide true immutability.\n* **Option B is incorrect:** Data Lifecycle Manager manages EBS snapshots and EBS-backed AMIs only; it does not cover RDS or EFS, and it does not provide cross-account immutability.\n* **Option D is incorrect:** Backup vaults cannot be replicated with S3 replication; AWS Backup has its own copy feature.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **\"Centralized backups across services and accounts\":** AWS Backup with Organizations backup policies.\n2. **Ransomware-resilient backups:** Cross-account copies + Vault Lock (compliance mode) protect against deletion by compromised administrators."
+    },
+    {
+      "domain": 2,
+      "task": "2.2",
+      "topics": [
+        "Amazon DynamoDB global tables",
+        "Amazon Route 53",
+        "Multi-Region active-active"
+      ],
+      "prompt": "A global payments startup needs its customer-profile service to remain fully available for both reads and writes even if an entire AWS Region fails. Users in North America and Europe must write to the Region closest to them with low latency, and the service must keep running in the remaining Region without a manual database promotion step. Which solution meets these requirements?",
+      "options": {
+        "A": "Use an Amazon RDS for MySQL Multi-AZ DB cluster in us-east-1 with a cross-Region read replica in eu-west-1.",
+        "B": "Use Amazon DynamoDB global tables with replicas in us-east-1 and eu-west-1, deploy the application in both Regions, and use Route 53 latency-based routing with health checks.",
+        "C": "Use a single Amazon DynamoDB table in us-east-1 with on-demand capacity and DynamoDB Accelerator (DAX) clusters in both Regions.",
+        "D": "Use Amazon Aurora Global Database with the primary cluster in us-east-1 and a secondary cluster in eu-west-1, and enable write forwarding on the secondary cluster for European users."
+      },
+      "isMulti": false,
+      "requiredCount": 1,
+      "correctAnswers": [
+        "B"
+      ],
+      "explanation": "### ✅ Why Option B is Correct\n\n* **Multi-active writes:** DynamoDB global tables accept reads and writes in every replica Region and replicate changes between Regions automatically.\n* **No promotion needed:** If a Region fails, the other replica already accepts writes, so there is no failover or promotion step for the database.\n* **Traffic steering:** Route 53 latency-based routing sends users to the closest healthy Region, and health checks remove a failed Region.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Only the primary accepts writes; a cross-Region replica must be manually promoted after a Regional failure.\n* **Option C is incorrect:** A single-Region table is unavailable if us-east-1 fails, and DAX clusters are Regional caches that do not provide writes elsewhere.\n* **Option D is incorrect:** Write forwarding still sends writes to the single primary in us-east-1, so writes from Europe have cross-Region latency, and a Regional failure requires a failover to promote the secondary.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **\"Multi-Region active-active writes\":** DynamoDB global tables.\n2. **Aurora Global Database:** Single writer Region; secondary Regions are read-only (write forwarding proxies to the primary) and require failover."
+    },
+    {
+      "domain": 2,
+      "task": "2.2",
+      "topics": [
+        "AWS Global Accelerator",
+        "Network Load Balancer"
+      ],
+      "prompt": "A company runs a multiplayer game backend that uses UDP on Network Load Balancers in two AWS Regions. Players' game clients connect to fixed IP addresses that are hard-coded and cannot easily be updated. If one Region becomes unhealthy, players must be redirected to the other Region within seconds, without waiting for DNS caches to expire. Which solution meets these requirements?",
+      "options": {
+        "A": "Create an Amazon CloudFront distribution with both Network Load Balancers as origins in an origin group with failover.",
+        "B": "Create Route 53 failover records that point to both Network Load Balancers and set a TTL of 60 seconds.",
+        "C": "Assign Elastic IP addresses to the Network Load Balancer in the primary Region and move them to the secondary Region's load balancer during a failure.",
+        "D": "Create an AWS Global Accelerator standard accelerator with an endpoint group for each Region that contains that Region's Network Load Balancer."
+      },
+      "isMulti": false,
+      "requiredCount": 1,
+      "correctAnswers": [
+        "D"
+      ],
+      "explanation": "### ✅ Why Option D is Correct\n\n* **Static anycast IPs:** Global Accelerator provides two static IP addresses that remain the same while endpoints change behind them, so the client configuration never changes.\n* **Fast health-based failover:** Global Accelerator continuously checks endpoint health and shifts traffic to healthy endpoint groups within seconds, independent of DNS caching.\n* **UDP support:** Global Accelerator supports both TCP and UDP traffic and routes players over the AWS global network.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** CloudFront does not support UDP traffic and does not provide fixed IP addresses for clients.\n* **Option B is incorrect:** DNS-based failover depends on resolvers and clients honoring TTLs, which can delay failover, and clients use hard-coded IPs instead of DNS.\n* **Option C is incorrect:** Elastic IP addresses are Regional and cannot be moved to resources in another Region.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **\"Static IPs + TCP/UDP + fast multi-Region failover\":** AWS Global Accelerator.\n2. **CloudFront vs Global Accelerator:** CloudFront = HTTP(S) caching at the edge; Global Accelerator = non-cached TCP/UDP acceleration with static IPs."
+    },
+    {
+      "domain": 2,
+      "task": "2.2",
+      "topics": [
+        "AWS X-Ray",
+        "Workload visibility"
+      ],
+      "prompt": "A company runs an order API composed of Amazon API Gateway, several AWS Lambda functions, and calls to Amazon DynamoDB and an external payment service. Users report that some requests intermittently take more than 5 seconds. The operations team needs to see the end-to-end path of individual requests and identify which component adds the latency. Which solution meets these requirements?",
+      "options": {
+        "A": "Enable AWS X-Ray active tracing on the API Gateway stage and the Lambda functions, instrument the downstream calls, and analyze the traces and the service map.",
+        "B": "Enable AWS CloudTrail data events for the Lambda functions and the DynamoDB table, and query the trail logs in Amazon S3 with Amazon Athena to compare timestamps.",
+        "C": "Enable VPC Flow Logs for the VPC and analyze the logs with Amazon CloudWatch Logs Insights.",
+        "D": "Create Amazon CloudWatch alarms on the average Duration metric of each Lambda function."
+      },
+      "isMulti": false,
+      "requiredCount": 1,
+      "correctAnswers": [
+        "A"
+      ],
+      "explanation": "### ✅ Why Option A is Correct\n\n* **Distributed tracing:** X-Ray records a trace for each request as it moves through API Gateway, Lambda, and downstream calls, with timing for each segment and subsegment.\n* **Service map:** The service map shows latency and errors for each component and connection, so the slow dependency is easy to identify.\n* **Native integration:** API Gateway and Lambda support X-Ray active tracing with a configuration setting, and instrumentation captures AWS SDK and HTTP calls to downstream services.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** CloudTrail records API activity for auditing; it does not measure per-request latency across components.\n* **Option C is incorrect:** VPC Flow Logs capture IP traffic metadata, not application-level request timing, and Lambda functions may not even run in a VPC.\n* **Option D is incorrect:** Average duration alarms can hide intermittent outliers and do not show which downstream call inside a function is slow.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **\"Trace requests across microservices / find the bottleneck\":** AWS X-Ray.\n2. **Observability tools:** CloudWatch = metrics, logs, alarms; CloudTrail = who did what (API audit); X-Ray = request tracing."
+    },
+    {
+      "domain": 2,
+      "task": "2.2",
+      "topics": [
+        "Immutable infrastructure",
+        "Amazon EC2 Auto Scaling",
+        "Launch templates"
+      ],
+      "prompt": "A company runs a web application on Amazon EC2 instances in an Auto Scaling group. Administrators currently patch running instances in place with scripts, and over time the instances have drifted into inconsistent configurations that cause intermittent failures. The company wants to adopt immutable infrastructure so that every running instance is identical and changes are rolled out without downtime. Which solution meets these requirements?",
+      "options": {
+        "A": "Use AWS Systems Manager Patch Manager to patch all running instances in place during a weekly maintenance window.",
+        "B": "Use AWS Config rules to detect configuration drift on the running instances, and automatically remediate the drift with AWS Systems Manager Automation runbooks.",
+        "C": "Bake each change into a new AMI, create a new launch template version that uses it, and start an Auto Scaling instance refresh with a minimum healthy percentage.",
+        "D": "Enable termination protection on all instances and create a nightly AMI from one instance to use as a backup."
+      },
+      "isMulti": false,
+      "requiredCount": 1,
+      "correctAnswers": [
+        "C"
+      ],
+      "explanation": "### ✅ Why Option C is Correct\n\n* **Replace, do not modify:** With immutable infrastructure, changes are baked into a new AMI and new instances replace old ones; running instances are never modified.\n* **Consistency:** Every instance launched from the same launch template version is identical, which eliminates configuration drift.\n* **Zero-downtime rollout:** Instance refresh replaces instances in batches while honoring a minimum healthy percentage, and can roll back with checkpoints.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** In-place patching is a mutable approach and can still lead to drift between instances.\n* **Option B is incorrect:** Detecting and remediating drift in place is still mutable infrastructure and adds operational complexity.\n* **Option D is incorrect:** Creating AMIs from a drifted instance preserves its inconsistent state and does not change how updates are deployed.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Immutable infrastructure:** New AMI/container image + replace instances (instance refresh, blue/green) instead of patching in place.\n2. **Automation for integrity:** Use launch templates, AMI pipelines (for example, EC2 Image Builder), and infrastructure as code to keep environments consistent."
+    },
+    {
+      "domain": 2,
+      "task": "2.2",
+      "topics": [
+        "Amazon EC2 Auto Scaling",
+        "Elastic Load Balancing",
+        "Health checks"
+      ],
+      "prompt": "A company runs an application on Amazon EC2 instances in an Auto Scaling group behind an Application Load Balancer. Occasionally, the application process on an instance hangs. The ALB marks the instance as unhealthy and stops sending it traffic, but the instance keeps running and is never replaced, so capacity is reduced until an administrator intervenes. Which solution will automatically replace these instances?",
+      "options": {
+        "A": "Enable EC2 detailed monitoring on the instances and set the health check grace period to 0 seconds.",
+        "B": "Turn on Elastic Load Balancing health checks for the Auto Scaling group so that instances that fail the target group health check are marked unhealthy and replaced.",
+        "C": "Configure a CloudWatch alarm on the StatusCheckFailed_Instance metric with an EC2 reboot action.",
+        "D": "Enable cross-zone load balancing on the Application Load Balancer and increase the target group's unhealthy threshold count so that hung instances are detected more reliably."
+      },
+      "isMulti": false,
+      "requiredCount": 1,
+      "correctAnswers": [
+        "B"
+      ],
+      "explanation": "### ✅ Why Option B is Correct\n\n* **Default health checks:** By default, Auto Scaling uses EC2 status checks, which only detect instance-level problems such as hardware or OS failures, not a hung application.\n* **ELB health checks:** When ELB health checks are turned on for the group, Auto Scaling also considers the target group health check result and replaces instances that fail it.\n* **Self-healing:** Replacement restores capacity automatically without administrator action.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Detailed monitoring only increases metric frequency, and a 0-second grace period could cause healthy instances that are still starting to be replaced.\n* **Option C is incorrect:** The instance status check passes when the operating system is healthy, so the alarm would not fire for a hung application process.\n* **Option D is incorrect:** Cross-zone load balancing affects traffic distribution, and a higher unhealthy threshold only delays detection; neither replaces the instance.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **\"ALB says unhealthy but ASG does not replace it\":** Turn on ELB health checks for the Auto Scaling group.\n2. **Health check grace period:** Set it long enough for instances to start and pass health checks before Auto Scaling evaluates them."
+    },
+    {
+      "domain": 2,
+      "task": "2.2",
+      "topics": [
+        "Amazon Aurora",
+        "Aurora Replicas",
+        "Availability Zones"
+      ],
+      "prompt": "A company runs an Amazon Aurora MySQL DB cluster that has a single writer DB instance and no other DB instances. During a recent instance failure, Aurora took about 10 minutes to recover, which exceeded the application's availability target. The company wants the database to recover from an instance or Availability Zone failure in about a minute or less, within the same Region, without any data loss. Which solution meets these requirements?",
+      "options": {
+        "A": "Enable Aurora Backtrack and set a backtrack window of 24 hours.",
+        "B": "Create an Aurora read replica cluster in a second AWS Region and manually promote it to a standalone DB cluster whenever the writer DB instance in the primary Region fails.",
+        "C": "Increase the writer DB instance size and enable Enhanced Monitoring.",
+        "D": "Add an Aurora Replica in a different Availability Zone with a high failover priority so that Aurora promotes it automatically if the writer fails."
+      },
+      "isMulti": false,
+      "requiredCount": 1,
+      "correctAnswers": [
+        "D"
+      ],
+      "explanation": "### ✅ Why Option D is Correct\n\n* **Automatic promotion:** When an Aurora Replica exists, Aurora automatically promotes it to the writer during failover, typically completing within about 60 seconds and often faster.\n* **No data loss:** Aurora Replicas share the same cluster volume as the writer, so a promoted replica has all committed data.\n* **AZ resilience:** Placing the replica in a different AZ ensures that a failover target survives an AZ outage. Without a replica, Aurora must create a new DB instance, which takes longer.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Backtrack rewinds the database to an earlier point in time; it does not provide high availability.\n* **Option B is incorrect:** A cross-Region replica uses asynchronous replication and manual promotion, which is slower and can lose recent writes.\n* **Option C is incorrect:** A larger instance does not provide a failover target; Enhanced Monitoring only adds OS-level metrics.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Aurora HA:** Add Aurora Replicas in other AZs; they act as automatic failover targets (priority tiers 0-15).\n2. **Aurora durability:** The cluster volume keeps six copies of data across three AZs, even with a single DB instance."
+    },
+    {
+      "domain": 2,
+      "task": "2.2",
+      "topics": [
+        "Amazon SQS",
+        "Dead-letter queues",
+        "AWS Lambda"
+      ],
+      "prompt": "A company uses an AWS Lambda function to process messages from an Amazon SQS standard queue. Each message takes up to 4 minutes to process. Some messages are being processed by two invocations at the same time, causing duplicate charges, and a few malformed messages are retried indefinitely and block downstream reporting. Which combination of actions will resolve these issues? (Select TWO.)",
+      "options": {
+        "A": "Increase the queue's message retention period to 14 days.",
+        "B": "Set the queue's visibility timeout to at least six times the Lambda function timeout, and set the function timeout to longer than the maximum processing time.",
+        "C": "Enable long polling by setting the ReceiveMessageWaitTimeSeconds attribute to 20 seconds.",
+        "D": "Configure a dead-letter queue with a redrive policy and a maxReceiveCount of 5 on the source queue.",
+        "E": "Configure a delivery delay of 15 minutes on the queue."
+      },
+      "isMulti": true,
+      "requiredCount": 2,
+      "correctAnswers": [
+        "B",
+        "D"
+      ],
+      "explanation": "### ✅ Why Options B & D are Correct\n\n* **Visibility timeout (B):** If the visibility timeout is shorter than processing time, the message becomes visible again and is picked up by another invocation. AWS recommends a visibility timeout of at least six times the function timeout for Lambda event sources.\n* **Dead-letter queue (D):** After a message has been received maxReceiveCount times without being deleted, SQS moves it to the DLQ so it stops being retried and can be inspected separately.\n* **Idempotency:** Standard queues are at-least-once, so consumers should also be idempotent; these settings remove the systematic causes of duplicates and poison-message loops.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** A longer retention period keeps failing messages in the queue longer, which makes the poison-message problem worse.\n* **Option C is incorrect:** Long polling reduces empty receives and cost; it does not prevent concurrent processing or isolate bad messages.\n* **Option E is incorrect:** A delivery delay only postpones the first delivery of new messages; it does not prevent reprocessing or remove poison messages.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **\"Messages processed twice\":** Visibility timeout is shorter than processing time.\n2. **\"Poison messages retried forever\":** Use a dead-letter queue with a maxReceiveCount redrive policy, then use DLQ redrive to reprocess after fixing the issue."
+    },
+    {
+      "domain": 2,
+      "task": "2.2",
+      "topics": [
+        "Disaster recovery",
+        "Warm standby",
+        "Amazon Route 53",
+        "Amazon RDS"
+      ],
+      "prompt": "A company runs a web application on Amazon EC2 instances in an Auto Scaling group behind an Application Load Balancer, with an Amazon RDS for PostgreSQL database, in us-east-1. Management wants a warm standby in us-west-2 with an RTO of 15 minutes and an RPO of a few minutes. Which combination of steps should a solutions architect take? (Select THREE.)",
+      "options": {
+        "A": "Convert the RDS DB instance in us-east-1 to a Multi-AZ deployment and rely on it for Regional failover.",
+        "B": "Create a cross-Region read replica of the database in us-west-2 that can be promoted to a standalone DB instance during failover.",
+        "C": "Create a Route 53 simple routing record that contains the DNS names of both Regions' load balancers.",
+        "D": "Copy the application AMI to us-west-2 and run an Auto Scaling group behind an ALB there at a small minimum capacity that is scaled up during failover.",
+        "E": "Create Route 53 failover routing records with health checks, with us-east-1 as primary and the us-west-2 ALB as secondary.",
+        "F": "Keep the AMI only in us-east-1 and launch instances from it into us-west-2 when a disaster occurs."
+      },
+      "isMulti": true,
+      "requiredCount": 3,
+      "correctAnswers": [
+        "B",
+        "D",
+        "E"
+      ],
+      "explanation": "### ✅ Why Options B, D & E are Correct\n\n* **Data tier (B):** A cross-Region read replica keeps data continuously replicated with lag that is typically seconds to minutes, and promotion takes minutes, meeting the RPO and RTO.\n* **Compute tier (D):** Warm standby means a scaled-down but fully functional copy is already running; the Auto Scaling group only needs to scale up during failover.\n* **Traffic tier (E):** Failover routing with health checks automatically shifts users to the us-west-2 ALB when the primary is unhealthy.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Multi-AZ protects against AZ failure within us-east-1 only; it does not provide recovery in another Region.\n* **Option C is incorrect:** Simple routing cannot be associated with health checks, so users could still be sent to the failed Region.\n* **Option F is incorrect:** AMIs are Regional resources; an AMI must be copied to us-west-2 before instances can be launched from it there.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Warm standby components:** Replicated data + scaled-down running compute + DNS failover; scale up when failing over.\n2. **Regional resources:** AMIs, EBS snapshots, security groups, and quotas are Regional; prepare them in the DR Region ahead of time."
+    }
+  ]
+}

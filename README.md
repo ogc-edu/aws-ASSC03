@@ -39,7 +39,7 @@ Ten original, full-length mock exams (65 questions each, 650 in total) written a
 - **Format**: multiple choice (1 of 4) and multiple response (2 of 5 / 3 of 6), 10 multiple-response per set.
 - **Blueprint**: 20 / 17 / 15 / 13 questions across Secure / Resilient / High-Performing / Cost-Optimized (30 / 26 / 24 / 20%).
 - **Current services**: e.g. gp3 limits, RCPs, centralized root access, Aurora Serverless v2, ElastiCache Serverless, S3 Express One Zone, public IPv4 charges.
-- **Pages**: `/claude` lists the sets (also reachable from the **Claude Sets** button in the header); `/claude/1` … `/claude/10` open each set with its own progress, matrix and per-domain score (Sets 1–3 live).
+- **Pages**: `/claude` lists the sets (also reachable from the **Claude Sets** button in the header); `/claude/1` … `/claude/10` open each set with its own progress, matrix and per-domain score (Sets 1–8 live).
 - **Data**: `client/public/claude/sets.json`, `set-1.json` … `set-10.json` (see `gemini-continue.md` for handoff and progress).
 
 ## Contents

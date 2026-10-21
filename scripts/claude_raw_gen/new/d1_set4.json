@@ -1,0 +1,451 @@
+[
+  {
+    "domain": 1,
+    "task": "1.1",
+    "topics": [
+      "IAM",
+      "Policy evaluation",
+      "Condition keys"
+    ],
+    "prompt": "A company attaches an IAM policy to its engineers' roles that denies all actions when aws:SourceIp is not in the corporate office CIDR range. Engineers in the office can use the AWS Management Console. However, when they create AWS CloudFormation stacks, stack creation fails with AccessDenied errors on resources that CloudFormation creates on their behalf. The company wants to keep the IP restriction on direct calls. What should a solutions architect do?",
+    "options": {
+      "A": "Add the published IP address ranges of the CloudFormation service to the allowed CIDR list in the deny statement.",
+      "B": "Replace the aws:SourceIp condition with an aws:SourceVpc condition that matches the corporate VPC.",
+      "C": "Add a condition to the deny statement so that it applies only when aws:ViaAWSService is false.",
+      "D": "Move the deny statement into an SCP so that it is evaluated before the identity-based policy."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Forward access sessions:** When CloudFormation creates resources with the caller's permissions, it makes the downstream calls from AWS service IP addresses. A plain aws:SourceIp deny blocks them.\n* **Targeted exception:** aws:ViaAWSService is true when an AWS service makes a request on the principal's behalf. Applying the deny only when it is false keeps the IP restriction on direct calls and allows service-made calls.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Service calls do not come from a stable published range that you can safely add to an allow list. This is fragile and could allow traffic that you did not intend to allow.\n* **Option B is incorrect:** aws:SourceVpc is present only for requests through VPC endpoints. Calls from the office and calls made by AWS services do not have it, so this breaks everything.\n* **Option D is incorrect:** An SCP with the same condition fails the same way. Where the deny is written does not change how the condition is evaluated.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Known pitfall:** IP-based deny policies break AWS services that act for you (CloudFormation, Athena, and others). Pair the deny with aws:ViaAWSService = false.\n2. **Related keys:** aws:CalledVia lists the services in the chain, and aws:PrincipalIsAWSService identifies service principals."
+  },
+  {
+    "domain": 1,
+    "task": "1.1",
+    "topics": [
+      "Amazon Cognito",
+      "IAM",
+      "Amazon Kinesis"
+    ],
+    "prompt": "A news company's mobile app must send anonymous usage events directly to an Amazon Kinesis data stream before a user signs in. After users sign in with the company's Amazon Cognito user pool, they must also be able to save preferences to an Amazon DynamoDB table. No long-term AWS credentials can be embedded in the app. Which solution meets these requirements?",
+    "options": {
+      "A": "Enable guest access in a Cognito identity pool, scope the unauthenticated role to kinesis:PutRecord, and add DynamoDB access to the authenticated role.",
+      "B": "Create an IAM user that has only kinesis:PutRecord permissions, and embed its access key in the app for use before sign-in, rotating the key with each app release.",
+      "C": "Use the Cognito user pool's ID token to call Kinesis directly, and add the user pool as a principal in the stream's resource policy.",
+      "D": "Create an API Gateway API key for anonymous users and attach a usage plan that allows writes to the Kinesis data stream."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Guest identities:** Identity pools support unauthenticated (guest) identities that receive temporary AWS credentials for a tightly scoped IAM role.\n* **Upgrade on sign-in:** When the user signs in with the user pool, the identity pool issues credentials for the authenticated role, which adds the DynamoDB permissions.\n* **No embedded keys:** All credentials are temporary and come from STS.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Embedding long-term access keys in a mobile app breaks the requirement and exposes the keys to anyone who decompiles the app.\n* **Option C is incorrect:** User pool tokens are not AWS credentials and cannot sign Kinesis API calls. They must be exchanged through an identity pool.\n* **Option D is incorrect:** API keys do not provide AWS credentials or authorization. They only identify clients for throttling and quotas.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Identity pool roles:** Unauthenticated role (guests) and authenticated role (signed-in users). Always give guests the least privilege.\n2. **Pattern:** \"Access AWS services from a mobile app before or after sign-in, with no embedded keys\" points to a Cognito identity pool."
+  },
+  {
+    "domain": 1,
+    "task": "1.1",
+    "topics": [
+      "Amazon S3",
+      "Bucket policies",
+      "AWS Organizations"
+    ],
+    "prompt": "A company keeps approved software installation packages in an S3 bucket in a shared services account. Every current and future account in the company's organization in AWS Organizations must be able to read the packages. The company creates new accounts every week, and no one outside the organization may have access. Which solution meets these requirements with the LEAST operational overhead?",
+    "options": {
+      "A": "Add a bucket policy that lists every member account ID as a principal, and update it whenever a new account is created.",
+      "B": "Share the bucket with the organization by using AWS Resource Access Manager (AWS RAM).",
+      "C": "Turn off S3 Block Public Access for the bucket, and allow public read access only to objects under the packages/ prefix.",
+      "D": "Add a bucket policy that allows s3:GetObject to all principals when aws:PrincipalOrgID equals the organization ID."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Organization-wide grant:** The aws:PrincipalOrgID condition matches any principal from any account in the organization, including accounts added later, with no policy updates.\n* **Not public:** S3 does not treat a policy with an aws:PrincipalOrgID condition as public, so Block Public Access can stay on.\n* **Cross-account rule:** Principals in member accounts also need identity-based permissions for s3:GetObject on the bucket.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Listing account IDs works, but it must be updated every week, which is the overhead the company wants to avoid.\n* **Option B is incorrect:** S3 buckets are not a resource type that AWS RAM can share.\n* **Option C is incorrect:** This makes the packages available to anyone on the internet, which breaks the requirement.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Data perimeter keys:** aws:PrincipalOrgID (who is calling), aws:ResourceOrgID (which resource), aws:PrincipalOrgPaths (an OU subtree).\n2. **Exam tip:** \"All accounts in my organization, including future ones\" points to aws:PrincipalOrgID in the resource policy."
+  },
+  {
+    "domain": 1,
+    "task": "1.1",
+    "topics": [
+      "AWS IAM Identity Center",
+      "SAML 2.0",
+      "SCIM"
+    ],
+    "prompt": "A company uses Okta as its workforce identity provider. Employees need single sign-on to 80 AWS accounts in the company's organization. When employees join, change teams, or leave, their access in AWS must be updated automatically based on their Okta groups, without manual steps by AWS administrators. Which solution meets these requirements?",
+    "options": {
+      "A": "Create a SAML identity provider and IAM roles in each of the 80 accounts, and configure an Okta application for every account.",
+      "B": "Use Okta as the external identity provider for IAM Identity Center with SCIM provisioning, and assign Okta groups to permission sets.",
+      "C": "Create an Amazon Cognito user pool that federates with Okta, and use a Cognito identity pool to give employees access to the AWS accounts.",
+      "D": "Deploy AWS Directory Service AD Connector, point it to Okta, and use it as the identity source for IAM Identity Center."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Central workforce SSO:** IAM Identity Center gives single sign-on across all accounts in the organization through SAML 2.0 federation with Okta.\n* **Automatic lifecycle:** SCIM provisioning keeps users and group memberships in Identity Center synchronized with Okta, so joiners, movers, and leavers are handled automatically.\n* **Group-based access:** Permission sets assigned to groups in each account turn group changes into access changes.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Per-account SAML providers and roles work, but they are hard to manage across 80 accounts and do not provision or deprovision users from Okta groups automatically.\n* **Option C is incorrect:** Cognito is for customer identities in applications. It is not designed for workforce sign-in to the AWS Management Console across accounts.\n* **Option D is incorrect:** AD Connector connects only to Microsoft Active Directory. Okta is a SAML/SCIM identity provider, not an AD domain.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Identity source options:** Identity Center directory, Active Directory (AWS Managed Microsoft AD or AD Connector), or an external IdP (SAML 2.0 + SCIM).\n2. **Keyword mapping:** \"Workforce SSO to many accounts + automatic provisioning\" points to IAM Identity Center with SCIM."
+  },
+  {
+    "domain": 1,
+    "task": "1.1",
+    "topics": [
+      "AWS Lambda",
+      "Resource-based policies",
+      "Amazon SNS"
+    ],
+    "prompt": "An Amazon SNS topic in Account B publishes order events. A Lambda function in Account A must be subscribed to the topic and invoked for each message. The security team requires that only this specific topic can invoke the function. Which solution meets these requirements?",
+    "options": {
+      "A": "Allow sns.amazonaws.com to invoke the function in its resource-based policy with aws:SourceArn set to the topic ARN, and subscribe the function.",
+      "B": "Add sns.amazonaws.com as a trusted principal in the trust policy of the function's execution role, and subscribe the function to the topic.",
+      "C": "Create an IAM role in Account A that Account B can assume, and give the role lambda:InvokeFunction permission on the function.",
+      "D": "Create an Amazon SQS queue in Account B, subscribe it to the topic, and configure the queue as an event source for the function without changing any policies."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Function policy controls invocation:** A Lambda function's resource-based policy decides who can invoke the function. Push-based services like SNS invoke the function through this policy.\n* **Least privilege:** Scoping the statement with aws:SourceArn for the topic ARN means no other topic, in any account, can invoke the function. This also prevents the confused deputy problem.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** The execution role's trust policy controls who can assume the role, which should be only Lambda. It is the function's permissions, not who can invoke the function.\n* **Option C is incorrect:** SNS does not assume IAM roles to deliver messages to Lambda. Invocation permission comes from the function's resource policy.\n* **Option D is incorrect:** A cross-account queue still needs a queue policy that allows the topic and permissions for the function to read the queue. It also does not meet the requirement without policy changes.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Two Lambda policies:** Execution role = what the function can do. Resource-based (function) policy = who can invoke the function.\n2. **Always scope service principals:** Use aws:SourceArn and/or aws:SourceAccount when granting to service principals."
+  },
+  {
+    "domain": 1,
+    "task": "1.1",
+    "topics": [
+      "IAM Access Analyzer",
+      "AWS CloudTrail",
+      "Least privilege"
+    ],
+    "prompt": "A development team's IAM role has broad permissions that were granted during a proof of concept. The security team wants to replace them with a least-privilege policy based on the actions and services that the role has actually used over the last 90 days. AWS CloudTrail is enabled in the account. Which solution meets these requirements with the LEAST effort?",
+    "options": {
+      "A": "Query the CloudTrail logs with Amazon Athena to list the actions that the role used, and write a new policy by hand.",
+      "B": "Run AWS Trusted Advisor security checks and apply the recommended policy changes to the role.",
+      "C": "Use IAM Access Analyzer to generate a policy from the role's CloudTrail activity, then review and attach the generated policy.",
+      "D": "Enable the AWS Config managed rule that checks for IAM policies with administrator access, and remove the permissions that it flags."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Policy generation:** IAM Access Analyzer reviews CloudTrail events for a chosen period and generates an identity-based policy template with the services and actions that the role used.\n* **Low effort:** The team reviews and refines the generated policy, such as by adding resource ARNs, instead of building it from raw logs.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** This works but needs manual querying and policy writing. Access Analyzer does the same analysis automatically.\n* **Option B is incorrect:** Trusted Advisor checks for issues such as exposed keys or root MFA. It does not generate least-privilege policies for a role.\n* **Option D is incorrect:** The Config rule only flags policies with full administrator access. It does not tell which permissions the role actually used.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Access Analyzer features:** External access findings, unused access findings, policy validation, custom policy checks, and policy generation from CloudTrail.\n2. **Exam tip:** \"Least privilege based on actual usage\" points to IAM Access Analyzer policy generation (or last-accessed information)."
+  },
+  {
+    "domain": 1,
+    "task": "1.1",
+    "topics": [
+      "AWS Organizations",
+      "SCPs",
+      "IAM"
+    ],
+    "prompt": "A company deploys a SecurityAudit IAM role into every member account of its organization by using AWS CloudFormation StackSets. Account administrators have full IAM permissions in their own accounts. The security team must prevent anyone except the central security automation role from modifying, detaching policies from, or deleting the SecurityAudit role, including administrators in member accounts. Which solution meets these requirements?",
+    "options": {
+      "A": "Attach a permissions boundary to every IAM user and role in the member accounts that denies changes to the SecurityAudit role.",
+      "B": "Add an inline deny policy to each account administrator role that blocks changes to the SecurityAudit role.",
+      "C": "Create an AWS Config rule with an Amazon EventBridge rule that detects any change to the SecurityAudit role and sends an alert to the security team for investigation.",
+      "D": "Attach an SCP that denies IAM write actions on the SecurityAudit role unless aws:PrincipalArn matches the security automation role."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Preventive and central:** An SCP applies to every principal in the member accounts, including administrators, and they cannot remove it from inside the account.\n* **Exception:** The aws:PrincipalArn condition exempts only the security automation role, so StackSets updates still work.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Administrators with full IAM permissions can remove or change permissions boundaries, and every new principal would also need the boundary.\n* **Option B is incorrect:** Account administrators can delete inline policies on their own roles, so this control is not tamper-proof.\n* **Option C is incorrect:** AWS Config detects changes after they happen. The requirement is to prevent them.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Protecting baseline resources:** Use SCPs with aws:PrincipalArn exceptions to protect security roles, CloudTrail, GuardDuty, and Config from member-account administrators.\n2. **Preventive vs detective:** SCP/RCP = preventive. Config/Security Hub = detective."
+  },
+  {
+    "domain": 1,
+    "task": "1.2",
+    "topics": [
+      "Amazon API Gateway",
+      "Amazon Cognito",
+      "OAuth 2.0 scopes"
+    ],
+    "prompt": "A company's users sign in to its web application through an Amazon Cognito user pool. The company is adding an Amazon API Gateway REST API for the application. Only signed-in users may call the API, and the POST /orders method must require the orders.write OAuth scope. The solution must require the LEAST development effort. Which solution meets these requirements?",
+    "options": {
+      "A": "Configure a Lambda authorizer that downloads the user pool's JSON Web Key Set, validates the JWT, and checks the scope claim.",
+      "B": "Configure a Cognito user pool authorizer on the API, and set the orders.write authorization scope on the POST /orders method.",
+      "C": "Configure AWS_IAM authorization on all methods, and have the web application sign requests with the user pool access token.",
+      "D": "Require an API key for all methods, and give each signed-in user a separate API key when they sign in."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Native integration:** A Cognito user pool authorizer validates ID or access tokens issued by the user pool, with no custom code.\n* **Scope-based authorization:** Setting authorization scopes on a method makes API Gateway require an access token that contains the orders.write scope.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** This works, but it needs custom token validation code that the built-in Cognito authorizer already provides, so it is more effort.\n* **Option C is incorrect:** IAM authorization needs AWS credentials and SigV4 signing. A user pool access token cannot be used to sign requests.\n* **Option D is incorrect:** API keys are not an authentication or authorization mechanism, and issuing one for each user does not enforce OAuth scopes.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Authorizer selection:** Users already in a Cognito user pool → Cognito authorizer (REST) or JWT authorizer (HTTP API). Fine-grained per-method access → OAuth scopes.\n2. **Least effort:** Prefer built-in authorizers over custom Lambda code when the token issuer is supported."
+  },
+  {
+    "domain": 1,
+    "task": "1.2",
+    "topics": [
+      "Amazon API Gateway",
+      "IAM",
+      "Cross-account access"
+    ],
+    "prompt": "A Lambda function in Account B must call an Amazon API Gateway REST API in Account A. The security team does not allow shared secrets, such as API keys, passwords, or client secrets. The API must authenticate the caller as the specific IAM role of the function and reject all other callers. Which combination of steps meets these requirements? (Select TWO.)",
+    "options": {
+      "A": "Store an API key in AWS Secrets Manager in Account B, and require the API key on the API methods.",
+      "B": "Set the API methods to AWS_IAM authorization, and add an API resource policy that allows execute-api:Invoke for the function's role ARN in Account B.",
+      "C": "Configure a Cognito user pool authorizer, and have the function use the client credentials grant with an app client secret.",
+      "D": "Grant the function's execution role execute-api:Invoke on the API ARN, and sign requests with Signature Version 4.",
+      "E": "Configure mutual TLS on a custom domain name for the API, and store the client certificate and private key in the function package."
+    },
+    "isMulti": true,
+    "requiredCount": 2,
+    "correctAnswers": [
+      "B",
+      "D"
+    ],
+    "explanation": "### ✅ Why Options B & D are Correct\n\n* **IAM authorization (B):** With AWS_IAM authorization, API Gateway authenticates SigV4-signed requests. The resource policy allows only the specific role from Account B, which is needed for cross-account access.\n* **Caller permissions (D):** For cross-account calls, the caller's identity-based policy must also allow execute-api:Invoke. SigV4 signing uses the role's temporary credentials, so no shared secret exists.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** API keys are shared secrets and are not meant for authentication, so this goes against the security requirement.\n* **Option C is incorrect:** The client credentials grant depends on an app client secret, which is a shared secret.\n* **Option E is incorrect:** Storing a private key in the deployment package is a secret to protect and rotate, and mTLS alone does not identify the IAM role.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **AWS-to-AWS API calls:** Use IAM (SigV4) authorization. Cross-account requires both the API resource policy and the caller's IAM policy to allow.\n2. **No shared secrets:** IAM roles give automatically rotated temporary credentials."
+  },
+  {
+    "domain": 1,
+    "task": "1.2",
+    "topics": [
+      "Amazon Inspector",
+      "AWS Organizations",
+      "Vulnerability management"
+    ],
+    "prompt": "A company runs workloads on Amazon EC2 instances, container images in Amazon ECR, and AWS Lambda functions across 30 accounts in AWS Organizations. The security team must continuously scan these resources for known software vulnerabilities (CVEs) and unintended network exposure, rescan automatically when new CVEs are published, and view all findings from one account. Which solution meets these requirements with the LEAST operational overhead?",
+    "options": {
+      "A": "Enable Amazon Inspector through a delegated administrator, and auto-enable EC2, ECR, and Lambda scanning for member accounts.",
+      "B": "Enable Amazon GuardDuty with a delegated administrator account, and turn on Runtime Monitoring for EC2, Amazon ECS, and Amazon EKS.",
+      "C": "Use AWS Systems Manager Patch Manager to apply patch baselines to all EC2 instances, and run scheduled patch compliance reports.",
+      "D": "Enable Amazon Macie in every account, and configure sensitive data discovery jobs that scan the ECR repositories and the Lambda deployment packages in each account."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Inspector coverage:** Amazon Inspector continuously scans EC2 instances, ECR container images, and Lambda functions for software vulnerabilities, and checks EC2 network reachability.\n* **Continuous rescans:** Inspector automatically rescans resources when new CVEs are added to its database.\n* **Organization-wide:** A delegated administrator can auto-enable scanning for current and new member accounts and view all findings centrally.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** GuardDuty detects active threats and malicious behavior. It does not do CVE-based vulnerability assessment.\n* **Option C is incorrect:** Patch Manager applies OS patches to managed instances. It does not scan container images or Lambda functions for CVEs.\n* **Option D is incorrect:** Macie finds sensitive data in Amazon S3. It does not scan ECR or Lambda for vulnerabilities.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Security service map:** Inspector = vulnerabilities/CVEs. GuardDuty = threat detection. Macie = sensitive data in S3. Security Hub = aggregation and posture checks. Detective = investigation.\n2. **Keyword:** \"CVE\" or \"software vulnerability scanning\" points to Amazon Inspector."
+  },
+  {
+    "domain": 1,
+    "task": "1.2",
+    "topics": [
+      "AWS WAF",
+      "Account takeover prevention",
+      "Application Load Balancer"
+    ],
+    "prompt": "A retail company's application has its own login endpoint behind an Application Load Balancer. Attackers are running a credential stuffing campaign with stolen username and password pairs. The requests come from tens of thousands of IP addresses, and each IP address sends only a few requests. The company wants a managed way to detect and block these login attempts. Which solution meets these requirements?",
+    "options": {
+      "A": "Add an AWS WAF rate-based rule that blocks IP addresses that send more than 100 requests to the login endpoint in 5 minutes.",
+      "B": "Subscribe to AWS Shield Advanced and enable automatic application layer DDoS mitigation for the ALB.",
+      "C": "Enable Amazon GuardDuty and create an Amazon EventBridge rule that adds the source IP addresses of findings to the ALB security group.",
+      "D": "Add the AWS WAF Fraud Control account takeover prevention (ATP) managed rule group to the ALB's web ACL, and configure it for the login endpoint."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Built for credential stuffing:** The ATP managed rule group inspects login requests to the configured endpoint. It checks submitted credentials against a database of stolen credentials and tracks login failure patterns.\n* **Works against distributed attacks:** ATP looks at credentials and login behavior, not only per-IP volume, so it can catch low-rate attacks spread across many IP addresses.\n* **Managed:** AWS maintains the rule logic and the stolen credential data.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Each IP address stays well under the limit, so a per-IP rate rule would not block a widely distributed attack.\n* **Option B is incorrect:** Shield Advanced mitigates DDoS floods. A low-volume credential stuffing attack is not a DDoS event.\n* **Option C is incorrect:** GuardDuty does not analyze application login requests. Security groups cannot deny traffic and have a small rule limit.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **WAF managed protections:** Bot Control (scrapers/bots), ATP (credential stuffing on login), ACFP (fake account creation), and core/SQLi/known-bad-inputs rule sets for common exploits.\n2. **Exam tip:** \"Stolen credentials\" or \"credential stuffing\" points to AWS WAF ATP."
+  },
+  {
+    "domain": 1,
+    "task": "1.2",
+    "topics": [
+      "AWS Shield Advanced",
+      "AWS WAF",
+      "Amazon CloudFront"
+    ],
+    "prompt": "A company subscribes to AWS Shield Advanced and protects its Amazon CloudFront distribution. During recent HTTP request floods, engineers had to analyze traffic and write AWS WAF rules by hand while the site was degraded. The company wants Shield Advanced to detect application layer attacks against the distribution and create and apply mitigating WAF rules automatically. Which solution meets these requirements?",
+    "options": {
+      "A": "Rely on AWS Shield Standard protections, which automatically mitigate HTTP floods for all CloudFront distributions.",
+      "B": "Open a case with the Shield Response Team at the start of each attack so that the team can write rules in the company's web ACL.",
+      "C": "Associate an AWS WAF web ACL with the distribution, and enable Shield Advanced automatic application layer DDoS mitigation for the distribution.",
+      "D": "Use AWS Firewall Manager to deploy a common security group policy across the organization that blocks attack traffic to the distribution and its origins."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Automatic L7 mitigation:** Shield Advanced can automatically create, evaluate, and deploy AWS WAF rules that mitigate application layer DDoS events against a protected resource.\n* **Prerequisite:** The protected resource must have an AWS WAF web ACL associated, because Shield Advanced manages a rule group inside that web ACL.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Shield Standard protects against common network and transport layer (L3/L4) attacks. It does not create WAF rules for HTTP floods.\n* **Option B is incorrect:** Engaging the SRT is a manual process during each event. The requirement is automatic mitigation.\n* **Option D is incorrect:** Security groups cannot be applied to CloudFront distributions and cannot inspect HTTP requests.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Shield tiers:** Standard = free, automatic L3/L4. Advanced = L7 visibility, automatic L7 mitigation with WAF, SRT access, cost protection, health-based detection.\n2. **Exam tip:** \"Automatic mitigation of HTTP floods\" points to Shield Advanced automatic application layer DDoS mitigation with a WAF web ACL."
+  },
+  {
+    "domain": 1,
+    "task": "1.2",
+    "topics": [
+      "AWS Network Firewall",
+      "Amazon VPC",
+      "Ingress routing"
+    ],
+    "prompt": "A company hosts an internet-facing application on an Application Load Balancer in public subnets of a single VPC. A compliance requirement says that all inbound traffic from the internet must be inspected by an intrusion prevention system with Suricata-compatible rules before it reaches the load balancer. The company wants a managed service and no third-party appliances. Which solution meets these requirements?",
+    "options": {
+      "A": "Associate an AWS WAF web ACL with the ALB, and add the AWS managed core rule set.",
+      "B": "Deploy AWS Network Firewall in dedicated subnets, and use an internet gateway route table and the ALB subnet route tables to send traffic through its endpoints.",
+      "C": "Enable Amazon GuardDuty in the account, and configure it to block malicious traffic to the ALB.",
+      "D": "Deploy a Gateway Load Balancer in the VPC, and route internet traffic from the internet gateway to its endpoints without registering any targets."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Managed IPS:** AWS Network Firewall is a managed, stateful firewall and IPS that supports Suricata-compatible rule groups.\n* **Ingress routing:** A route table associated with the internet gateway (edge association) sends traffic for the ALB subnets to the firewall endpoints. The ALB subnet route tables send return traffic back through the endpoints for symmetric inspection.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** AWS WAF inspects HTTP/HTTPS requests with WAF rules. It is not a Suricata-compatible IPS for all inbound traffic.\n* **Option C is incorrect:** GuardDuty is a detection service. It does not sit inline or block traffic.\n* **Option D is incorrect:** A Gateway Load Balancer needs third-party appliances as targets to inspect traffic, which the company does not want. Without targets, it cannot inspect anything.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Network Firewall deployment models:** Distributed (per VPC, ingress routing) or centralized (inspection VPC with Transit Gateway, appliance mode).\n2. **WAF vs Network Firewall:** WAF = HTTP layer on ALB/CloudFront/API Gateway. Network Firewall = VPC-level stateful/IPS for any protocol."
+  },
+  {
+    "domain": 1,
+    "task": "1.2",
+    "topics": [
+      "Amazon VPC",
+      "Security groups",
+      "Managed prefix lists",
+      "AWS RAM"
+    ],
+    "prompt": "A company allows a partner to connect to TCP port 8443 on EC2 instances that use dozens of security groups across 12 AWS accounts. The partner uses 25 CIDR ranges, and the list changes several times a year. Today, engineers update every security group by hand when the list changes. The company wants to update the allowed ranges in one place. Which solution meets these requirements with the LEAST operational overhead?",
+    "options": {
+      "A": "Put the CIDR ranges in a customer-managed prefix list, share it through AWS RAM, and reference it in the security group rules.",
+      "B": "Add the partner CIDR ranges to the network ACLs of every subnet that contains the instances, and remove the security group rules.",
+      "C": "Create an AWS WAF IP set with the partner CIDR ranges, and associate it with each EC2 instance.",
+      "D": "Write a Lambda function that reads the partner ranges from a file in Amazon S3 and updates every security group in every account."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **One source of truth:** A customer-managed prefix list groups CIDR blocks into one object. Security group rules that reference it pick up changes automatically.\n* **Cross-account:** AWS RAM shares the prefix list with other accounts in the organization, so all 12 accounts reference the same list.\n* **Quota note:** A prefix list counts against the security group rule quota by its maximum number of entries.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Network ACLs must still be updated subnet by subnet in each account, have low rule limits, and are stateless, which adds work.\n* **Option C is incorrect:** AWS WAF IP sets work only with WAF-supported resources, such as ALB, CloudFront, and API Gateway. They cannot be associated with EC2 instances.\n* **Option D is incorrect:** Custom automation must be built, secured, and maintained across accounts. Prefix lists do this natively.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Managed prefix lists:** Reference them in security groups and route tables. AWS-managed lists exist for services, such as the CloudFront origin-facing list.\n2. **Exam tip:** \"Same set of CIDRs in many security groups/accounts\" points to a customer-managed prefix list shared with AWS RAM."
+  },
+  {
+    "domain": 1,
+    "task": "1.2",
+    "topics": [
+      "Amazon Aurora",
+      "IAM database authentication",
+      "AWS Lambda"
+    ],
+    "prompt": "A Lambda function connects to an Amazon Aurora MySQL DB cluster. A new security standard says that the function must not use any database password, including passwords that are stored and rotated in a secrets store. Database access must be controlled through IAM. Which combination of steps meets these requirements? (Select TWO.)",
+    "options": {
+      "A": "Enable IAM database authentication on the DB cluster, and create a database user that is identified with the AWSAuthenticationPlugin.",
+      "B": "Store the database credentials in AWS Secrets Manager, and enable automatic rotation every 7 days.",
+      "C": "Store the database password as a SecureString parameter in AWS Systems Manager Parameter Store, and encrypt it with a KMS key.",
+      "D": "Join the DB cluster to AWS Managed Microsoft AD, and use Kerberos authentication with a service account password for the function.",
+      "E": "Grant the function's execution role rds-db:connect for the database user, and have the function generate an authentication token and connect over TLS."
+    },
+    "isMulti": true,
+    "requiredCount": 2,
+    "correctAnswers": [
+      "A",
+      "E"
+    ],
+    "explanation": "### ✅ Why Options A & E are Correct\n\n* **IAM DB authentication (A):** With IAM database authentication enabled, a MySQL user created with AWSAuthenticationPlugin authenticates with a short-lived IAM authentication token instead of a password.\n* **Token-based connection (E):** The execution role needs rds-db:connect on the db user resource. The function generates a token (valid for 15 minutes) with its role credentials and connects over TLS, which IAM authentication requires.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Secrets Manager rotation still uses a database password, which the new standard does not allow.\n* **Option C is incorrect:** Parameter Store still holds a database password, and this adds no rotation.\n* **Option D is incorrect:** Kerberos with a service account password still depends on a password, and running a directory adds overhead.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Passwordless database access:** RDS/Aurora MySQL and PostgreSQL support IAM database authentication with tokens generated from IAM credentials.\n2. **Trade-off:** IAM authentication has connection-rate limits. For very high connection rates, use RDS Proxy (which can also use IAM authentication) or Secrets Manager."
+  },
+  {
+    "domain": 1,
+    "task": "1.3",
+    "topics": [
+      "Amazon Macie",
+      "Data classification",
+      "Amazon S3"
+    ],
+    "prompt": "A company already uses Amazon Macie automated sensitive data discovery for its S3 buckets. The company also stores internal employee identifiers that use the format EMP- followed by 8 digits, which Macie does not report. The data governance team wants Macie to detect and report these identifiers in S3 objects, especially when they appear near the words \"employee\" or \"staff\". Which solution meets these requirements?",
+    "options": {
+      "A": "Create an AWS Config custom rule that runs a Lambda function to search new S3 objects for the identifier pattern.",
+      "B": "Use Amazon Comprehend to detect PII entities in the S3 objects, and send the results to AWS Security Hub.",
+      "C": "Create a Macie custom data identifier with a regular expression and keywords, and use it in automated discovery and jobs.",
+      "D": "Enable Amazon GuardDuty S3 Protection, and add the identifier pattern to a GuardDuty threat list."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Custom data identifiers:** Macie lets you define your own sensitive data types with a regular expression, plus optional keywords, a proximity rule, and ignore words to reduce false positives.\n* **Integrated reporting:** Custom identifiers work in automated sensitive data discovery and in classification jobs, and their findings go to Macie and Security Hub like managed identifier findings.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** A custom Config rule with Lambda content scanning is custom development that Macie already provides as a managed feature.\n* **Option B is incorrect:** Comprehend detects standard PII entity types. It does not know the company-specific EMP- format and needs custom integration with S3.\n* **Option D is incorrect:** GuardDuty S3 Protection detects suspicious access activity. Threat lists contain malicious IP addresses and domains, not data patterns.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Macie:** Managed data identifiers (PII, credentials, financial data) plus custom data identifiers for organization-specific formats, with allow lists to suppress known values.\n2. **Keyword:** \"Discover/classify sensitive data in S3\" points to Amazon Macie."
+  },
+  {
+    "domain": 1,
+    "task": "1.3",
+    "topics": [
+      "AWS KMS",
+      "Key policies",
+      "Separation of duties"
+    ],
+    "prompt": "A company's compliance framework requires separation of duties for an AWS KMS customer managed key that protects payment data. A KeyAdmin role must be able to manage the key, including changing its policy, rotating it, disabling it, and scheduling deletion, but must not be able to encrypt or decrypt data. An application role must be able to encrypt and decrypt data but must not be able to manage the key. Which solution meets these requirements?",
+    "options": {
+      "A": "Allow kms:* to both roles in the key policy, and use AWS CloudTrail to alert when either role performs an action outside its job.",
+      "B": "Use the AWS managed key for the service that stores the data, and attach separate identity-based IAM policies to the KeyAdmin role and to the application role that grant only the actions each role needs.",
+      "C": "Give both roles full KMS permissions in their IAM policies, and attach a permissions boundary to the application role only.",
+      "D": "In the key policy, allow the KeyAdmin role only key management actions and allow the application role only cryptographic actions such as kms:Encrypt, kms:Decrypt, and kms:GenerateDataKey."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Key policy is the primary control:** Every KMS key has a key policy. Separate statements can give key administrators management actions (such as Create*, Put*, Enable*, Disable*, ScheduleKeyDeletion) and give key users only cryptographic operations.\n* **Least privilege:** Neither role gets permissions outside its job, which meets the separation of duties requirement.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Alerts are detective. Both roles could still misuse the key, so separation of duties is not enforced.\n* **Option B is incorrect:** AWS managed key policies cannot be edited, and the company cannot control who administers the key.\n* **Option C is incorrect:** The KeyAdmin role would still be able to decrypt data, so separation of duties is not met.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Key policy roles:** The default console key policy separates key administrators and key users. Use that model for separation of duties.\n2. **Remember:** If the key policy does not allow access (directly or by enabling IAM policies through the account principal), IAM policies alone cannot grant access to a KMS key."
+  },
+  {
+    "domain": 1,
+    "task": "1.3",
+    "topics": [
+      "Amazon S3",
+      "S3 Replication",
+      "AWS KMS"
+    ],
+    "prompt": "A company must replicate new objects from an S3 bucket in us-east-1 to a bucket in eu-west-1 for disaster recovery. Objects in the source bucket are encrypted with SSE-KMS by using a customer managed key in us-east-1. The replicas must be encrypted with a customer managed key in eu-west-1. Which combination of steps must a solutions architect take? (Select THREE.)",
+    "options": {
+      "A": "Enable S3 Transfer Acceleration on both buckets.",
+      "B": "Enable S3 Versioning on the source and destination buckets.",
+      "C": "Create a replication rule that enables replication of objects encrypted with AWS KMS and specifies the eu-west-1 KMS key for the replicas.",
+      "D": "Run an S3 Batch Replication job every hour to copy new objects to the destination bucket.",
+      "E": "Give the replication IAM role kms:Decrypt on the source key and kms:Encrypt on the destination key, in addition to the S3 replication permissions.",
+      "F": "Disable default encryption on the destination bucket so that replicated objects keep their source encryption."
+    },
+    "isMulti": true,
+    "requiredCount": 3,
+    "correctAnswers": [
+      "B",
+      "C",
+      "E"
+    ],
+    "explanation": "### ✅ Why Options B, C & E are Correct\n\n* **Versioning (B):** S3 Replication requires versioning on both the source and destination buckets.\n* **Opt-in for SSE-KMS (C):** Objects encrypted with SSE-KMS are replicated only when the rule enables replication of KMS-encrypted objects and names a destination KMS key in the destination Region.\n* **Key permissions (E):** S3 uses the replication role to decrypt the source objects and re-encrypt the replicas, so the role needs kms:Decrypt on the source key and kms:Encrypt on the destination key.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Transfer Acceleration speeds up client uploads over long distances. Replication does not need it.\n* **Option D is incorrect:** Batch Replication is for existing objects or failed replications. Live replication rules handle new objects continuously.\n* **Option F is incorrect:** Disabling default encryption is not needed. Replicas are encrypted with the KMS key named in the replication rule.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **CRR checklist:** Versioning on both buckets + replication role + KMS opt-in and destination key + key policies that allow the role.\n2. **Alternative:** KMS multi-Region keys can use related keys in both Regions, but replication still needs the SSE-KMS setting and permissions."
+  },
+  {
+    "domain": 1,
+    "task": "1.3",
+    "topics": [
+      "Amazon CloudFront",
+      "Field-level encryption",
+      "Encryption in transit"
+    ],
+    "prompt": "A company's web form collects national ID numbers through Amazon CloudFront. Requests pass through an Application Load Balancer and several microservices that log request bodies. Security requires that the national ID field is encrypted as close to the user as possible and that only the identity verification microservice, which holds a private key, can ever see the plaintext value. The rest of the form fields must stay readable by the other services. Which solution meets these requirements?",
+    "options": {
+      "A": "Configure end-to-end HTTPS from viewers to CloudFront and from CloudFront to the ALB with ACM certificates.",
+      "B": "Configure CloudFront field-level encryption with the verification service's public key for the national ID field.",
+      "C": "Add an AWS WAF rule to the distribution's web ACL that masks the national ID field in the request body before the request is forwarded to the ALB and the microservices.",
+      "D": "Enable SSE-KMS encryption on the S3 bucket where the microservices write their request logs."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Field-level encryption:** CloudFront encrypts specific POST form fields at the edge with a public key that you provide. The fields stay encrypted through the whole application stack.\n* **Only the key holder decrypts:** Only the service with the matching private key can decrypt the national ID. Other services see ciphertext for that field and plaintext for the others.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** HTTPS encrypts each network hop, but TLS ends at CloudFront and at the ALB, so every service and log after that sees the plaintext.\n* **Option C is incorrect:** AWS WAF inspects requests to allow, block, or count them. It does not encrypt or rewrite request bodies.\n* **Option D is incorrect:** Encrypting logs at rest does not stop the microservices from processing and logging the plaintext value.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Protect specific fields end to end:** \"Only one backend can read a sensitive field\" points to CloudFront field-level encryption.\n2. **Layers:** TLS (ACM) = in transit per hop. Field-level encryption = application-layer protection for chosen fields. KMS = at rest."
+  },
+  {
+    "domain": 1,
+    "task": "1.3",
+    "topics": [
+      "Amazon EBS",
+      "AWS KMS",
+      "Encryption at rest"
+    ],
+    "prompt": "A company requires all new Amazon EBS volumes in its AWS account to be encrypted with a specific AWS KMS customer managed key. Some teams use older launch templates and scripts that do not set any encryption options. The company wants all new volumes to be encrypted without changing these templates and scripts. Which solution meets these requirements?",
+    "options": {
+      "A": "Create an AWS Config rule that checks whether EBS volumes are encrypted and sends notifications for unencrypted volumes.",
+      "B": "Attach an SCP that denies ec2:CreateVolume and ec2:RunInstances when the ec2:Encrypted condition key is false.",
+      "C": "Enable EBS encryption by default in each AWS Region that the company uses, and set the customer managed key as the default EBS encryption key.",
+      "D": "Use AWS Backup with a backup plan that copies all new EBS volumes into an encrypted backup vault that uses the customer managed key, and restore from the vault when needed."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Encryption by default:** When this setting is on for a Region, every new EBS volume and snapshot copy is encrypted, even if the request does not ask for encryption.\n* **Default key:** Setting the customer managed key as the default makes volumes use that key instead of the AWS managed aws/ebs key.\n* **No workflow changes:** Existing templates and scripts keep working unchanged.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** AWS Config only detects unencrypted volumes after they are created. It does not encrypt them.\n* **Option B is incorrect:** The SCP would make the older templates and scripts fail, which breaks the requirement not to change them.\n* **Option D is incorrect:** Backups do not encrypt the live volumes that the instances use.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Regional setting:** EBS encryption by default is set per Region per account. It can be enforced across accounts with organization policies or automation.\n2. **Existing volumes:** To encrypt an existing unencrypted volume, snapshot it, copy the snapshot with encryption, and create a new volume."
+  }
+]

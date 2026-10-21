@@ -1,0 +1,450 @@
+[
+  {
+    "domain": 1,
+    "task": "1.1",
+    "topics": [
+      "Amazon Verified Permissions",
+      "Amazon Cognito",
+      "Fine-grained authorization"
+    ],
+    "prompt": "A healthcare company is building a patient portal. Users sign in through an Amazon Cognito user pool. Authorization rules are complex: for example, a doctor may view a patient's record only if the patient is assigned to that doctor's clinic, and a patient may share a record with a family member for a limited time. The security team wants to define and audit these rules centrally and change them without redeploying application code. Which solution meets these requirements?",
+    "options": {
+      "A": "Create an IAM role for each application user, and write IAM policies that list the patient records each user can access.",
+      "B": "Create a Cognito user pool group for each clinic, and have the application allow access when the user belongs to the same group as the patient.",
+      "C": "Define the rules as Cedar policies in an Amazon Verified Permissions policy store, and have the application call the authorization API with the user's Cognito token, the action, and the resource before it returns data.",
+      "D": "Store the rules as JSON documents in an Amazon DynamoDB table, and write custom code in each microservice to evaluate the rules."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Amazon Verified Permissions:** This managed service handles fine-grained authorization inside custom applications. Rules are written in the Cedar policy language and stored centrally in a policy store.\n* **Context-aware decisions:** Cedar policies can use attributes of the principal, the resource, and the request context (for example clinic assignment or a sharing expiry time) to return an allow or deny decision.\n* **Separated from code:** Policies can be changed, validated against a schema, and audited without redeploying the application. Verified Permissions can accept Cognito user pool tokens as the identity source.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** IAM controls access to AWS resources, not records inside an application. One role per end user does not scale and would hit IAM quotas.\n* **Option B is incorrect:** Groups give only coarse role-based checks. They cannot express relationship rules or time-limited sharing, and the logic would still be hardcoded in the application.\n* **Option D is incorrect:** This builds and maintains a custom policy engine in every microservice, which is error-prone and hard to audit.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **'Fine-grained permissions inside a custom application, managed outside code':** Use Amazon Verified Permissions with Cedar policies.\n2. **Authentication vs authorization:** Cognito authenticates users. Verified Permissions decides what an authenticated user can do in the application.\n3. **Exam tip:** IAM policies are for AWS API access. Application-level authorization belongs in the application or in Verified Permissions."
+  },
+  {
+    "domain": 1,
+    "task": "1.1",
+    "topics": [
+      "AWS Lambda",
+      "Lambda function URLs",
+      "Resource-based policies"
+    ],
+    "prompt": "A team in Account A built an AWS Lambda function that returns pricing data over HTTPS. A single service in Account B, which runs under one IAM role, must call the function. The team does not need request throttling, API keys, or other Amazon API Gateway features, and it wants the simplest setup. No other principal may invoke the function. Which solution meets these requirements?",
+    "options": {
+      "A": "Create a Lambda function URL with the AWS_IAM auth type, add a resource-based policy statement that allows the Account B role to invoke the function through its URL, give the role matching permissions in Account B, and have the service sign requests with SigV4.",
+      "B": "Create a Lambda function URL with the NONE auth type, and have the function check a shared secret in a custom request header.",
+      "C": "Create a Lambda function URL with the NONE auth type, and attach a security group to the function URL that allows traffic only from Account B's NAT gateway IP address.",
+      "D": "Create an Amazon API Gateway REST API with a Lambda proxy integration, and enable API keys with a usage plan for Account B."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **AWS_IAM auth type:** With AWS_IAM, every request to the function URL must be signed with Signature Version 4, and Lambda authorizes the caller with IAM.\n* **Cross-account authorization:** For a caller in another account, both the function's resource-based policy and the caller's identity-based policy must allow the invocation. Only the named role can call the function.\n* **Simplest:** A function URL is a built-in HTTPS endpoint for one function, with no API Gateway resources to deploy or manage.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** With NONE, anyone on the internet can reach the function. A shared secret is a static credential that can leak and is not tied to the IAM role.\n* **Option C is incorrect:** Function URLs do not support security groups. IP-based restrictions also do not identify the IAM role.\n* **Option D is incorrect:** This adds an API Gateway layer that the team does not need. API keys identify usage plans and are not meant for authorization.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **'Single-function HTTPS endpoint, no API Gateway features':** Use a Lambda function URL.\n2. **Securing function URLs:** Use the AWS_IAM auth type with resource-based policies. Use NONE only for truly public endpoints, and add your own authentication in that case.\n3. **Need throttling, usage plans, WAF, or custom authorizers?:** Use Amazon API Gateway instead."
+  },
+  {
+    "domain": 1,
+    "task": "1.1",
+    "topics": [
+      "Amazon Cognito",
+      "OAuth 2.0 client credentials",
+      "Amazon API Gateway"
+    ],
+    "prompt": "A logistics company exposes a shipment-tracking REST API through Amazon API Gateway. Fifty partner companies will call the API from their own backend servers, with no human users involved. Each partner must receive its own credentials that can be revoked individually, and the access tokens must be short-lived and limited to either read-only or read-write scopes. Partners do not have AWS accounts. Which solution meets these requirements with the LEAST operational overhead?",
+    "options": {
+      "A": "Create an IAM user with access keys for each partner, and allow execute-api:Invoke in each user's policy.",
+      "B": "Create an API key for each partner, and associate the keys with a usage plan for the API.",
+      "C": "Create a Cognito identity pool that allows unauthenticated identities, and give the unauthenticated role permission to invoke the API.",
+      "D": "Create a resource server with custom scopes in an Amazon Cognito user pool, create an app client with a client secret for each partner that uses the client credentials grant, and configure a Cognito user pool authorizer on the API that requires the scopes."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Machine-to-machine OAuth 2.0:** The client credentials grant lets a backend system exchange its client ID and secret for a short-lived access token from the Cognito token endpoint. No user sign-in is involved.\n* **Scopes and revocation:** Custom scopes on a resource server limit what each token allows. Each partner has its own app client, which can be deleted or have its secret rotated on its own.\n* **Built-in validation:** The API Gateway Cognito authorizer checks the token signature, expiry, and required scopes without custom code.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** IAM users with long-term access keys for external parties go against best practices, and the keys are not short-lived.\n* **Option B is incorrect:** API keys are for usage plans and throttling. AWS states that they should not be used for authentication or authorization, and they do not expire on their own.\n* **Option C is incorrect:** Unauthenticated identities give anyone who uses the app the same access. They do not identify or separate partners.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **'Server-to-server API access, no users, OAuth scopes':** Use the Cognito user pool client credentials grant (machine-to-machine).\n2. **'End users sign in to an app':** Use the authorization code grant with a Cognito user pool.\n3. **API keys:** API keys meter and throttle callers. They do not secure an API."
+  },
+  {
+    "domain": 1,
+    "task": "1.1",
+    "topics": [
+      "IAM Access Analyzer",
+      "Custom policy checks",
+      "CI/CD"
+    ],
+    "prompt": "A company's platform team lets application teams submit IAM policies as part of infrastructure-as-code pull requests. The security team must automatically block any pull request whose policy grants s3:DeleteBucket, kms:ScheduleKeyDeletion, or iam:PassRole, and must also block any change that grants more access than the currently deployed version of the same policy. The check must run in the existing pipeline before deployment. Which solution meets these requirements?",
+    "options": {
+      "A": "Enable AWS Config rules that detect the listed actions after deployment, and use automatic remediation to remove the noncompliant statements.",
+      "B": "Add IAM Access Analyzer custom policy checks to the pipeline: run CheckAccessNotGranted with the listed actions and CheckNoNewAccess against the deployed policy, and fail the build if either check fails.",
+      "C": "Apply a service control policy (SCP) that denies the listed actions to all accounts, and review all other policy changes manually.",
+      "D": "Run IAM Access Analyzer policy validation in the pipeline, and fail the build on any security warning."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **CheckAccessNotGranted:** This custom policy check confirms that a policy does not grant any of a specified list of actions or resources. It fails if the policy grants s3:DeleteBucket, kms:ScheduleKeyDeletion, or iam:PassRole.\n* **CheckNoNewAccess:** This check compares a new policy version with a reference (the deployed version) and fails if the new version grants more access.\n* **Shift-left:** The checks run through the AWS CLI or API, so they fit into any CI/CD pipeline and stop bad policies before deployment.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** AWS Config evaluates resources after they are deployed. The requirement is to block the change before deployment.\n* **Option C is incorrect:** An SCP blocks the actions at runtime for every principal, including legitimate administrators. It also does not detect policy changes that grant more access, so manual review would still be needed.\n* **Option D is incorrect:** Policy validation checks grammar and AWS best practices. It cannot check for a company-defined list of sensitive actions or compare against a deployed version.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **'Block policies that grant specific actions before deploy':** Use IAM Access Analyzer custom policy checks (CheckAccessNotGranted).\n2. **'Policy change must not widen access':** Use CheckNoNewAccess. CheckNoPublicAccess finds resource policies that allow public access.\n3. **Validation vs checks:** Policy validation finds syntax and best-practice issues. Custom policy checks use automated reasoning against your own security standards."
+  },
+  {
+    "domain": 1,
+    "task": "1.1",
+    "topics": [
+      "Amazon DynamoDB",
+      "Amazon Cognito",
+      "Fine-grained access control"
+    ],
+    "prompt": "A mobile fitness app stores workout history in an Amazon DynamoDB table. The table's partition key is the user's Amazon Cognito identity ID. The app uses a Cognito identity pool to obtain temporary AWS credentials and calls DynamoDB directly without a backend service. Each user must be able to read and write only the items that belong to that user. What should a solutions architect do?",
+    "options": {
+      "A": "Create a separate DynamoDB table for each user, and use the identity pool's role mapping to map users to tables.",
+      "B": "Encrypt each user's items with a different AWS KMS key, and grant each user permission to use only that user's key.",
+      "C": "Attach a policy to the identity pool's authenticated role that allows the DynamoDB item actions with a condition that dynamodb:LeadingKeys equals ${cognito-identity.amazonaws.com:sub}.",
+      "D": "Attach a resource-based policy to the DynamoDB table that allows access only from the IP address of each user's device."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Fine-grained access control:** The dynamodb:LeadingKeys condition key limits access to items whose partition key value matches the condition.\n* **Policy variable:** ${cognito-identity.amazonaws.com:sub} resolves to the caller's Cognito identity ID at request time. One role and one policy therefore work for millions of users.\n* **Serverless and secure:** Users receive temporary, scoped credentials from the identity pool. No backend is needed to enforce row-level isolation.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** One table per user does not scale, quickly reaches table quotas, and adds a lot of management overhead.\n* **Option B is incorrect:** Encryption at rest with KMS is applied at the table level in DynamoDB. You cannot use a different KMS key for each item, and encryption does not control which items a caller can read.\n* **Option D is incorrect:** Mobile device IP addresses change constantly and are often shared through carrier NAT. IP-based rules cannot reliably identify a user.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **'Users access only their own items in DynamoDB':** Use an IAM policy with the dynamodb:LeadingKeys condition and a web identity policy variable.\n2. **Column-level restriction:** Use the dynamodb:Attributes condition key to limit which attributes a caller can read.\n3. **Pattern:** A Cognito identity pool plus fine-grained IAM conditions gives per-user data isolation without a backend tier."
+  },
+  {
+    "domain": 1,
+    "task": "1.1",
+    "topics": [
+      "Amazon EC2",
+      "IMDSv2",
+      "AWS Organizations",
+      "SCPs"
+    ],
+    "prompt": "A penetration test showed that a server-side request forgery (SSRF) flaw in a web application could read IAM role credentials from the EC2 instance metadata service by using IMDSv1. A company with 40 accounts in AWS Organizations wants to make sure that all running instances use IMDSv2 only, that new instances use IMDSv2 by default even when a launch template does not specify it, and that no one can launch or reconfigure an instance to allow IMDSv1. Which combination of steps will meet these requirements? (Select THREE.)",
+    "options": {
+      "A": "Modify the metadata options of all existing instances to set HttpTokens to required.",
+      "B": "Turn off the instance metadata service on every instance so that no credentials can be retrieved.",
+      "C": "Attach an SCP that denies ec2:RunInstances unless the ec2:MetadataHttpTokens condition key is required, and denies ec2:ModifyInstanceMetadataOptions requests that would allow IMDSv1.",
+      "D": "Add an outbound security group rule on each instance that denies traffic to 169.254.169.254.",
+      "E": "Set the account-level default for instance metadata options to require IMDSv2 (HttpTokens required) in every account and Region in use.",
+      "F": "Replace the instance profiles with IAM user access keys stored in a configuration file on each instance."
+    },
+    "isMulti": true,
+    "requiredCount": 3,
+    "correctAnswers": [
+      "A",
+      "C",
+      "E"
+    ],
+    "explanation": "### ✅ Why Options A, C & E are Correct\n\n* **Fix running instances:** Changing HttpTokens to required on existing instances (ModifyInstanceMetadataOptions) turns off IMDSv1 without a restart. IMDSv2 needs a session token from a PUT request, which typical SSRF flaws cannot obtain.\n* **Secure default:** The EC2 account-level instance metadata defaults apply to new launches that do not set the metadata options themselves, so IMDSv2 becomes the default.\n* **Guardrail:** An SCP that uses ec2:MetadataHttpTokens stops anyone, including account administrators, from launching or changing instances to allow IMDSv1.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Applications and the AWS SDK on the instances need the metadata service to get the instance role's temporary credentials. Turning it off breaks them.\n* **Option D is incorrect:** Security groups support only allow rules, not deny rules. Instance metadata traffic is also not controlled by security groups.\n* **Option F is incorrect:** Long-term access keys on disk are less secure than temporary role credentials and can be stolen through the same flaw.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **'SSRF + instance credentials':** Require IMDSv2 (HttpTokens=required).\n2. **Enforcement layers:** Fix existing instances, set secure defaults for new ones, and add a preventive SCP guardrail. AWS Config rules can detect drift.\n3. **Hop limit:** Keep the IMDSv2 response hop limit at 1 unless containers on the host need metadata access."
+  },
+  {
+    "domain": 1,
+    "task": "1.1",
+    "topics": [
+      "EC2 Instance Connect Endpoint",
+      "IAM",
+      "Amazon VPC"
+    ],
+    "prompt": "A company runs network appliances on Amazon EC2 instances in private subnets. The appliance operating system does not allow extra agents, such as the SSM Agent, to be installed, but it does run an SSH server. Administrators need SSH access from their laptops. The instances must not have public IP addresses, the company does not want to run bastion hosts, and access must be controlled with IAM policies and recorded in AWS CloudTrail. Which solution meets these requirements with the LEAST operational overhead?",
+    "options": {
+      "A": "Create an EC2 Instance Connect Endpoint in the VPC, allow SSH from the endpoint's security group to the instances, and grant administrators the ec2-instance-connect:OpenTunnel permission in IAM.",
+      "B": "Use AWS Systems Manager Session Manager with port forwarding to TCP port 22 on the instances.",
+      "C": "Deploy a hardened bastion host in a public subnet with an Elastic IP address, and restrict SSH to the corporate IP range.",
+      "D": "Assign an Elastic IP address to each appliance, and allow SSH only from the corporate IP range in the security groups."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **No public IPs or bastions:** An EC2 Instance Connect Endpoint provides private TCP connectivity from the internet into the VPC. The instances need no public IP address and the VPC needs no internet gateway for this access.\n* **No agent needed:** The endpoint forwards the SSH connection to the instance's SSH server, so nothing extra has to be installed on the appliances.\n* **IAM-controlled and audited:** Opening a tunnel requires the ec2-instance-connect:OpenTunnel permission, which can be limited with conditions on port or target, and every tunnel is logged in CloudTrail.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Session Manager requires the SSM Agent on the instance, which cannot be installed on these appliances.\n* **Option C is incorrect:** A bastion host is exactly what the company wants to avoid. It must be patched and monitored, and SSH access to it is not controlled through IAM.\n* **Option D is incorrect:** This gives the appliances public IP addresses and exposes SSH to the internet, which breaks the requirements.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **'SSH/RDP to private instances, no bastion, no agent':** Use EC2 Instance Connect Endpoint.\n2. **'No inbound ports, agent available, session logging':** Use Systems Manager Session Manager.\n3. **Security groups:** Allow port 22 on the instances only from the endpoint's security group."
+  },
+  {
+    "domain": 1,
+    "task": "1.2",
+    "topics": [
+      "AWS Systems Manager",
+      "Session Manager",
+      "VPC endpoints"
+    ],
+    "prompt": "A company runs Amazon EC2 instances in private subnets of a VPC that has no internet gateway and no NAT gateway. Administrators currently connect through a bastion host with SSH keys. The security team wants to remove the bastion host, close all inbound ports on the instances, stop distributing SSH keys, and log all session activity. The instances run a current Amazon Linux AMI with the SSM Agent preinstalled. Which combination of steps will meet these requirements? (Select TWO.)",
+    "options": {
+      "A": "Add an inbound rule to the instances' security group that allows TCP port 22 from the Systems Manager service's IP address ranges.",
+      "B": "Attach an instance profile to the instances that includes the AmazonSSMManagedInstanceCore managed policy.",
+      "C": "Create a gateway VPC endpoint for Systems Manager, and add it to the private subnets' route tables.",
+      "D": "Create interface VPC endpoints for the Systems Manager services that Session Manager uses (com.amazonaws.<region>.ssm and com.amazonaws.<region>.ssmmessages), and allow HTTPS from the instances to the endpoints.",
+      "E": "Deploy an EC2 Instance Connect Endpoint in each subnet, and give administrators the SSH private keys of the instances."
+    },
+    "isMulti": true,
+    "requiredCount": 2,
+    "correctAnswers": [
+      "B",
+      "D"
+    ],
+    "explanation": "### ✅ Why Options B & D are Correct\n\n* **Instance permissions:** The SSM Agent needs IAM permissions to register with Systems Manager and open session channels. The AmazonSSMManagedInstanceCore policy, attached through an instance profile, provides them.\n* **Private connectivity:** Without internet access, the agent reaches Systems Manager through interface VPC endpoints (AWS PrivateLink). The ssm and ssmmessages endpoints carry registration and the session data channel.\n* **Security outcome:** Session Manager uses only outbound HTTPS from the agent. No inbound ports, bastion hosts, or SSH keys are needed, and sessions can be logged to S3 or CloudWatch Logs and audited in CloudTrail.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Session Manager does not need inbound connections. Opening port 22 goes against the requirement to close all inbound ports.\n* **Option C is incorrect:** Gateway endpoints exist only for Amazon S3 and Amazon DynamoDB. Systems Manager uses interface endpoints.\n* **Option E is incorrect:** This still relies on SSH key distribution, which the requirement says to stop.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **'Remove bastion / no SSH keys / no inbound ports':** Use Systems Manager Session Manager.\n2. **Private subnets without NAT:** Add interface endpoints for ssm and ssmmessages (older agents also use ec2messages). Add an S3 gateway endpoint or a logs interface endpoint if session logs are sent there.\n3. **Fleet-wide alternative:** Default Host Management Configuration can grant the permissions to instances without editing each instance profile."
+  },
+  {
+    "domain": 1,
+    "task": "1.2",
+    "topics": [
+      "Amazon Route 53 Resolver DNS Firewall",
+      "Amazon VPC"
+    ],
+    "prompt": "A security team found that malware on some Amazon EC2 instances tries to resolve command-and-control domains and send data out by tunneling it through DNS queries. All instances use the Amazon Route 53 Resolver (the VPC +2 address) for DNS. The team wants to block DNS queries for known malicious domains in all VPCs, use threat lists maintained by AWS, and log the blocked queries. Which solution meets these requirements?",
+    "options": {
+      "A": "Enable Amazon GuardDuty in all accounts, and turn on DNS log monitoring to find and stop the malicious queries.",
+      "B": "Create Route 53 Resolver DNS Firewall rule groups that use the AWS managed domain lists with a BLOCK action, associate the rule groups with the VPCs, and enable Resolver query logging.",
+      "C": "Add network ACL rules that deny outbound UDP and TCP port 53 traffic from the private subnets.",
+      "D": "Deploy AWS Network Firewall in each VPC with stateful domain list rules, and route subnet traffic through the firewall endpoints."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **DNS-layer filtering:** DNS Firewall inspects queries sent to the Route 53 Resolver and can BLOCK them (NODATA, NXDOMAIN, or override), ALERT, or ALLOW for the domains in a list.\n* **AWS managed domain lists:** AWS maintains lists of domains linked to malware, botnet command and control, and other threats. You do not maintain threat intelligence yourself.\n* **Visibility:** Resolver query logging records the queries and the actions taken. Firewall Manager can deploy DNS Firewall rule groups across an organization.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** GuardDuty detects and reports suspicious DNS activity, but it does not block queries.\n* **Option C is incorrect:** Queries to the Route 53 Resolver at the VPC +2 address are not filtered by network ACLs. Blocking port 53 entirely would also break legitimate name resolution.\n* **Option D is incorrect:** DNS queries to the VPC Resolver do not go through Network Firewall endpoints. Network Firewall domain lists filter HTTP Host headers and TLS SNI, not Resolver queries.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **'Block malicious domain lookups / DNS exfiltration':** Use Route 53 Resolver DNS Firewall.\n2. **Detect vs block:** GuardDuty detects. DNS Firewall, Network Firewall, and AWS WAF enforce.\n3. **Central management:** Use AWS Firewall Manager to apply DNS Firewall rule groups to every VPC in the organization."
+  },
+  {
+    "domain": 1,
+    "task": "1.2",
+    "topics": [
+      "AWS Firewall Manager",
+      "AWS WAF",
+      "AWS Organizations"
+    ],
+    "prompt": "A company has 80 AWS accounts in AWS Organizations, and new accounts are created every month. Every internet-facing Application Load Balancer and Amazon CloudFront distribution must have a baseline set of AWS WAF rules, including the AWS Managed Rules core rule set. Application teams must be able to add their own rules but must not be able to remove the baseline. New accounts and new resources must be protected automatically. Which solution meets these requirements with the LEAST operational overhead?",
+    "options": {
+      "A": "Use AWS CloudFormation StackSets to deploy a web ACL to every account, and ask application teams to associate it with their resources.",
+      "B": "Create an AWS Config rule that detects resources without a web ACL, and send noncompliance notifications to the application teams by using Amazon SNS.",
+      "C": "Create one web ACL in the management account, and associate it with the ALBs and distributions in all member accounts.",
+      "D": "Designate an AWS Firewall Manager administrator account, and create an AWS WAF policy that contains the baseline first and last rule groups, scoped to the organization with automatic remediation."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Central WAF enforcement:** A Firewall Manager AWS WAF policy creates and associates web ACLs with in-scope ALBs, API Gateway stages, and CloudFront distributions across accounts.\n* **Baseline cannot be removed:** The administrator sets first and last rule groups. Account owners can add their own rule groups in between, but they cannot change the baseline.\n* **Automatic for new accounts and resources:** With automatic remediation, Firewall Manager applies the policy to new accounts and newly created resources. Prerequisites are Organizations with all features and AWS Config enabled.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** StackSets can deploy the web ACL, but association depends on each team, and teams could change or remove the rules.\n* **Option B is incorrect:** This only detects and notifies. It does not enforce protection automatically.\n* **Option C is incorrect:** A web ACL can be associated only with resources in the same account, so a single central web ACL cannot protect resources in member accounts.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **'Centrally enforce WAF / Shield / security groups / Network Firewall / DNS Firewall across org':** Use AWS Firewall Manager.\n2. **Prerequisites:** AWS Organizations with all features, a Firewall Manager administrator account, and AWS Config enabled in the accounts.\n3. **Exam tip:** Firewall Manager is a management layer. It configures WAF, Shield Advanced, security group, Network Firewall, and DNS Firewall policies, but it does not inspect traffic itself."
+  },
+  {
+    "domain": 1,
+    "task": "1.2",
+    "topics": [
+      "AWS Nitro Enclaves",
+      "AWS KMS",
+      "Amazon EC2"
+    ],
+    "prompt": "A payments company processes cardholder data on Amazon EC2 instances. A new requirement says that decrypted card data must be processed in an isolated environment that operators, administrators with root access to the instance, and other processes on the instance cannot reach. Only code whose identity has been verified may be able to use the AWS KMS key that decrypts the data. Which solution meets these requirements?",
+    "options": {
+      "A": "Run the processing code in an AWS Nitro Enclave, and add a condition to the KMS key policy that allows decryption only when the request comes with a valid attestation document whose measurements match the signed enclave image.",
+      "B": "Run the processing on Dedicated Hosts with encrypted Amazon EBS volumes, and restrict SSH access to a small group of administrators.",
+      "C": "Store the KMS key in an AWS CloudHSM custom key store, and give the instance role permission to call kms:Decrypt.",
+      "D": "Run the processing code in a container on Amazon ECS with AWS Fargate, and store the decrypted data in a tmpfs volume."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Isolated compute:** Nitro Enclaves carve CPU and memory from a parent instance into an isolated VM that has no persistent storage, no interactive access, and no external networking. Even root users on the parent instance cannot access it.\n* **Cryptographic attestation:** The enclave produces a signed attestation document that contains measurements (PCRs) of the enclave image. KMS key policy conditions such as kms:RecipientAttestation:ImageSha384 or PCR values allow decryption only for the approved code.\n* **Data protection:** KMS encrypts the response to the enclave's public key, so the plaintext is visible only inside the enclave.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Dedicated Hosts give physical isolation from other customers, but administrators with root access on the instance can still read decrypted data in memory.\n* **Option C is incorrect:** CloudHSM controls where the key material lives. It does not isolate the processing environment or verify the identity of the calling code, and any code using the instance role can still decrypt.\n* **Option D is incorrect:** Fargate isolates tasks from one another, but it does not stop privileged operators of the workload from accessing data, and it provides no code attestation to KMS.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **'Isolate highly sensitive processing from admins / attestation':** Use AWS Nitro Enclaves with KMS attestation conditions.\n2. **Shared responsibility:** The Nitro System has no operator access path for AWS personnel. Enclaves extend that isolation to the customer's own administrators.\n3. **Use cases:** PII, PCI data, healthcare data, private key handling, and multi-party computation."
+  },
+  {
+    "domain": 1,
+    "task": "1.2",
+    "topics": [
+      "Amazon CloudFront",
+      "Geo restriction"
+    ],
+    "prompt": "A media company streams licensed video through an Amazon CloudFront distribution. A new licensing agreement forbids access to the content from three specific countries. Viewers in those countries must receive an HTTP 403 error. The company wants the simplest solution that adds no extra per-request charges and no additional services. What should a solutions architect do?",
+    "options": {
+      "A": "Configure Amazon Route 53 geolocation routing so that DNS queries from the three countries resolve to a static error page.",
+      "B": "Create an AWS WAF web ACL with a geographic match rule for the three countries, and associate it with the distribution.",
+      "C": "Enable CloudFront geographic restrictions on the distribution with a block list that contains the three countries.",
+      "D": "Deploy a Lambda@Edge function on viewer request events that looks up the viewer's IP address in a geolocation database and returns 403."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Built-in feature:** CloudFront geographic restrictions use an allow list or a block list of countries for the whole distribution. CloudFront returns HTTP 403 (Forbidden) to blocked viewers.\n* **No extra cost or services:** Geo restriction is included with CloudFront at no additional charge and needs only a setting on the distribution.\n* **Accurate location:** CloudFront determines the viewer's country by using a third-party GeoIP database.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Routing DNS for some countries does not stop viewers who use other resolvers or who request the distribution's domain directly. It is not access control.\n* **Option B is incorrect:** AWS WAF geo match rules work and allow finer control, but they add a separate service and per-request and per-rule charges.\n* **Option D is incorrect:** This adds code, a geolocation database to maintain, and Lambda@Edge charges for every request.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **'Block entire countries from a CloudFront distribution, simplest':** Use CloudFront geo restriction.\n2. **When to choose WAF geo match:** Use it when you need country rules combined with other conditions (for example, only some paths, or with rate limits) or need to count rather than block.\n3. **Remember:** Geo restriction applies to the whole distribution, not to individual paths."
+  },
+  {
+    "domain": 1,
+    "task": "1.2",
+    "topics": [
+      "VPC Flow Logs",
+      "Amazon CloudWatch Logs",
+      "Security groups"
+    ],
+    "prompt": "Users report that an application on Amazon EC2 instances in a private subnet sometimes cannot connect to a database server in another subnet of the same VPC. The security team suspects that a security group or network ACL is rejecting the traffic and needs to see the source and destination IP addresses, ports, and whether each connection attempt was accepted or rejected. Inspecting packet payloads is not required. Which solution meets these requirements with the LEAST operational overhead?",
+    "options": {
+      "A": "Use AWS CloudTrail to search for RejectConnection events for the database's network interface.",
+      "B": "Create a VPC flow log for the subnets (or their network interfaces) that publishes to Amazon CloudWatch Logs, and query for records with the REJECT action by using CloudWatch Logs Insights.",
+      "C": "Configure VPC Traffic Mirroring from the application instances to a monitoring appliance that runs packet capture software.",
+      "D": "Enable Amazon GuardDuty, and review its findings for blocked connections between the two subnets."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **VPC Flow Logs:** Flow logs capture IP traffic metadata for a VPC, subnet, or network interface: source and destination addresses and ports, protocol, packets, bytes, and an ACCEPT or REJECT action.\n* **Troubleshoot security groups and NACLs:** REJECT records show that a security group or network ACL denied the traffic. Comparing records in both directions helps find stateless NACL return-traffic problems.\n* **Low overhead:** Publishing to CloudWatch Logs and querying with Logs Insights needs no agents or appliances.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** CloudTrail records API calls, not network packets or connection attempts. There is no RejectConnection event for this traffic.\n* **Option C is incorrect:** Traffic Mirroring captures full packets, which is not required. It also needs a monitoring appliance and much more setup.\n* **Option D is incorrect:** GuardDuty uses flow logs internally to detect threats, but it does not report ordinary connections that security groups or NACLs reject.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **'Who talked to whom, accepted or rejected':** Use VPC Flow Logs (metadata only, no payload).\n2. **'Need packet contents':** Use VPC Traffic Mirroring.\n3. **Destinations:** Flow logs can go to CloudWatch Logs, Amazon S3 (query with Athena), or Amazon Data Firehose."
+  },
+  {
+    "domain": 1,
+    "task": "1.2",
+    "topics": [
+      "Amazon S3",
+      "Presigned URLs",
+      "AWS Lambda"
+    ],
+    "prompt": "A web application lets customers upload scanned documents of up to 50 MB. Customers sign in to the application through the company's own session-based login, not with AWS credentials. The documents must go into a private Amazon S3 bucket with S3 Block Public Access enabled, and the uploads must not pass through the application servers. Each customer must be able to upload only one specific object key, for no longer than 10 minutes. Which solution meets these requirements?",
+    "options": {
+      "A": "Create an IAM user for the web application, and send its access keys to the browser in JavaScript so that customers can call PutObject directly.",
+      "B": "Add a bucket policy that allows s3:PutObject from the application's public IP addresses, and have the browser upload directly to the bucket.",
+      "C": "Enable S3 Transfer Acceleration on the bucket, and give customers the accelerated endpoint URL of the bucket.",
+      "D": "After authenticating the customer, have a backend AWS Lambda function generate an S3 presigned URL for a PUT on a specific object key that expires in 10 minutes, and have the browser upload with that URL."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Presigned URL:** A presigned URL lets the holder perform one specific operation (PUT to one bucket and key) with the signer's permissions, until the URL expires.\n* **Private bucket stays private:** The bucket needs no public policy. Block Public Access stays on, and the backend role needs only s3:PutObject on the upload prefix.\n* **Offloads traffic:** The browser sends the file straight to S3, so large uploads do not consume application server capacity.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Exposing long-term access keys in browser code is a serious security risk. Anyone could extract them and use them without restriction.\n* **Option B is incorrect:** Customers upload from their own browsers, not from the application's IP addresses. Allowing public IP-based access would also not limit each customer to one key and 10 minutes.\n* **Option C is incorrect:** Transfer Acceleration only speeds up transfers. It does not grant access to a private bucket.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **'Temporary access to one object without AWS credentials':** Use S3 presigned URLs, generated by a backend that holds IAM permissions.\n2. **Expiration gotcha:** A presigned URL stops working when the credentials that signed it expire. URLs signed with temporary role credentials cannot outlive the role session.\n3. **Alternative:** Use Cognito identity pools when users need ongoing scoped AWS credentials rather than single operations."
+  },
+  {
+    "domain": 1,
+    "task": "1.3",
+    "topics": [
+      "Amazon CloudFront",
+      "Signed cookies",
+      "Amazon S3"
+    ],
+    "prompt": "A training company sells video courses. Each course is delivered as HTTP Live Streaming (HLS) with hundreds of small segment files stored in a private Amazon S3 bucket behind an Amazon CloudFront distribution that uses origin access control (OAC). Only paying subscribers may access a course's files for 24 hours after they sign in, and the company does not want to change the URLs that the video player requests. Which solution meets these requirements?",
+    "options": {
+      "A": "Use CloudFront signed cookies issued by the application after sign-in, with a custom policy that allows the course path for 24 hours and a trusted key group configured on the cache behavior.",
+      "B": "Have the application generate a CloudFront signed URL for every segment file, and rewrite the HLS playlists to use the signed URLs.",
+      "C": "Have the application generate S3 presigned URLs for each segment file that are valid for 24 hours.",
+      "D": "Remove OAC and use an S3 bucket policy that allows s3:GetObject only when the aws:Referer header matches the company's website."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Signed cookies for many files:** One set of signed cookies can authorize access to many objects (for example, everything under /courses/123/*) without changing the object URLs.\n* **Custom policy:** A custom policy can use a wildcard resource path and an expiration time (24 hours), and can optionally restrict the viewer's IP range.\n* **Trusted key groups:** CloudFront validates signatures with public keys in a trusted key group. This is the recommended method, so the root user's CloudFront key pairs are not needed. OAC keeps the bucket private.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Signed URLs work but change every URL, so playlists must be rewritten for every viewer. That breaks the requirement not to change URLs and adds much work for hundreds of files.\n* **Option C is incorrect:** S3 presigned URLs bypass CloudFront caching and OAC, and they change every URL. Also, if they are signed with temporary credentials, they may expire before 24 hours.\n* **Option D is incorrect:** The Referer header is easy to forge and does not check subscriptions. Removing OAC also exposes the bucket.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **'Restrict many files, keep URLs unchanged':** Use CloudFront signed cookies.\n2. **'Restrict a single file / client that does not support cookies':** Use CloudFront signed URLs.\n3. **Origin protection:** Use OAC so that viewers cannot bypass CloudFront to reach S3 directly."
+  },
+  {
+    "domain": 1,
+    "task": "1.3",
+    "topics": [
+      "Amazon S3",
+      "Bucket policies",
+      "Encryption in transit"
+    ],
+    "prompt": "A company stores regulated documents in an Amazon S3 bucket. Applications, partners, and administrators access the bucket through the S3 API from many locations. A new compliance rule says that every request to the bucket must be encrypted in transit, and any request over plain HTTP must be rejected, no matter what IAM permissions the caller has. Which solution meets this requirement?",
+    "options": {
+      "A": "Enable default encryption on the bucket with SSE-KMS and an AWS KMS customer managed key.",
+      "B": "Put an Amazon CloudFront distribution in front of the bucket, and set the viewer protocol policy to redirect HTTP to HTTPS.",
+      "C": "Add a bucket policy statement that denies all S3 actions for all principals when the aws:SecureTransport condition key is false.",
+      "D": "Turn on S3 Block Public Access for the bucket and the account."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **aws:SecureTransport:** This global condition key is false when a request is sent over HTTP instead of HTTPS (TLS).\n* **Explicit deny wins:** A Deny statement in the bucket policy applies to every principal, including those whose IAM policies allow access, because an explicit deny overrides any allow.\n* **Covers all access paths:** The control is enforced on the bucket itself, so it applies to every client that calls the S3 API directly.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Default encryption protects objects at rest. It does not stop requests from being sent over HTTP.\n* **Option B is incorrect:** CloudFront only affects requests that go through the distribution. Clients that call the S3 API directly could still use HTTP.\n* **Option D is incorrect:** Block Public Access stops public access through policies and ACLs. It does not check the transport protocol.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **'Enforce HTTPS/TLS for S3':** Use a bucket policy Deny with \"aws:SecureTransport\": \"false\".\n2. **Minimum TLS version:** Add a deny on the s3:TlsVersion condition key to reject older TLS versions.\n3. **In transit vs at rest:** SSE-S3 and SSE-KMS protect data at rest. SecureTransport and TLS protect data in transit."
+  },
+  {
+    "domain": 1,
+    "task": "1.3",
+    "topics": [
+      "Amazon DynamoDB",
+      "VPC endpoints",
+      "Endpoint policies",
+      "Data exfiltration"
+    ],
+    "prompt": "Applications on Amazon EC2 instances in private subnets access Amazon DynamoDB tables in the same account through a gateway VPC endpoint. The subnets have no NAT gateway. The security team is worried that a compromised instance could use credentials from another AWS account to copy data into DynamoDB tables owned by an attacker. The team wants to make sure that traffic through the endpoint can reach only DynamoDB tables in the company's own account. Which solution meets this requirement?",
+    "options": {
+      "A": "Remove DynamoDB permissions for tables in other accounts from the instance role's IAM policy.",
+      "B": "Attach a VPC endpoint policy to the DynamoDB gateway endpoint that allows DynamoDB actions only on table ARNs in the company's account (or only when the aws:ResourceAccount condition key matches the company's account ID).",
+      "C": "Add an outbound security group rule that allows HTTPS only to the DynamoDB managed prefix list.",
+      "D": "Enable DynamoDB encryption at rest with an AWS KMS customer managed key, and restrict the key policy to the company's account."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Endpoint policies apply to every request:** A gateway endpoint policy is evaluated for every request that passes through the endpoint, no matter which credentials are used, including credentials from another account.\n* **Data perimeter:** Limiting the policy to the company's table ARNs or to aws:ResourceAccount blocks writes to attacker-owned tables. Because there is no NAT gateway, the endpoint is the only path to DynamoDB.\n* **No cost:** Gateway endpoints for DynamoDB and S3 have no hourly or data processing charges.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** An attacker would use their own credentials, not the instance role, so changing the role's policy does not stop the copy.\n* **Option C is incorrect:** The prefix list covers DynamoDB in the whole Region, including tables in any account, so this does not limit which tables can be reached.\n* **Option D is incorrect:** Encryption at rest protects the company's own tables. It has no effect on writes to another account's tables.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **'Stop exfiltration to other accounts' resources through VPC endpoints':** Use a VPC endpoint policy with resource ARNs or aws:ResourceAccount.\n2. **Data perimeter layers:** Combine identity (SCPs), resource (RCPs, resource policies), and network (endpoint policies) controls.\n3. **Gateway endpoints:** Gateway endpoints exist only for S3 and DynamoDB, and they are added to route tables."
+  },
+  {
+    "domain": 1,
+    "task": "1.3",
+    "topics": [
+      "Amazon CloudWatch Logs",
+      "Data protection policies",
+      "Sensitive data"
+    ],
+    "prompt": "A company's applications write logs to Amazon CloudWatch Logs. A review found that some log events contain email addresses and credit card numbers. Developers still need to read the logs for troubleshooting, but they must not see the sensitive values. A small security team must be able to view the original values when needed, and the company wants a report of where sensitive data was found. Changing application code is not possible in the short term. Which solution meets these requirements?",
+    "options": {
+      "A": "Export the log groups to Amazon S3 every hour, use Amazon Macie to find the sensitive data, and delete the log events that contain findings.",
+      "B": "Encrypt the log groups with an AWS KMS customer managed key, and allow only the security team to use the key.",
+      "C": "Create a subscription filter that sends log events to an AWS Lambda function, which removes the sensitive values and writes the result to a new log group.",
+      "D": "Create a CloudWatch Logs data protection policy with managed data identifiers for email addresses and credit card numbers, send audit findings to a destination, and grant the logs:Unmask permission only to the security team."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Automatic masking:** A data protection policy (for a log group or for the whole account) uses managed data identifiers to find sensitive data as it is ingested and masks it in queries, Live Tail, and the console.\n* **Controlled unmasking:** Only principals with the logs:Unmask IAM permission can view the original values.\n* **Audit findings:** The policy can send findings about where sensitive data was found to CloudWatch Logs, Amazon S3, or Amazon Data Firehose. No application changes are needed.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** This adds custom export steps and deletes data that developers need. Macie scans S3 objects, not CloudWatch Logs directly.\n* **Option B is incorrect:** Anyone who can read the log group sees all values in plaintext once access is granted. KMS encryption does not partially mask values, and developers would lose access to the logs entirely.\n* **Option C is incorrect:** This requires custom code and duplicate storage, and the original log group still contains the unmasked data.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **'Mask PII in CloudWatch Logs':** Use CloudWatch Logs data protection policies with the logs:Unmask permission.\n2. **'Discover PII in S3':** Use Amazon Macie.\n3. **Best practice:** Still fix the application so it does not log sensitive data. Masking is a safety net."
+  },
+  {
+    "domain": 1,
+    "task": "1.3",
+    "topics": [
+      "AWS Backup",
+      "Logically air-gapped vault",
+      "AWS Resource Access Manager (AWS RAM)"
+    ],
+    "prompt": "A company is concerned about ransomware attacks that could compromise its production AWS account, including privileged credentials. It uses AWS Backup to protect Amazon EBS volumes, Amazon EC2 instances, and Amazon RDS databases. Backups must be immutable so that no one can delete them before their retention ends. If the production account is compromised, the company must be able to restore quickly into a separate, clean recovery account without first copying large backups. Which combination of steps will meet these requirements? (Select TWO.)",
+    "options": {
+      "A": "Add a copy action to the backup plan that copies recovery points to an AWS Backup logically air-gapped vault with minimum and maximum retention periods.",
+      "B": "Enable Amazon S3 Cross-Region Replication for the backups that AWS Backup stores.",
+      "C": "Apply AWS Backup Vault Lock in governance mode to the existing backup vault in the production account.",
+      "D": "Create Amazon EBS snapshots manually every day, and share them with the recovery account.",
+      "E": "Share the logically air-gapped vault with the recovery account by using AWS Resource Access Manager (AWS RAM), and restore from the shared vault in the recovery account."
+    },
+    "isMulti": true,
+    "requiredCount": 2,
+    "correctAnswers": [
+      "A",
+      "E"
+    ],
+    "explanation": "### ✅ Why Options A & E are Correct\n\n* **Logically air-gapped vault:** This vault type is locked in compliance mode by default, so recovery points cannot be deleted before the retention period ends, even by the root user. It is designed to keep backups isolated from the source account.\n* **Fast cross-account recovery:** The vault can be shared through AWS RAM with other accounts, such as a clean recovery account. Those accounts can restore directly from the shared vault without first copying the backup.\n* **Backup plan integration:** A copy action in the existing backup plan sends recovery points to the air-gapped vault automatically.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** AWS Backup does not expose its backup storage as S3 buckets that you can replicate. Replication also would not make backups immutable.\n* **Option C is incorrect:** Governance mode can be removed or changed by users with sufficient IAM permissions, so compromised privileged credentials could still delete backups.\n* **Option D is incorrect:** Manual snapshots are not immutable, add operational overhead, and do not cover RDS or full EC2 instance backups.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **'Ransomware / compromised account / immutable / restore elsewhere':** Use an AWS Backup logically air-gapped vault shared through AWS RAM.\n2. **Vault Lock modes:** Governance mode can be removed by privileged users. Compliance mode becomes immutable after the grace period ends.\n3. **Defense in depth:** Combine this with SCPs that deny backup deletion and a separate recovery account in a different OU."
+  },
+  {
+    "domain": 1,
+    "task": "1.3",
+    "topics": [
+      "AWS KMS",
+      "Key policies",
+      "Amazon S3"
+    ],
+    "prompt": "A company encrypts objects in an Amazon S3 bucket with SSE-KMS by using a customer managed key. Several IAM roles in the account have broad kms:Decrypt permissions in their identity-based policies for other reasons. The security team wants to make sure that this key can be used for decryption only when the request comes through Amazon S3 in the company's Region, and never through direct KMS API calls by those roles. What should a solutions architect add to the key policy?",
+    "options": {
+      "A": "A statement that denies kms:Decrypt unless the aws:SourceIp condition key matches the company's corporate CIDR range.",
+      "B": "A statement that denies kms:Decrypt unless the aws:SecureTransport condition key is true.",
+      "C": "A statement that denies kms:Decrypt to all principals unless the kms:ViaService condition key equals s3.<region>.amazonaws.com.",
+      "D": "A statement that denies kms:Decrypt unless the kms:EncryptionAlgorithm condition key equals SYMMETRIC_DEFAULT."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **kms:ViaService:** This condition limits use of the KMS key to requests that an AWS service makes on behalf of the principal, in this case Amazon S3 in the specified Region.\n* **Blocks direct use:** Direct calls to the KMS Decrypt API by a role do not match the condition, so the explicit deny applies. An explicit deny overrides any allow in the roles' identity-based policies.\n* **Key policies are the primary control:** Key policies are the main way to control access to a KMS key, and a deny in the key policy applies no matter what identity-based policies allow.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Source IP conditions do not tell S3-mediated requests apart from direct KMS calls. Requests that AWS services make on your behalf may also not carry the caller's original IP address.\n* **Option B is incorrect:** Calls to AWS KMS already use TLS. This condition does not limit which service can use the key.\n* **Option D is incorrect:** SSE-KMS and direct calls both use symmetric encryption, so this condition does not separate them.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **'Key usable only through a specific service':** Use the kms:ViaService condition in the key policy.\n2. **Other useful KMS conditions:** kms:CallerAccount, kms:EncryptionContext:*, and kms:GrantIsForAWSResource.\n3. **Exam tip:** If the key policy does not allow it, IAM policies alone cannot grant access to a KMS key."
+  }
+]

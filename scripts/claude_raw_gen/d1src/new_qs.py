@@ -1,0 +1,36 @@
+NEW1 = '''set1.append(q("1.3", ["AWS CloudTrail", "AWS Organizations", "Log integrity"],
+ "A company has 50 accounts in AWS Organizations and adds new accounts every month. Auditors require that API activity from every current and future account is recorded in a dedicated log archive account. Administrators of workload accounts must not be able to stop or delete the logging, and the company must be able to prove that log files were not modified or deleted after delivery. Which solution meets these requirements with the LEAST operational overhead?",
+ {"A": "Create a CloudTrail trail in each member account that delivers to an S3 bucket in that account, and enable S3 Versioning on each bucket.",
+  "B": "Use CloudTrail event history in each account and export the events to the log archive account every week with a scheduled Lambda function.",
+  "C": "Create a CloudTrail organization trail that delivers to an S3 bucket in the log archive account, and enable log file integrity validation.",
+  "D": "Create an AWS Config aggregator in the log archive account that collects configuration items from all member accounts in the organization."},
+ ["C"],
+ [("Organization trail", "An organization trail created from the management account (or a CloudTrail delegated administrator account) logs events for every member account, including accounts that join later. Member accounts can see the trail but cannot modify or delete it."),
+  ("Central, isolated storage", "Delivering to a bucket in a separate log archive account, with a bucket policy that allows only CloudTrail to write, keeps logs out of reach of workload account administrators."),
+  ("Integrity validation", "Log file integrity validation creates digest files that use SHA-256 hashing and SHA-256 with RSA signing. You can then use the AWS CLI to prove whether log files were changed or deleted after CloudTrail delivered them.")],
+ {"A": "Per-account trails and buckets can be stopped or deleted by each account's administrators, must be set up again for every new account, and versioning does not prove integrity.",
+  "B": "Event history covers only 90 days of management events, and custom export code adds overhead with no way to prove the logs were not tampered with.",
+  "D": "AWS Config records resource configuration changes, not a complete record of API activity, and it provides no log file integrity validation."},
+ [("'All accounts, including future ones, tamper-evident API logs'", "This points to a CloudTrail organization trail with log file integrity validation that delivers to a log archive account."),
+  ("Defense in depth", "Add an SCP that denies cloudtrail:StopLogging and cloudtrail:DeleteTrail, and encrypt the logs with SSE-KMS. AWS Control Tower sets up this pattern automatically."),
+  ("Exam tip", "CloudTrail answers 'who did what, and when'. AWS Config answers 'what did the resource look like, and is it compliant'.")]))
+
+'''
+NEW2 = '''set2.append(q("1.3", ["Amazon S3", "S3 Object Ownership", "Cross-account access"],
+ "A company's S3 bucket receives data files from five partner companies. Each partner uploads with its own AWS account credentials, which a bucket policy allows. The company's analysts in the bucket-owning account get AccessDenied errors when they read many of the partner-uploaded objects because the objects are owned by the uploading accounts. The company wants to own every object in the bucket, including existing ones, without asking partners to change their upload process, and it does not want to use ACLs. Which solution meets these requirements?",
+ {"A": "Require partners to include the bucket-owner-full-control canned ACL on every upload, and add a bucket policy that denies uploads without that ACL.",
+  "B": "Ask each partner to attach an IAM policy to its upload role that grants the company's account s3:GetObject on the uploaded objects.",
+  "C": "Change the bucket's S3 Object Ownership setting to bucket owner enforced.",
+  "D": "Keep the S3 Object Ownership setting of object writer, and add a bucket policy statement that grants the analysts' IAM role s3:GetObject on all objects."},
+ ["C"],
+ [("Bucket owner enforced", "With this setting, ACLs are disabled and the bucket owner automatically owns and has full control over every object in the bucket, including objects that already exist and objects that other accounts upload later."),
+  ("No partner changes", "Partners keep uploading with their existing credentials and bucket policy permissions. Uploads that try to set ACLs other than bucket-owner-full-control are rejected."),
+  ("Policy-based access", "Once ACLs are disabled, access is controlled only by policies, so the analysts' IAM permissions and the bucket policy take effect for all objects.")],
+ {"A": "This relies on ACLs and requires every partner to change its upload requests, which violates both requirements. It also does not fix ownership of existing objects.",
+  "B": "Identity-based policies in the partner accounts cannot grant permissions to principals in another account, and the objects would still be owned by the partners.",
+  "D": "When another account owns an object, the bucket owner's bucket policy does not grant access to that object, so the analysts would still be denied."},
+ [("Cross-account uploads and ownership problems", "Set S3 Object Ownership to bucket owner enforced."),
+  ("Current defaults", "New buckets have ACLs disabled (bucket owner enforced) and Block Public Access turned on by default. AWS recommends keeping ACLs disabled except in rare cases."),
+  ("Exam tip", "bucket-owner-full-control is the legacy, ACL-based answer. On current exams, prefer bucket owner enforced.")]))
+
+'''

@@ -1,0 +1,294 @@
+[
+  {
+    "domain": 4,
+    "task": "4.1",
+    "topics": [
+      "Amazon S3",
+      "S3 Intelligent-Tiering",
+      "Archive Access tier",
+      "Deep Archive Access tier"
+    ],
+    "prompt": "A company keeps a 3 PB data lake in Amazon S3 Intelligent-Tiering by using only the default automatic access tiers. An analysis shows that about 60% of the objects have not been read for more than a year, but any object can unexpectedly become relevant again when an old case is reopened. Analysts can wait up to 12 hours for those long-untouched objects to become available. The company wants to lower storage costs further without building any access-tracking logic. Which solution meets these requirements MOST cost-effectively?",
+    "options": {
+      "A": "Add an S3 Lifecycle rule that transitions every object to S3 Glacier Deep Archive 365 days after object creation.",
+      "B": "Add an S3 Lifecycle rule that transitions every object to S3 Glacier Instant Retrieval 180 days after object creation.",
+      "C": "Activate the optional Archive Access and Deep Archive Access tiers in an S3 Intelligent-Tiering archive configuration for the bucket.",
+      "D": "Use S3 Inventory reports and S3 Batch Operations to copy objects whose last-modified date is older than 1 year into S3 Glacier Flexible Retrieval."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Access-based, not age-based:** S3 Intelligent-Tiering moves each object based on when it was last accessed. Activating the opt-in Archive Access (from 90 days without access) and Deep Archive Access (from 180 days without access) tiers sends only truly cold objects to the lowest-cost tiers.\n* **Automatic return:** When an archived object is restored, Intelligent-Tiering moves it back to the Frequent Access tier automatically, so reopened cases need no manual reclassification.\n* **Fits the latency budget:** Restores from the Deep Archive Access tier complete within 12 hours (Archive Access within 3-5 hours with standard retrieval), which the analysts have said is acceptable, and Intelligent-Tiering charges no retrieval fees for standard restores.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Lifecycle transitions are based on object age, not on last access. Old objects that are still being read would be archived and every read would then require a restore. Archived objects also never move back automatically.\n* **Option B is incorrect:** Glacier Instant Retrieval keeps millisecond access, which the company does not need, so it costs considerably more than the Deep Archive Access tier. It is also age-based and adds per-GB retrieval fees.\n* **Option D is incorrect:** Last-modified date is not last-access date, and this approach requires building and running a recurring Inventory and Batch Operations pipeline, which is the access-tracking logic the company wants to avoid.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Unpredictable access + can wait hours:** Choose S3 Intelligent-Tiering with the Archive Access and Deep Archive Access tiers activated.\n2. **Opt-in tiers:** The Archive Instant Access tier (90 days) is automatic. The Archive Access and Deep Archive Access tiers apply only after you create an archive configuration on the bucket, optionally scoped by prefix or tag.\n3. **Lifecycle vs Intelligent-Tiering:** Lifecycle rules suit known, age-based patterns. Intelligent-Tiering suits unknown or changing access patterns."
+  },
+  {
+    "domain": 4,
+    "task": "4.1",
+    "topics": [
+      "Amazon S3",
+      "S3 Glacier Deep Archive",
+      "Small object overhead"
+    ],
+    "prompt": "An IoT company writes about 400 million JSON telemetry objects to Amazon S3 each month. The average object size is 6 KB. The data must be retained for 10 years for warranty claims, is almost never read after 7 days, and can take up to 48 hours to retrieve when needed. A solutions architect must design the archival storage strategy. Which solution is MOST cost-effective?",
+    "options": {
+      "A": "Run a daily job that combines each day's objects into large compressed archive files, stores those files directly in S3 Glacier Deep Archive, and deletes the original small objects after 7 days.",
+      "B": "Create an S3 Lifecycle rule that transitions each telemetry object to S3 Glacier Deep Archive 7 days after creation.",
+      "C": "Store the objects in S3 Intelligent-Tiering and activate the Deep Archive Access tier so that objects move automatically after 180 days without access.",
+      "D": "Create an S3 Lifecycle rule that transitions each telemetry object to S3 Glacier Instant Retrieval 7 days after creation."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Per-object overhead:** Each object stored in S3 Glacier Flexible Retrieval or S3 Glacier Deep Archive adds about 40 KB of billable metadata (8 KB at S3 Standard rates and 32 KB at the archive rate). For a 6 KB object, the overhead is several times larger than the data itself.\n* **Request charges:** Lifecycle transitions and PUT requests are billed per object. Aggregating hundreds of millions of objects into a few large files reduces both the transition request fees and the metadata overhead.\n* **Meets retrieval needs:** Deep Archive retrieval completes within 12 hours (standard) or 48 hours (bulk), which fits the 48-hour requirement.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Transitioning 400 million tiny objects each month incurs high per-object transition fees and roughly 40 KB of overhead per object. S3 Lifecycle also does not transition objects smaller than 128 KB by default, so most objects would not move unless the default is overridden.\n* **Option C is incorrect:** Objects smaller than 128 KB are never monitored or moved by S3 Intelligent-Tiering. They are always billed at the Frequent Access tier rate, so these 6 KB objects would gain no savings.\n* **Option D is incorrect:** S3 Glacier Instant Retrieval has a 128 KB minimum billable object size, so each 6 KB object is billed as 128 KB. It is also more expensive per GB than Deep Archive and provides millisecond access that is not needed.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Batch small files before archiving:** For archive tiers, many small objects means paying for overhead and requests. Pack small files into larger objects first (for example, tar or zip files).\n2. **Minimum billable sizes:** S3 Standard-IA, One Zone-IA and Glacier Instant Retrieval bill a minimum of 128 KB per object. Glacier Flexible Retrieval and Deep Archive add about 40 KB of metadata per object.\n3. **Direct upload:** You can PUT objects directly into the DEEP_ARCHIVE storage class, which avoids a separate lifecycle transition step."
+  },
+  {
+    "domain": 4,
+    "task": "4.1",
+    "topics": [
+      "Amazon EBS",
+      "EBS Snapshots Archive",
+      "Amazon Data Lifecycle Manager"
+    ],
+    "prompt": "A company creates a month-end snapshot of each of its 4 TiB Amazon EBS volumes and must keep every month-end snapshot for 7 years for auditors. The snapshots are almost never restored. When an auditor does request one, a restore time of up to 3 days is acceptable. Daily snapshots are kept for only 14 days. Which solution will reduce the cost of storing the month-end snapshots the MOST?",
+    "options": {
+      "A": "Copy the month-end snapshots to a second AWS Region and delete the source copies.",
+      "B": "Configure an S3 Lifecycle rule on the bucket that stores EBS snapshots to transition them to S3 Glacier Deep Archive.",
+      "C": "Enable Recycle Bin retention rules for the month-end snapshots and then delete them.",
+      "D": "Use an Amazon Data Lifecycle Manager policy to move the month-end snapshots to the EBS Snapshots Archive tier."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Archive tier pricing:** EBS Snapshots Archive stores snapshots at up to 75% lower storage cost than the standard snapshot tier. It is designed for snapshots that are retained for 90 days or more and rarely accessed.\n* **Restore window fits:** Restoring an archived snapshot to the standard tier takes 24-72 hours, which is within the 3-day tolerance.\n* **Automation:** Data Lifecycle Manager snapshot policies can archive snapshots automatically on a schedule, so no custom scripting is needed.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** A cross-Region copy is billed at the same standard snapshot rate plus inter-Region data transfer. It does not reduce storage cost.\n* **Option B is incorrect:** EBS snapshots are stored in AWS-managed storage, not in a customer bucket. You cannot apply S3 Lifecycle rules to them.\n* **Option C is incorrect:** Recycle Bin protects against accidental deletion. Snapshots in Recycle Bin are billed at the standard snapshot rate and are permanently deleted when the retention period ends, so they are not a 7-year archive.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Long-term, rarely restored snapshots:** Use EBS Snapshots Archive (minimum 90-day archive period, 24-72 hour restore).\n2. **Full vs incremental:** An archived snapshot is stored as a full snapshot, not an incremental one. Archiving is most effective for monthly, quarterly or yearly snapshots that you keep for compliance.\n3. **Related features:** Recycle Bin protects against accidental deletion, and Fast Snapshot Restore speeds up restores. Neither one reduces the cost of long-term retention."
+  },
+  {
+    "domain": 4,
+    "task": "4.1",
+    "topics": [
+      "Amazon S3",
+      "S3 Storage Lens",
+      "S3 Lifecycle",
+      "Multipart upload"
+    ],
+    "prompt": "A video platform's upload service uses multipart uploads to write large files to an Amazon S3 bucket. The S3 Storage Lens dashboard shows that about 18% of the bucket's billed bytes are incomplete multipart upload parts older than 7 days, left behind by clients that disconnected mid-upload. S3 Versioning is not enabled. Which solution will remove this waste with the LEAST operational overhead?",
+    "options": {
+      "A": "Enable S3 Versioning and add a lifecycle rule that expires noncurrent object versions after 7 days.",
+      "B": "Add an S3 Lifecycle rule with an AbortIncompleteMultipartUpload action that runs 7 days after an upload is initiated.",
+      "C": "Generate a daily S3 Inventory report and use S3 Batch Operations to delete the objects that it lists as incomplete.",
+      "D": "Move the bucket to S3 Intelligent-Tiering so that the unused parts are moved automatically to lower-cost access tiers."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Built-in cleanup:** The AbortIncompleteMultipartUpload lifecycle action stops multipart uploads that are not completed within the specified number of days after they start, and deletes their stored parts.\n* **Hidden cost:** Parts from incomplete uploads are billed as storage but are not visible as objects. S3 Storage Lens reports these bytes so you can find the waste.\n* **Zero maintenance:** A single lifecycle rule runs automatically at the bucket or prefix level, with no scheduled jobs.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Upload parts are not object versions. Noncurrent-version expiration does not affect incomplete multipart uploads, and enabling versioning could add cost by keeping overwritten objects.\n* **Option C is incorrect:** S3 Inventory lists objects, not the parts of incomplete multipart uploads, so Batch Operations cannot target them. This option also adds recurring jobs to maintain.\n* **Option D is incorrect:** Incomplete multipart upload parts are not completed objects, so they are not moved between Intelligent-Tiering access tiers. Tiering would also only lower the cost of the waste instead of removing it.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Storage Lens:** Organization-wide visibility into storage usage and cost-optimization opportunities, such as incomplete multipart uploads and noncurrent versions.\n2. **Best practice:** Add an AbortIncompleteMultipartUpload rule (commonly 7 days) to any bucket that receives multipart uploads."
+  },
+  {
+    "domain": 4,
+    "task": "4.1",
+    "topics": [
+      "Amazon S3",
+      "S3 One Zone-IA",
+      "S3 Lifecycle"
+    ],
+    "prompt": "A photo-sharing application stores each uploaded original image under the originals/ prefix of an Amazon S3 Standard bucket. It also stores several resized renditions of each image under the renditions/ prefix. The renditions can be regenerated from the originals at any time. After 30 days, renditions are requested only a few times each month and must still load in milliseconds. Originals must survive the loss of an Availability Zone. Which solution is MOST cost-effective?",
+    "options": {
+      "A": "Create an S3 Lifecycle rule that transitions all objects in the bucket to S3 Standard-Infrequent Access (S3 Standard-IA) 30 days after creation.",
+      "B": "Create an S3 Lifecycle rule filtered on the renditions/ prefix that transitions objects to S3 One Zone-Infrequent Access (S3 One Zone-IA) 30 days after creation.",
+      "C": "Create an S3 Lifecycle rule filtered on the renditions/ prefix that transitions objects to S3 Glacier Flexible Retrieval 30 days after creation.",
+      "D": "Create an S3 Lifecycle rule that transitions all objects in the bucket to S3 One Zone-Infrequent Access (S3 One Zone-IA) 30 days after creation."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Reproducible data:** S3 One Zone-IA costs about 20% less than S3 Standard-IA. Because it stores data in a single AZ, it suits data that can be recreated, such as image renditions.\n* **Millisecond access:** One Zone-IA provides the same millisecond first-byte latency as S3 Standard.\n* **Scoped rule:** A prefix filter applies the transition only to renditions, so the irreplaceable originals stay in multi-AZ storage.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Standard-IA is valid but more expensive than One Zone-IA. Multi-AZ resilience is unnecessary for renditions that can be regenerated.\n* **Option C is incorrect:** Glacier Flexible Retrieval requires a restore that takes minutes to hours before an object can be read, which violates the millisecond requirement.\n* **Option D is incorrect:** Moving the originals to One Zone-IA means they would be lost if the Availability Zone were destroyed, which violates the durability requirement for originals.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** Infrequently accessed + easily reproducible + millisecond access means S3 One Zone-IA.\n2. **Lifecycle filters:** Use prefix or object-tag filters so that each class of data gets its own transition policy.\n3. **Transition timing:** Lifecycle rules can transition objects to Standard-IA or One Zone-IA only after they have been stored for at least 30 days."
+  },
+  {
+    "domain": 4,
+    "task": "4.2",
+    "topics": [
+      "Amazon EC2 Spot Instances",
+      "Amazon EC2 Auto Scaling",
+      "Allocation strategies"
+    ],
+    "prompt": "A company runs its CI build runners in an Amazon EC2 Auto Scaling group that uses only c5.2xlarge Spot Instances in a single Availability Zone with the lowest-price allocation strategy. Builds are retried automatically, but frequent Spot interruptions are now delaying releases. The company wants to keep using Spot Instances for cost savings while reducing interruptions. Which combination of actions should a solutions architect take? (Select TWO.)",
+    "options": {
+      "A": "Increase the maximum Spot price in the launch template to the On-Demand price so that the instances are no longer reclaimed.",
+      "B": "Configure a mixed instances policy that uses attribute-based instance type selection, which lets the group use many instance types with the required vCPU and memory ranges, across multiple Availability Zones.",
+      "C": "Replace the Spot Instances with On-Demand Capacity Reservations in the current Availability Zone.",
+      "D": "Change the Spot allocation strategy to price-capacity-optimized.",
+      "E": "Keep the lowest-price allocation strategy and set the number of Spot pools to 1 so that all instances come from the cheapest pool."
+    },
+    "isMulti": true,
+    "requiredCount": 2,
+    "correctAnswers": [
+      "B",
+      "D"
+    ],
+    "explanation": "### ✅ Why Options B & D are Correct\n\n* **More capacity pools:** Each instance type in each AZ is a separate Spot capacity pool. Attribute-based selection across many types and multiple AZs greatly increases the capacity that Spot can draw from.\n* **Smarter allocation:** The price-capacity-optimized strategy launches from the pools with the most available capacity and then chooses the lowest price among them. AWS recommends it for most Spot workloads because it lowers interruption rates.\n* **Savings preserved:** Both changes keep the workload on Spot pricing.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Spot interruptions are mainly caused by EC2 needing the capacity back, not by price. Raising the maximum price does not prevent capacity-driven interruptions.\n* **Option C is incorrect:** Capacity Reservations are billed at On-Demand rates whether or not they are used, which removes the Spot savings.\n* **Option E is incorrect:** Concentrating all instances in the single cheapest pool is the pattern most likely to be interrupted all at once.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Spot best practices:** Be flexible about instance types and AZs, use price-capacity-optimized allocation, and handle the two-minute interruption notice. Capacity Rebalancing can also launch replacements proactively.\n2. **Attribute-based selection:** Specify vCPU and memory ranges instead of a fixed list of instance types, so newer generations are included automatically."
+  },
+  {
+    "domain": 4,
+    "task": "4.2",
+    "topics": [
+      "AWS Lambda",
+      "AWS Step Functions",
+      "Wait state"
+    ],
+    "prompt": "An AWS Lambda function submits a document-conversion job to a partner's API and then polls the job status every 30 seconds until the job finishes. Jobs usually take 8-14 minutes, so each invocation runs for up to 15 minutes, mostly idle. The function runs about 300,000 times each month. The partner API does not support callbacks. Which solution will reduce cost the MOST?",
+    "options": {
+      "A": "Increase the function's memory allocation so that each invocation finishes faster.",
+      "B": "Move the polling loop into an AWS Step Functions Express workflow that uses a Wait state between status checks.",
+      "C": "Use an AWS Step Functions Standard workflow in which one short Lambda function submits the job, a Wait state pauses 60 seconds, and another short Lambda function checks the status in a Choice loop.",
+      "D": "Configure provisioned concurrency for the function so that invocations do not incur cold starts."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Stop paying for idle time:** Lambda bills for every millisecond that a function runs, including time spent sleeping. In the Step Functions pattern, the Lambda functions run for only milliseconds per check.\n* **Standard workflow pricing:** Standard workflows are billed per state transition, not per second of duration. Waiting for minutes in a Wait state therefore costs only the transitions involved.\n* **Duration fits:** Standard workflows can run for up to one year, so a 14-minute job is no problem.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** The function spends most of its time waiting on the partner, not computing. More memory raises the per-millisecond price without shortening the wait.\n* **Option B is incorrect:** Express workflows have a maximum duration of 5 minutes and are billed by duration. Jobs that take 8-14 minutes would fail, and long waits would still be billed.\n* **Option D is incorrect:** Provisioned concurrency adds a charge for keeping environments initialized. It addresses startup latency, not idle wait time.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Long waits in serverless:** Use a Step Functions Standard workflow with Wait states, or the callback (task token) pattern if the external system supports it.\n2. **Standard vs Express:** Standard: up to 1 year, billed per state transition. Express: up to 5 minutes, billed by requests and duration. Express suits high-volume, short workflows."
+  },
+  {
+    "domain": 4,
+    "task": "4.2",
+    "topics": [
+      "Amazon CloudFront",
+      "CloudFront Functions",
+      "Lambda@Edge"
+    ],
+    "prompt": "A media website serves 3 billion requests each month through Amazon CloudFront. A Node.js Lambda@Edge function on the viewer request event normalizes query strings, rewrites URLs to versioned paths, and redirects legacy paths. The function runs in under 1 ms, makes no network calls, and needs no access to the request body. The company wants to reduce the cost of this edge logic. Which solution meets this requirement?",
+    "options": {
+      "A": "Rewrite the logic as a CloudFront Function that is associated with the viewer request event.",
+      "B": "Reconfigure the Lambda@Edge function to use the arm64 architecture and the minimum memory setting.",
+      "C": "Move the Lambda@Edge function from the viewer request event to the origin response event.",
+      "D": "Move the logic to an AWS Lambda function URL in a single Region and configure it as an additional CloudFront origin."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Purpose-built:** CloudFront Functions run lightweight JavaScript for viewer request and viewer response events. They are intended for URL rewrites, redirects, header changes and cache-key normalization.\n* **Lower price:** CloudFront Functions cost about one-sixth as much as Lambda@Edge, are billed per invocation only, and run at every CloudFront edge location with sub-millisecond startup.\n* **Constraints met:** The logic needs no network access or request body and runs in under 1 ms, which fits within the limits of CloudFront Functions.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Lambda@Edge supports only the x86_64 architecture. Lowering memory still leaves per-request plus duration pricing, which costs more than CloudFront Functions.\n* **Option C is incorrect:** Origin response runs only on cache misses and only after the origin has been contacted. URL rewrites and redirects must happen before the cache lookup, so the logic would no longer work.\n* **Option D is incorrect:** Every request would travel to a single Region, which adds latency and Lambda charges instead of reducing cost.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Edge compute selection:** Simple, high-volume header or URL manipulation calls for CloudFront Functions. Network calls, request bodies, longer runtimes or origin events call for Lambda@Edge.\n2. **CloudFront KeyValueStore:** CloudFront Functions can read a KeyValueStore for redirect maps or feature flags without network calls."
+  },
+  {
+    "domain": 4,
+    "task": "4.2",
+    "topics": [
+      "Savings Plans",
+      "EC2 Instance Savings Plans",
+      "AWS Graviton"
+    ],
+    "prompt": "A company runs a steady, always-on workload on Graviton-based m7g instances in the eu-west-1 Region. The company has standardized on the m7g family in eu-west-1 for the next 3 years but expects to change instance sizes and move instances between Availability Zones as the application evolves. The workload cannot tolerate interruptions. Which purchasing option provides the LOWEST cost?",
+    "options": {
+      "A": "A 3-year Compute Savings Plan.",
+      "B": "Spot Instances in a capacity-optimized Auto Scaling group.",
+      "C": "3-year Standard Reserved Instances scoped to a single Availability Zone for the current instance size.",
+      "D": "A 3-year EC2 Instance Savings Plan for the m7g family in eu-west-1."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Largest Savings Plan discount:** EC2 Instance Savings Plans offer up to 72% off On-Demand in exchange for committing to one instance family in one Region.\n* **Flexibility still included:** The discount applies automatically to any size within the family, in any AZ in the Region, and to any OS or tenancy, which covers the expected size and AZ changes.\n* **Commitment matches plan:** The company has already committed to m7g in eu-west-1, so it gives up no flexibility it needs.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** A Compute Savings Plan provides flexibility across families, Regions, Fargate and Lambda, but its maximum discount (up to 66%) is lower. That flexibility is not needed here.\n* **Option B is incorrect:** Spot Instances can be interrupted with a two-minute notice, which the workload cannot tolerate.\n* **Option C is incorrect:** Zonal Reserved Instances are tied to a specific AZ and do not provide instance size flexibility, so the discount would stop applying when sizes or AZs change.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Savings Plan selection:** Fixed family and Region means an EC2 Instance Savings Plan (highest discount). Changing families, Regions or compute services means a Compute Savings Plan.\n2. **Zonal vs Regional RIs:** Zonal RIs reserve capacity in one AZ but lose size and AZ flexibility. Regional RIs provide flexibility but no capacity reservation."
+  },
+  {
+    "domain": 4,
+    "task": "4.3",
+    "topics": [
+      "Amazon DynamoDB",
+      "DynamoDB Standard-IA table class"
+    ],
+    "prompt": "A company stores 45 TB of historical order records in an Amazon DynamoDB table that uses provisioned capacity. Storage accounts for about 70% of the table's monthly cost because the records are read infrequently, but customer service agents must still be able to look up any order with single-digit millisecond latency through the existing application. Which solution will reduce cost with the LEAST application change?",
+    "options": {
+      "A": "Export the table to Amazon S3 and query old orders with Amazon Athena, and then delete the exported items from the table.",
+      "B": "Change the table class of the table to DynamoDB Standard-Infrequent Access (DynamoDB Standard-IA).",
+      "C": "Switch the table from provisioned capacity mode to on-demand capacity mode.",
+      "D": "Add a DynamoDB Accelerator (DAX) cluster in front of the table to reduce read capacity consumption."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Storage-dominated tables:** The DynamoDB Standard-IA table class lowers storage cost by up to 60% compared with the Standard table class, in exchange for higher read and write request prices. It suits tables where storage is the main cost.\n* **Same performance and API:** Standard-IA tables keep the same single-digit millisecond performance, durability and API, so the application does not change.\n* **Simple switch:** You can change the table class in place without downtime.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Athena queries take seconds, not single-digit milliseconds, and the application would have to be rewritten to query two data stores.\n* **Option C is incorrect:** Capacity mode affects throughput pricing only. Storage, which is 70% of the cost, would be billed the same.\n* **Option D is incorrect:** DAX adds node-hour charges and reduces read cost, but read throughput is not the main cost driver here.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Table class rule of thumb:** Choose Standard-IA when storage exceeds about 50% of a table's throughput (read and write) cost. Otherwise keep the Standard table class.\n2. **Other levers:** Use TTL to delete expired items at no cost and on-demand or provisioned capacity for throughput. Table class addresses only storage."
+  },
+  {
+    "domain": 4,
+    "task": "4.3",
+    "topics": [
+      "Amazon Aurora",
+      "Aurora cloning"
+    ],
+    "prompt": "A company's QA team needs a fresh, writable copy of a 12 TB Amazon Aurora MySQL production database every morning to run integration tests that modify only a small fraction of the data. The team currently restores the latest snapshot to a new cluster each day, and the company pays for a full 12 TB storage volume for every copy. Which solution is MOST cost-effective?",
+    "options": {
+      "A": "Create an Aurora clone of the production cluster each morning and delete the clone after the tests finish.",
+      "B": "Restore the snapshot to a cluster that uses a smaller DB instance class each morning.",
+      "C": "Add an Aurora Replica to the production cluster and direct the QA tests to the replica endpoint.",
+      "D": "Use AWS DMS to replicate the production database continuously to an Amazon RDS for MySQL DB instance for QA."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Copy-on-write:** Aurora cloning creates a new cluster that shares the source cluster's storage pages. New pages are created and billed only when data is changed in either cluster.\n* **Low storage cost:** Because the tests change only a small fraction of the data, the clone uses only a small amount of additional storage instead of a full 12 TB copy.\n* **Fast:** A clone is created much faster than a full snapshot restore, even for large databases.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** A smaller instance class lowers compute cost, but a snapshot restore still creates a full copy of the storage volume, and that copy is the main cost.\n* **Option C is incorrect:** Aurora Replicas are read-only and share the production cluster, so tests that modify data cannot run there and could affect production.\n* **Option D is incorrect:** DMS adds a replication instance and a full 12 TB copy of the data on RDS storage, which costs more than a clone.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Dev/test copies of Aurora:** Use Aurora cloning (copy-on-write) for fast, low-cost copies. It also works across accounts by sharing the cluster through AWS RAM.\n2. **Snapshot restore vs clone:** A restore creates a full, independent copy of the storage. A clone shares the existing pages until they change."
+  },
+  {
+    "domain": 4,
+    "task": "4.4",
+    "topics": [
+      "Amazon CloudFront",
+      "Amazon S3",
+      "Origin access control",
+      "Data transfer"
+    ],
+    "prompt": "A software company distributes installer files of up to 2 GB from a public Amazon S3 bucket in us-east-1 to anonymous users worldwide. The same few hundred files are downloaded repeatedly, and data transfer out from S3 to the internet is now about 350 TB each month. The company wants to reduce data transfer costs and improve download speeds. Which solution meets these requirements?",
+    "options": {
+      "A": "Enable S3 Transfer Acceleration on the bucket and publish the accelerated endpoint URLs.",
+      "B": "Enable Requester Pays on the bucket so that downloaders pay the data transfer charges.",
+      "C": "Create an Amazon CloudFront distribution with the bucket as the origin, restrict the bucket with origin access control (OAC), and publish the CloudFront URLs.",
+      "D": "Replicate the bucket to buckets in three more Regions with S3 Cross-Region Replication and use Amazon Route 53 latency-based routing."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Free origin fetches:** Data transfer from S3 to CloudFront is not charged. CloudFront data transfer out costs less per GB than S3 data transfer out to the internet and offers volume tiers.\n* **Caching:** Repeatedly downloaded files are served from edge caches, which reduces S3 GET requests and improves speed for users worldwide.\n* **Security:** OAC lets the bucket stay private and block public access while CloudFront serves the content.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Transfer Acceleration adds a per-GB charge on top of data transfer out and has no caching. It is designed to speed up long-distance transfers to and from a bucket, not to reduce cost.\n* **Option B is incorrect:** Requester Pays requires the requester to be an authenticated AWS account. Anonymous public users cannot download the files.\n* **Option D is incorrect:** Replication multiplies storage cost and adds inter-Region transfer charges, while the internet data transfer out from each bucket is still billed.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **High-volume static downloads:** Serve them through Amazon CloudFront with a private S3 origin and OAC (not the legacy OAI).\n2. **Cost lever:** Origin-to-CloudFront transfer is free, so CloudFront often reduces cost as well as latency."
+  },
+  {
+    "domain": 4,
+    "task": "4.4",
+    "topics": [
+      "Amazon ECR",
+      "AWS PrivateLink",
+      "VPC endpoints",
+      "NAT gateway"
+    ],
+    "prompt": "Amazon EC2 instances in private subnets pull large container images from Amazon ECR in the same Region about 25 TB each month. All traffic currently leaves through a NAT gateway, and the NAT gateway data processing charges have become a major cost. A solutions architect must remove NAT gateway charges for image pulls MOST cost-effectively. Which combination of steps should the solutions architect take? (Select TWO.)",
+    "options": {
+      "A": "Create interface VPC endpoints for com.amazonaws.<region>.ecr.api and com.amazonaws.<region>.ecr.dkr with private DNS enabled.",
+      "B": "Create an interface VPC endpoint for Amazon S3 to handle the image layer downloads.",
+      "C": "Enable ECR cross-Region replication so that images are copied closer to the instances.",
+      "D": "Replace the NAT gateway with an AWS Transit Gateway attachment to a shared egress VPC.",
+      "E": "Create a gateway VPC endpoint for Amazon S3 and associate it with the private subnets' route tables."
+    },
+    "isMulti": true,
+    "requiredCount": 2,
+    "correctAnswers": [
+      "A",
+      "E"
+    ],
+    "explanation": "### ✅ Why Options A & E are Correct\n\n* **ECR API and Docker endpoints:** The ecr.api and ecr.dkr interface endpoints carry authentication, manifest and registry API calls privately, without the NAT gateway.\n* **Layers come from S3:** ECR stores image layers in Amazon S3. A gateway endpoint for S3 carries the large layer downloads, has no hourly or per-GB charge, and works by adding a route to the route tables.\n* **Together:** With both in place, image pulls never touch the NAT gateway.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** An S3 interface endpoint would work, but it adds hourly and per-GB processing charges. The gateway endpoint is free, so it is the more cost-effective choice.\n* **Option C is incorrect:** The images are already in the same Region. Replication adds storage and transfer cost and does not change the NAT path.\n* **Option D is incorrect:** A Transit Gateway adds attachment and per-GB data processing charges, and the traffic would still need a NAT gateway in the egress VPC.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **ECR private access:** Requires ecr.api, ecr.dkr and an S3 endpoint (gateway preferred). Add a CloudWatch Logs endpoint if tasks send logs.\n2. **Gateway endpoints:** S3 and DynamoDB gateway endpoints are free. Use them before paying NAT gateway or interface endpoint processing charges."
+  }
+]

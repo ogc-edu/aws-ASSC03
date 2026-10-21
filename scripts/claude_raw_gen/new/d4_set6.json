@@ -1,0 +1,293 @@
+[
+  {
+    "domain": 4,
+    "task": "4.1",
+    "topics": [
+      "Amazon S3",
+      "S3 Glacier Deep Archive",
+      "S3 Lifecycle"
+    ],
+    "prompt": "A company's IoT platform writes about 300 million sensor readings each month to an Amazon S3 bucket. Each reading is stored as an individual 6 KB JSON object. After 30 days the data is accessed only for rare audits, and audits always retrieve a full day of readings for one device fleet at a time. The company wants to move the data to Amazon S3 Glacier Deep Archive to reduce cost, but a cost estimate shows that the archived data would cost more than expected. Which solution will MOST cost-effectively archive the data?",
+    "options": {
+      "A": "Create an S3 Lifecycle rule that transitions every object to S3 Glacier Deep Archive after 30 days, and add an object size filter that includes objects smaller than 128 KB.",
+      "B": "Create an S3 Lifecycle rule that transitions the objects to S3 Glacier Instant Retrieval after 30 days and to S3 Glacier Deep Archive after 90 days.",
+      "C": "Run a daily job that combines each fleet's readings for the day into a single compressed archive file, upload the archive directly to the S3 Glacier Deep Archive storage class, and expire the individual objects with an S3 Lifecycle rule.",
+      "D": "Enable S3 Intelligent-Tiering on the bucket and activate the Deep Archive Access tier so that objects move automatically after 180 days without access."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Per-object overhead dominates for tiny objects:** Every object archived to S3 Glacier Flexible Retrieval or Glacier Deep Archive carries about 40 KB of extra billable metadata (32 KB at the archive rate plus 8 KB at S3 Standard rates), and lifecycle transitions are billed per 1,000 objects. For 6 KB objects the overhead is several times the size of the data itself.\n* **Aggregation fixes both costs:** Combining one day of readings per fleet into a single compressed object turns millions of objects into a handful, which removes most transition request charges and the per-object metadata overhead, and compression shrinks the stored bytes.\n* **Matches the access pattern:** Audits always retrieve a full day for one fleet, so one archive per fleet per day is exactly the unit that is restored.\n* **Direct upload to the archive class:** Writing the archive with the DEEP_ARCHIVE storage class avoids a separate lifecycle transition request, and a lifecycle expiration rule removes the original small objects.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Lifecycle rules skip objects smaller than 128 KB by default, and overriding that filter only makes the problem worse: each 6 KB object would still incur transition request charges and about 40 KB of archive metadata overhead.\n* **Option B is incorrect:** Adding an intermediate Glacier Instant Retrieval step adds a second round of per-object transition charges, and Glacier Instant Retrieval bills each object as at least 128 KB. The tiny-object overhead is not solved.\n* **Option D is incorrect:** S3 Intelligent-Tiering does not auto-tier objects smaller than 128 KB (they always stay in the Frequent Access tier), so 6 KB objects would never reach the Deep Archive Access tier.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Small objects + Glacier = aggregate first:** When a scenario has millions of tiny objects and an archive tier, the cost-effective answer is to batch them into larger objects (tar/zip/Parquet) before archiving.\n2. **128 KB thresholds:** Since September 2024, S3 Lifecycle by default does not transition objects smaller than 128 KB, Intelligent-Tiering does not tier them, and Glacier Instant Retrieval and Standard-IA bill a 128 KB minimum.\n3. **Batch vs individual uploads:** The exam guide explicitly lists 'batch uploads to Amazon S3 compared with individual uploads' as a cost skill; request charges scale with object count, not bytes."
+  },
+  {
+    "domain": 4,
+    "task": "4.1",
+    "topics": [
+      "Amazon EBS",
+      "EBS Snapshots Archive"
+    ],
+    "prompt": "A company takes a full Amazon EBS snapshot of each of its database server volumes at the end of every quarter and must keep each quarter-end snapshot for 7 years for compliance. The quarter-end snapshots are restored only if an auditor requests historical data, and a restore time of up to 3 days is acceptable. The company also keeps daily snapshots for 14 days for operational recovery. Which solution will reduce the storage cost of the quarter-end snapshots the MOST?",
+    "options": {
+      "A": "Move the quarter-end snapshots to the EBS Snapshots Archive tier and keep the daily snapshots in the standard tier.",
+      "B": "Enable EBS fast snapshot restore on the quarter-end snapshots and delete the daily snapshots after 7 days.",
+      "C": "Copy the quarter-end snapshots to a second AWS Region and delete them from the primary Region.",
+      "D": "Create Amazon Machine Images (AMIs) from the quarter-end snapshots and deregister the original snapshots."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Built for long-term, rarely restored snapshots:** EBS Snapshots Archive stores snapshots at up to 75% lower storage cost than the standard tier and is intended for snapshots that must be retained for 90 days or longer and are rarely accessed.\n* **Restore time fits:** Restoring an archived snapshot to the standard tier takes up to 24-72 hours, which is within the 3-day tolerance stated in the scenario.\n* **Daily snapshots stay incremental:** Short-lived operational snapshots remain in the standard tier where they are incremental and can be restored immediately; archived snapshots are converted to full snapshots, which suits a once-per-quarter compliance copy.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Fast snapshot restore adds an hourly charge per snapshot per Availability Zone to remove initialization latency; it increases cost and does nothing for long-term retention.\n* **Option C is incorrect:** Copying snapshots to another Region adds cross-Region data transfer charges and stores them at the same standard-tier rate, so there is no storage saving.\n* **Option D is incorrect:** An AMI is backed by the same EBS snapshots; the snapshots cannot be deleted while the AMI references them, and the storage cost is unchanged.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'Retain EBS snapshots for years, rarely restored, restore in hours or days acceptable' = EBS Snapshots Archive (minimum 90-day retention in the archive tier).\n2. **Automation:** Amazon Data Lifecycle Manager and AWS Backup can both create snapshots on a schedule and move them to the archive tier automatically.\n3. **Don't confuse FSR:** Fast snapshot restore is a performance feature (no lazy loading on restore) and always adds cost."
+  },
+  {
+    "domain": 4,
+    "task": "4.1",
+    "topics": [
+      "AWS Cost and Usage Report",
+      "AWS Data Exports",
+      "Amazon Athena",
+      "Cost allocation tags"
+    ],
+    "prompt": "A company's finance team must allocate storage costs to 40 internal teams. Each Amazon S3 bucket, Amazon EFS file system, and Amazon EBS volume has an activated cost allocation tag named team. The finance team wants hourly line-item cost data that includes resource IDs and tag values, and must keep this data for at least 12 months, and analysts want to query the data with standard SQL and join it with internal HR data. Which solution meets these requirements?",
+    "options": {
+      "A": "Use AWS Cost Explorer with resource-level data enabled, group by the team tag, and download the report as CSV each month.",
+      "B": "Create a cost budget in AWS Budgets for each team that filters on the team tag, and configure daily budget reports that are emailed to the finance team.",
+      "C": "Use the AWS Trusted Advisor cost optimization checks and export the results to an Amazon S3 bucket for analysis.",
+      "D": "Create a standard data export (CUR 2.0) in AWS Data Exports with hourly granularity and resource IDs included, deliver it to Amazon S3 in Parquet format, and query it with Amazon Athena."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Most granular billing data:** The Cost and Usage Report, delivered through AWS Data Exports as CUR 2.0, contains line items at hourly granularity with resource IDs and columns for activated cost allocation tags.\n* **SQL-ready:** Delivering the export to Amazon S3 in Parquet format lets analysts query it with Amazon Athena using standard SQL and join it with other datasets such as HR data stored in S3.\n* **Retention under your control:** Each export delivery is stored in your own S3 bucket, so the company keeps line-item data for 12 months or longer and can apply S3 Lifecycle rules to it.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Cost Explorer resource-level data covers only the most recent 14 days, and Cost Explorer does not provide SQL access or joins with external data.\n* **Option B is incorrect:** AWS Budgets tracks spend against thresholds; budget reports summarize budget status and do not provide hourly line items with resource IDs.\n* **Option C is incorrect:** Trusted Advisor checks identify optimization opportunities (idle or underutilized resources); they are not a cost allocation or billing data source.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'Line-item', 'resource IDs', 'hourly', 'query with SQL/Athena', 'BI tool' = Cost and Usage Report (CUR 2.0 via AWS Data Exports) in S3 + Athena.\n2. **Tool roles:** Cost Explorer = visual analysis and forecasting; Budgets = thresholds and alerts/actions; CUR/Data Exports = the raw, most detailed billing dataset.\n3. **Tags must be activated:** User-defined tags appear in billing data only after they are activated as cost allocation tags in the Billing console of the management (payer) account."
+  },
+  {
+    "domain": 4,
+    "task": "4.2",
+    "topics": [
+      "AWS Budgets",
+      "Budget actions",
+      "AWS Organizations",
+      "SCPs"
+    ],
+    "prompt": "A company gives each developer a sandbox AWS account in an organization in AWS Organizations. Developers frequently launch large Amazon EC2 instances and forget about them. The company wants each sandbox account to be limited to $500 of monthly spend. When forecasted monthly spend for an account reaches 100% of the limit, the company wants to automatically prevent new EC2 instances from being launched in that account without stopping existing workloads, and with the LEAST operational overhead. Which solution meets these requirements?",
+    "options": {
+      "A": "Configure AWS Cost Anomaly Detection with a monitor for each linked account and an Amazon SNS subscription that notifies the developer when an anomaly is detected.",
+      "B": "Create a budget in AWS Budgets for each sandbox account with a 100% forecasted-spend threshold and a budget action that attaches an SCP denying ec2:RunInstances.",
+      "C": "Create an AWS Config rule in each sandbox account that checks EC2 instance types against an approved list and invokes an AWS Systems Manager Automation runbook to terminate noncompliant instances.",
+      "D": "Use AWS Trusted Advisor to identify low-utilization Amazon EC2 instances in each sandbox account every week and send the check results to the developers by email so they can clean up."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Budget actions are native enforcement:** AWS Budgets can run budget actions when an actual or forecasted threshold is crossed. Supported actions are applying an IAM policy, applying a service control policy, or stopping specific EC2 or RDS instances.\n* **Prevent, don't stop:** Attaching an SCP that denies ec2:RunInstances blocks new launches across the whole account while leaving running workloads untouched, exactly as required.\n* **Low overhead:** The budget, threshold, and action are configured once (and can be created per account from the management account); actions can run automatically or require approval.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Cost Anomaly Detection detects unusual spend patterns with machine learning and sends alerts, but it cannot enforce a fixed $500 limit or block launches.\n* **Option C is incorrect:** A custom AWS Config rule with remediation evaluates resource configuration, not spend, and terminating instances violates the requirement not to stop existing workloads. It also has more overhead.\n* **Option D is incorrect:** Trusted Advisor provides weekly recommendations only; it does not enforce limits or act automatically.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'Automatically take action when spend/forecast crosses a threshold' = AWS Budgets with budget actions (IAM policy, SCP, or stop EC2/RDS instances).\n2. **Alert vs enforce:** Budgets alerts and Cost Anomaly Detection notify; only budget actions (or custom automation) change permissions or stop resources.\n3. **Forecasted thresholds:** Budgets can alert on forecasted spend, which lets you act before the money is actually spent."
+  },
+  {
+    "domain": 4,
+    "task": "4.2",
+    "topics": [
+      "AWS Organizations",
+      "Consolidated billing",
+      "Savings Plans"
+    ],
+    "prompt": "A company purchased a 3-year Compute Savings Plan in its organization's management account. AWS Cost Explorer shows that Savings Plan utilization is only 62% because the company recently shut down several workloads. The company has just acquired a subsidiary that runs a large, steady Amazon EC2 and AWS Fargate workload in three standalone AWS accounts that are billed separately. The company wants to use the unused Savings Plan commitment as quickly as possible with the LEAST effort. What should a solutions architect do?",
+    "options": {
+      "A": "Sell the unused portion of the Compute Savings Plan on the Reserved Instance Marketplace and buy a new Savings Plan in each subsidiary account.",
+      "B": "Use AWS Resource Access Manager (AWS RAM) to share the Compute Savings Plan with the three subsidiary accounts.",
+      "C": "Invite the three subsidiary accounts to join the organization so that consolidated billing applies, and keep discount sharing turned on in the billing preferences.",
+      "D": "Migrate the subsidiary's workloads into the management account by using AWS Application Migration Service so that the Savings Plan covers them."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Consolidated billing shares discounts:** With consolidated billing in AWS Organizations, Savings Plans and Reserved Instance discounts purchased in any account apply to eligible usage in all other accounts in the organization when discount sharing is enabled (the default).\n* **Compute Savings Plans are flexible:** A Compute Savings Plan applies across EC2 instance families, sizes, Regions, operating systems, and to Fargate and Lambda, so the subsidiary's EC2 and Fargate usage is eligible as soon as the accounts join.\n* **Least effort:** Inviting accounts into the organization requires no workload changes and no new purchases.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Savings Plans cannot be sold on the Reserved Instance Marketplace (only certain EC2 Standard Reserved Instances can), and buying more commitment increases cost.\n* **Option B is incorrect:** Savings Plans are not shareable resources in AWS RAM; discount sharing is controlled by consolidated billing and billing preferences.\n* **Option D is incorrect:** Migrating workloads between accounts is a large, risky project and is unnecessary because consolidated billing already shares the discount across accounts.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'Unused RIs or Savings Plans' + 'other accounts' = bring the accounts into the same AWS Organization (consolidated billing) with discount sharing on.\n2. **Sharing preferences:** The management account can turn RI and Savings Plans discount sharing on or off for specific accounts, for example to keep a business unit's discounts for itself.\n3. **Other consolidated billing benefits:** One bill, and combined usage for volume pricing tiers (such as S3 storage tiers and data transfer)."
+  },
+  {
+    "domain": 4,
+    "task": "4.3",
+    "topics": [
+      "Amazon DynamoDB",
+      "DynamoDB Standard-IA table class"
+    ],
+    "prompt": "A retail company stores order history in an Amazon DynamoDB table that uses provisioned capacity with auto scaling. The table holds 40 TB of data and grows by 1 TB each month. Customers occasionally view old orders, and AWS Cost Explorer shows that storage accounts for more than 80% of the table's monthly cost, while read and write capacity costs are small. The application must continue to read any order with single-digit millisecond latency. Which change will reduce the table's cost the MOST?",
+    "options": {
+      "A": "Change the table class of the table to DynamoDB Standard-Infrequent Access (DynamoDB Standard-IA).",
+      "B": "Switch the table to on-demand capacity mode.",
+      "C": "Purchase DynamoDB reserved capacity for the table's provisioned read and write capacity.",
+      "D": "Export the table to Amazon S3 each month and add an Amazon ElastiCache cluster in front of the table."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Storage-dominated tables:** The DynamoDB Standard-IA table class lowers storage cost by about 60% compared with the Standard table class, in exchange for higher read and write request costs. It is designed for tables where storage is the dominant cost.\n* **Same performance:** Standard-IA tables keep the same single-digit millisecond performance, durability, and availability as Standard tables, and the table class can be changed without downtime or application changes.\n* **Fits this cost profile:** With storage above 80% of spend and small throughput costs, the storage saving far outweighs the higher per-request price.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** On-demand mode changes how throughput is billed; it does not reduce storage cost, which is the main cost driver here.\n* **Option C is incorrect:** Reserved capacity discounts provisioned throughput only, which is a small part of the bill. Reserved capacity is also not available for Standard-IA tables, but storage cost is the problem to solve.\n* **Option D is incorrect:** Exporting to S3 does not remove the data from the table, and adding ElastiCache adds cost; neither reduces DynamoDB storage charges.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'DynamoDB storage is the main cost' + 'infrequently accessed data' + 'keep same latency' = DynamoDB Standard-IA table class.\n2. **Throughput vs storage levers:** Capacity mode, auto scaling, and reserved capacity optimize throughput cost; table class and TTL optimize storage cost.\n3. **Switching rules:** You can switch a table's class (Standard <-> Standard-IA) up to twice in a trailing 30-day period."
+  },
+  {
+    "domain": 4,
+    "task": "4.3",
+    "topics": [
+      "Amazon Redshift",
+      "Amazon Redshift Serverless"
+    ],
+    "prompt": "A company runs a 4-node Amazon Redshift provisioned cluster 24 hours a day for a marketing analytics team. The team runs ad hoc queries on unpredictable days, usually for a few hours at a time and totaling about 25 hours each month. Query performance must remain similar during those sessions, and the team does not want to manage scheduling or resizing. Which solution is the MOST cost-effective?",
+    "options": {
+      "A": "Purchase Reserved Nodes for the existing provisioned cluster for a 1-year term.",
+      "B": "Migrate the data warehouse to Amazon Redshift Serverless and set a base capacity that meets the query performance requirement.",
+      "C": "Create an Amazon EventBridge Scheduler schedule that pauses the cluster every evening and resumes it every morning on weekdays.",
+      "D": "Migrate the data to Amazon Aurora PostgreSQL and run the queries against an Aurora Replica."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Pay only when queries run:** Redshift Serverless bills compute in Redshift Processing Unit (RPU) hours on a per-second basis only while queries are running; there is no compute charge when the warehouse is idle. Storage is billed separately.\n* **No capacity management:** Serverless automatically provisions and scales capacity, so the team does not schedule pause/resume or resize clusters.\n* **Fits the usage:** About 25 active hours a month is a small fraction of the roughly 730 hours a provisioned cluster bills.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Reserved Nodes discount a cluster that runs all month; they still pay for about 700 idle hours a month and lock the company into a term.\n* **Option C is incorrect:** A fixed weekday schedule does not match unpredictable usage: the cluster would be paused when the team needs it on some days and running idle for most scheduled hours on others.\n* **Option D is incorrect:** Aurora PostgreSQL is a row-oriented OLTP engine; it is not a cost-effective replacement for a columnar data warehouse, and a provisioned Aurora cluster also bills 24/7.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'Intermittent/unpredictable analytics' + 'no capacity management' = Redshift Serverless. 'Steady 24/7 warehouse' = provisioned RA3 with Reserved Nodes.\n2. **Pause/resume:** Pausing a provisioned cluster helps only for predictable idle windows.\n3. **Columnar for analytics:** Redshift's columnar storage and compression scan far less data than row-based OLTP engines for analytic queries."
+  },
+  {
+    "domain": 4,
+    "task": "4.3",
+    "topics": [
+      "Amazon Aurora",
+      "Aurora Serverless v2",
+      "Aurora Replicas"
+    ],
+    "prompt": "A ticketing company runs an Amazon Aurora MySQL cluster with one provisioned db.r6g.2xlarge writer and three provisioned db.r6g.4xlarge Aurora Replicas. Write traffic is steady. Read traffic is low most of the day, but when popular events go on sale, read traffic increases 10 times within seconds for 15-30 minutes. The replicas are sized for these peaks and are idle most of the time. The company wants to reduce cost while serving read spikes immediately. Which solution meets these requirements?",
+    "options": {
+      "A": "Replace the three replicas with one db.r6g.16xlarge replica and route all reads to it.",
+      "B": "Configure Aurora Auto Scaling for replicas with a target tracking policy on average CPU utilization, and reduce the minimum to one small provisioned replica.",
+      "C": "Convert the entire cluster, including the writer, to Aurora Serverless v2 and set the maximum capacity to the size of the current writer.",
+      "D": "Replace the provisioned replicas with Aurora Serverless v2 reader instances in promotion tiers 2-15 and set a minimum and maximum ACU range that covers normal and peak read load."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Mixed-configuration clusters:** An Aurora cluster can combine a provisioned writer with Aurora Serverless v2 readers. Serverless v2 readers scale capacity in place, in fine-grained ACU increments, within seconds.\n* **Pay for what is used:** Serverless v2 bills per ACU-second, so readers run at a small capacity most of the day and scale up only during on-sale events, instead of paying for three peak-sized replicas all day.\n* **Independent scaling:** Readers in promotion tiers 2-15 scale based on their own load instead of tracking the writer's capacity, which is correct for read-only spikes.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** A single 16xlarge replica is even larger and still billed 24/7, and it removes reader redundancy.\n* **Option B is incorrect:** Replica auto scaling adds new provisioned instances, which take several minutes to create and become available. That is too slow for spikes that arrive within seconds and last only 15-30 minutes.\n* **Option C is incorrect:** Write traffic is steady and already right-sized on a provisioned instance; capping the cluster at the writer's size could also limit read capacity during peaks. The problem is only the over-provisioned readers.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'Spiky/unpredictable database load' + 'scale in seconds' + 'pay for actual usage' = Aurora Serverless v2.\n2. **Steady vs spiky:** Keep steady components on provisioned instances (optionally with Reserved Instances) and move spiky components to Serverless v2.\n3. **Promotion tiers:** Serverless v2 readers in tiers 0-1 scale with the writer so they can take over after failover; tiers 2-15 scale independently."
+  },
+  {
+    "domain": 4,
+    "task": "4.3",
+    "topics": [
+      "Amazon RDS",
+      "Reserved DB instances",
+      "Amazon EventBridge Scheduler"
+    ],
+    "prompt": "A company runs its production workload on Amazon RDS for PostgreSQL Multi-AZ DB instances that have run continuously at a steady size for 2 years. The company also has 25 single-AZ RDS for PostgreSQL development DB instances that developers use only from 08:00 to 19:00 on weekdays. The company will keep both environments for at least 3 more years. Which combination of actions will reduce RDS costs the MOST? (Select TWO.)",
+    "options": {
+      "A": "Purchase a Compute Savings Plan that covers the hourly cost of the production DB instances.",
+      "B": "Purchase 3-year Reserved DB instances that match the production DB instance class family, engine, Region, and Multi-AZ deployment.",
+      "C": "Convert the development DB instances to Multi-AZ DB clusters with readable standbys so developers can share them.",
+      "D": "Stop the development DB instances once with the RDS console. RDS keeps them stopped until a developer starts them.",
+      "E": "Use Amazon EventBridge Scheduler to call the RDS StopDBInstance and StartDBInstance APIs for the development DB instances outside and at the start of working hours."
+    },
+    "isMulti": true,
+    "requiredCount": 2,
+    "correctAnswers": [
+      "B",
+      "E"
+    ],
+    "explanation": "### ✅ Why Options B & E are Correct\n\n* **Option B - Reserved DB instances for steady production:** A steady, long-lived production database is the textbook case for RDS Reserved Instances. A 3-year term gives the largest discount, and size flexibility within an instance family applies for PostgreSQL.\n* **Option E - schedule stop/start for dev:** Development instances are needed only about 55 of 168 hours a week. Stopping them outside working hours removes the instance-hour charge (storage is still billed). EventBridge Scheduler can call the RDS API directly on a cron schedule without servers.\n* **Combined effect:** Committing to discounts for always-on capacity and turning off idle capacity are the two main levers for database compute cost.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Compute Savings Plans apply to EC2, Fargate, and Lambda usage, not to Amazon RDS DB instances.\n* **Option C is incorrect:** Multi-AZ DB clusters run three DB instances and cost more than a single-AZ instance; high availability is not needed for development.\n* **Option D is incorrect:** A stopped RDS DB instance is automatically started again after 7 days, so a one-time stop does not keep the instances off. A recurring schedule is required.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'Steady 24/7 RDS for years' = RDS Reserved Instances. 'Dev/test used only in business hours' = scheduled stop/start.\n2. **7-day rule:** RDS and Aurora automatically restart a stopped instance or cluster after 7 days; use a recurring schedule (EventBridge Scheduler, Lambda, or Instance Scheduler on AWS).\n3. **Savings Plans scope:** Compute Savings Plans cover EC2, Fargate, and Lambda only; database instances use database-specific commitment options such as Reserved DB instances."
+  },
+  {
+    "domain": 4,
+    "task": "4.4",
+    "topics": [
+      "Amazon CloudFront",
+      "Amazon S3",
+      "Data transfer"
+    ],
+    "prompt": "A software company distributes installer files and patches to customers worldwide directly from a public Amazon S3 bucket in us-east-1. The bucket serves about 400 TB each month, and the same few hundred files make up most downloads after each release. AWS Cost Explorer shows that data transfer out to the internet from Amazon S3 is the company's largest cost. Which solution will reduce this cost the MOST while improving download performance?",
+    "options": {
+      "A": "Put an Amazon CloudFront distribution with origin access control (OAC) in front of the bucket, make the bucket private, and serve downloads from the distribution.",
+      "B": "Enable S3 Transfer Acceleration on the bucket and update the download URLs to use the accelerate endpoint.",
+      "C": "Use S3 Cross-Region Replication to copy the bucket to four other AWS Regions, and use Amazon Route 53 latency-based routing records to direct each customer to the nearest bucket for downloads.",
+      "D": "Create an AWS Global Accelerator standard accelerator with the S3 bucket as an endpoint."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Free origin fetches:** Data transfer from Amazon S3 (and other AWS origins) to CloudFront edge locations is free. Customers are billed at CloudFront's data transfer out rates, which are lower than S3 internet data transfer out rates.\n* **Caching:** Because the same files are downloaded repeatedly, most requests are served from edge caches, which reduces origin requests and speeds up downloads for global customers.\n* **Secure origin:** Origin access control lets the bucket stay private with Block Public Access enabled while CloudFront signs requests to S3.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Transfer Acceleration adds a per-GB charge on top of data transfer and is mainly intended to speed up long-distance uploads into S3; it does not cache content.\n* **Option C is incorrect:** Replication adds inter-Region transfer and duplicate storage costs in four more Regions, and customers still pay S3 internet data transfer out rates.\n* **Option D is incorrect:** Global Accelerator does not support S3 buckets as endpoints and does not cache content; it adds fixed hourly and premium data transfer fees.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'High data transfer out from S3/ALB/EC2' + 'repeated downloads' + 'global users' = Amazon CloudFront in front of the origin.\n2. **OAC, not OAI:** Use origin access control for S3 origins; origin access identity is legacy.\n3. **Global Accelerator vs CloudFront:** Global Accelerator = static anycast IPs and fast failover for TCP/UDP apps (no caching); CloudFront = caching CDN for HTTP(S)."
+  },
+  {
+    "domain": 4,
+    "task": "4.4",
+    "topics": [
+      "Amazon EC2",
+      "Data transfer",
+      "Availability Zones",
+      "Placement groups"
+    ],
+    "prompt": "A company runs a non-production Apache Spark cluster on Amazon EC2 instances in an Auto Scaling group that spans three Availability Zones in one VPC. The cluster is used for nightly test runs and is recreated if it fails. The nodes exchange about 300 TB of shuffle data with each other each month, and the AWS Cost and Usage Report shows a large charge for the DataTransfer-Regional-Bytes usage type. Which solution will reduce this cost the MOST?",
+    "options": {
+      "A": "Configure the nodes to communicate by using public IPv4 addresses through an internet gateway.",
+      "B": "Create a VPC peering connection for each pair of subnets in different Availability Zones.",
+      "C": "Launch all the cluster nodes in a single Availability Zone, in a cluster placement group.",
+      "D": "Send inter-node traffic through an AWS Transit Gateway attachment in each Availability Zone."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Cross-AZ traffic is billed:** Data transferred between EC2 instances in different Availability Zones in the same Region is charged per GB in each direction (the DataTransfer-Regional-Bytes usage type). Traffic between instances in the same AZ that use private IP addresses is free.\n* **Availability isn't required:** The cluster is non-production and easily recreated, so multi-AZ resilience is not worth the cross-AZ charges on 300 TB of shuffle traffic.\n* **Bonus performance:** A cluster placement group packs instances close together for low latency and high network throughput between nodes.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Using public IPs makes the traffic more expensive, not cheaper: traffic using public or Elastic IP addresses is charged even within a Region, and public IPv4 addresses have an hourly charge.\n* **Option B is incorrect:** Subnets in the same VPC already route to each other; VPC peering connects separate VPCs and does not remove cross-AZ data transfer charges.\n* **Option D is incorrect:** Transit Gateway adds an hourly attachment charge and a per-GB data processing charge on top of the existing transfer cost.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'DataTransfer-Regional-Bytes' or 'inter-AZ transfer' on the bill = traffic crossing Availability Zones.\n2. **Required availability by workload class:** Production: spread across AZs and accept the transfer cost. Non-production or re-creatable batch: a single AZ is often the cost-optimal choice.\n3. **Keep traffic private and local:** Same-AZ private-IP traffic is free; cross-AZ, public-IP, and inter-Region traffic are billed."
+  },
+  {
+    "domain": 4,
+    "task": "4.4",
+    "topics": [
+      "AWS Site-to-Site VPN",
+      "AWS Direct Connect"
+    ],
+    "prompt": "A company is opening a small regional office that needs private, encrypted connectivity to applications in a VPC. The office will transfer about 150 GB of data each month, and occasional latency variation is acceptable. The office has a reliable business internet connection, and connectivity must be available within one week. Which solution is the MOST cost-effective?",
+    "options": {
+      "A": "Order a 1 Gbps AWS Direct Connect dedicated connection at the nearest Direct Connect location and create a private virtual interface.",
+      "B": "Create an AWS Site-to-Site VPN connection between a virtual private gateway on the VPC and the office's customer gateway device.",
+      "C": "Deploy AWS Client VPN and install the VPN client on every computer in the office.",
+      "D": "Order a hosted AWS Direct Connect connection from a partner and configure a Site-to-Site VPN over the connection for encryption."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Low cost for low volume:** Site-to-Site VPN is billed per connection-hour plus standard data transfer out; at 150 GB a month it costs far less than Direct Connect port hours and circuits.\n* **Fast to deploy:** A VPN can be configured in hours over the existing internet connection, while Direct Connect requires ordering a port or hosted connection and a physical cross-connect, which typically takes weeks.\n* **Encrypted by design:** Site-to-Site VPN uses IPsec tunnels (two per connection for redundancy), which meets the encryption requirement.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** A dedicated Direct Connect port costs more each month, takes weeks to provision, and does not encrypt traffic by default. Its consistent performance is not required here.\n* **Option C is incorrect:** Client VPN is billed per endpoint association hour and per active client connection-hour, and is meant for individual remote users, not for site-to-site connectivity for a whole office.\n* **Option D is incorrect:** This combines the cost and lead time of Direct Connect with a VPN. It is used when consistent performance and encryption are both required, which is not the case here.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Connectivity decision:** Low volume, fast setup, internet acceptable = Site-to-Site VPN. High volume, consistent latency, lower per-GB egress = Direct Connect.\n2. **VPN bandwidth:** Each VPN tunnel supports up to about 1.25 Gbps; use multiple tunnels with ECMP on a transit gateway for more throughput.\n3. **Client VPN vs Site-to-Site:** Client VPN = individual users on their own devices; Site-to-Site VPN = network-to-network."
+  },
+  {
+    "domain": 4,
+    "task": "4.4",
+    "topics": [
+      "NAT gateway",
+      "VPC endpoints",
+      "Amazon ECR",
+      "Amazon ECS",
+      "AWS Fargate"
+    ],
+    "prompt": "A company runs a production Amazon ECS on AWS Fargate service in private subnets across three Availability Zones. A single NAT gateway in the first Availability Zone provides outbound internet access for all private subnets. Tasks scale in and out frequently and pull about 30 TB of container images from Amazon ECR each month, and they also call third-party APIs on the internet. The bill shows high NAT gateway data processing charges and high cross-AZ data transfer charges. The tasks must remain in private subnets. Which combination of steps will reduce these costs? (Select TWO.)",
+    "options": {
+      "A": "Create an Amazon S3 gateway endpoint and associate it with the private subnets' route tables.",
+      "B": "Move the tasks to public subnets and assign public IP addresses so they can reach Amazon ECR without the NAT gateway.",
+      "C": "Replace the NAT gateway with an AWS Transit Gateway and a centralized egress VPC.",
+      "D": "Create a NAT gateway in each Availability Zone and update each private subnet's route table to use the NAT gateway in the same Availability Zone.",
+      "E": "Enable AWS Global Accelerator for the ECR registry endpoint."
+    },
+    "isMulti": true,
+    "requiredCount": 2,
+    "correctAnswers": [
+      "A",
+      "D"
+    ],
+    "explanation": "### ✅ Why Options A & D are Correct\n\n* **Option A - S3 gateway endpoint for image layers:** Amazon ECR stores image layers in Amazon S3, so most of the bytes in an image pull are S3 downloads. A gateway endpoint for S3 has no hourly or per-GB charge and routes that traffic privately, removing it from NAT gateway data processing.\n* **Option D - AZ-local NAT gateways:** With one NAT gateway, traffic from tasks in the other two AZs crosses AZ boundaries and incurs cross-AZ data transfer charges. A NAT gateway per AZ with AZ-local routes removes those charges and also removes the single point of failure for a production workload.\n* **Together:** The gateway endpoint removes the largest traffic flow from NAT entirely, and the per-AZ NAT gateways keep the remaining internet-bound API traffic within each AZ.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** The requirement is that tasks remain in private subnets; public IPs also add hourly public IPv4 charges for every task.\n* **Option C is incorrect:** Centralized egress through Transit Gateway adds per-attachment hourly and per-GB data processing charges on top of NAT gateway charges; it helps with many VPCs, not with these costs.\n* **Option E is incorrect:** Global Accelerator does not front AWS service endpoints such as ECR and would add fees without affecting NAT or cross-AZ charges.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'High NAT gateway processing charges' + 'traffic to S3 or DynamoDB (including ECR layers)' = gateway VPC endpoints (free).\n2. **Shared vs per-AZ NAT:** One shared NAT gateway saves hourly cost for low-traffic dev VPCs; for production or high-traffic VPCs, a NAT gateway per AZ avoids cross-AZ charges and AZ dependency.\n3. **ECR private access:** For fully private pulls without NAT, add interface endpoints for ecr.api and ecr.dkr plus the S3 gateway endpoint."
+  }
+]

@@ -1,0 +1,296 @@
+[
+  {
+    "domain": 4,
+    "task": "4.1",
+    "topics": [
+      "Amazon EFS",
+      "EFS Archive storage class",
+      "EFS lifecycle management"
+    ],
+    "prompt": "A research institute stores 250 TB of project files on an Amazon EFS Regional file system that uses Elastic throughput. More than 80% of the files have not been opened for over a year, but researchers occasionally open any file through the same NFS mount path a few times each year. The file system must remain Multi-AZ and keep a single namespace. Which solution will reduce storage costs the MOST while meeting these requirements?",
+    "options": {
+      "A": "Use AWS DataSync to move files older than 1 year to Amazon S3 Glacier Deep Archive and delete them from the file system.",
+      "B": "Configure EFS lifecycle management to transition files to EFS Infrequent Access (IA) after 30 days and to EFS Archive after 90 days since last access.",
+      "C": "Recreate the file system by using EFS One Zone storage classes and copy the files to it.",
+      "D": "Switch the file system to Provisioned throughput mode with a lower provisioned throughput value."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Three storage tiers:** EFS Standard, EFS Infrequent Access and EFS Archive are all available within the same file system and namespace. Archive is the lowest-cost class, designed for data accessed a few times a year or less.\n* **Transparent access:** Files in IA or Archive are still read through the same mount path with no restore step. Only the per-GB access charge is higher.\n* **Access-based lifecycle:** Lifecycle policies move files based on time since last access, so active files stay in Standard (and can optionally move back to Standard on first access).\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Files in Glacier Deep Archive are no longer reachable through the NFS path and must be restored before use, which breaks the single-namespace requirement.\n* **Option C is incorrect:** EFS One Zone stores data in a single Availability Zone, which violates the Multi-AZ requirement, and still lacks the savings of the Archive class.\n* **Option D is incorrect:** Throughput mode affects throughput charges, not storage. Storage is the main cost here.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Rarely accessed file data:** Use EFS lifecycle management with IA and Archive to keep one namespace at lower cost.\n2. **Archive considerations:** EFS Archive has a minimum 90-day storage duration and a minimum billable file size, and it is intended for file systems that use Elastic throughput.\n3. **File vs object:** If applications need a POSIX path, tier inside EFS. If they can use the S3 API, S3 storage classes are even cheaper."
+  },
+  {
+    "domain": 4,
+    "task": "4.1",
+    "topics": [
+      "AWS DataSync",
+      "Amazon EFS",
+      "AWS Direct Connect"
+    ],
+    "prompt": "A company is migrating 70 TB of files from an on-premises NFS server to Amazon EFS. The company already has a 10 Gbps AWS Direct Connect connection with plenty of unused bandwidth. The migration must preserve file metadata and verify data integrity, and it must finish with a final incremental sync during a weekend cutover. The company wants the MOST cost-effective approach with the LEAST operational overhead. Which solution meets these requirements?",
+    "options": {
+      "A": "Order AWS Snowball Edge devices, copy the files to the devices, and import the data into Amazon EFS.",
+      "B": "Deploy an S3 File Gateway on premises, copy the files to it, and then mount the gateway's bucket from Amazon EC2.",
+      "C": "Launch Amazon EC2 instances that mount the EFS file system and run rsync jobs over the Direct Connect connection, started by a cron schedule on an on-premises server.",
+      "D": "Deploy an AWS DataSync agent on premises and run DataSync tasks that copy from the NFS server to the EFS file system over the Direct Connect connection."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Purpose-built migration:** DataSync copies NFS and SMB data to Amazon EFS, Amazon FSx and Amazon S3 with metadata preservation, in-transit encryption and built-in data integrity verification.\n* **Incremental cutover:** Later task runs transfer only changed files, which makes a final weekend sync quick. Tasks can be scheduled and bandwidth-limited.\n* **Uses existing link:** With spare capacity on a 10 Gbps link, 70 TB can be transferred in a few days or less. DataSync charges a flat per-GB fee with no device or job fees.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Snowball Edge adds device and shipping time and cost, and Snowball does not import directly into EFS, so a second copy step would be needed. The network link is already adequate.\n* **Option B is incorrect:** S3 File Gateway writes to Amazon S3, not Amazon EFS, so the files would land in the wrong target and require another migration step.\n* **Option C is incorrect:** Custom rsync scripts require building, scaling, monitoring and verifying the transfer manually, which is high operational overhead.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Data migration selection:** Online file or object transfer with verification: DataSync. Ongoing hybrid access: Storage Gateway. SFTP/FTPS endpoints: Transfer Family. Limited or no network: Snow Family.\n2. **Estimate first:** Compare data size with available bandwidth and the deadline before choosing offline transfer."
+  },
+  {
+    "domain": 4,
+    "task": "4.1",
+    "topics": [
+      "Amazon EBS",
+      "Cold HDD (sc1)",
+      "EBS volume types"
+    ],
+    "prompt": "A media company runs a legacy indexing application on Amazon EC2 that requires a block device. The application keeps a 12 TiB archive of video files on a General Purpose SSD (gp3) volume. A batch job reads the archive sequentially once each week and needs about 100 MiB/s of throughput. No other access occurs. Which change will reduce storage cost the MOST while meeting the requirements?",
+    "options": {
+      "A": "Change the volume to a Cold HDD (sc1) volume by using Elastic Volumes.",
+      "B": "Change the volume to a Throughput Optimized HDD (st1) volume by using Elastic Volumes.",
+      "C": "Change the volume to a Provisioned IOPS SSD (io2) volume with a lower IOPS setting.",
+      "D": "Move the files to an Amazon S3 bucket in the S3 Glacier Flexible Retrieval storage class and mount the bucket with Mountpoint for Amazon S3."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Lowest-cost EBS:** sc1 has the lowest price per GiB of any EBS volume type and is designed for large, sequential, infrequently accessed (cold) data.\n* **Enough throughput:** sc1 provides a baseline of 12 MiB/s per TiB (about 144 MiB/s for 12 TiB) and can burst up to 250 MiB/s per volume, which covers the 100 MiB/s weekly scan.\n* **No downtime:** Elastic Volumes changes the volume type while it remains attached.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** st1 also meets the throughput need, but it costs about three times as much per GiB as sc1 and is intended for frequently accessed throughput workloads.\n* **Option C is incorrect:** io2 is the most expensive EBS volume type and is designed for latency-sensitive, IOPS-intensive databases.\n* **Option D is incorrect:** The application requires a block device, and objects in Glacier Flexible Retrieval must be restored before they can be read. Mountpoint does not provide block storage.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **HDD types:** st1: frequently accessed, throughput-intensive (big data, logs). sc1: cold, infrequently accessed, lowest cost. HDD volumes cannot be boot volumes.\n2. **Right-sizing EBS:** Check CloudWatch VolumeReadBytes and VolumeReadOps, then pick the cheapest volume type that meets the measured IOPS and throughput."
+  },
+  {
+    "domain": 4,
+    "task": "4.1",
+    "topics": [
+      "Amazon CloudWatch Logs",
+      "Log classes",
+      "Log retention"
+    ],
+    "prompt": "A company's applications send about 30 TB of verbose debug logs each month to Amazon CloudWatch Logs log groups that use the Standard log class and have retention set to Never expire. Engineers query these logs only occasionally with CloudWatch Logs Insights during investigations and never use them for metric filters, alarms, or Live Tail. Logs older than 90 days are never needed. Which solution will reduce costs the MOST?",
+    "options": {
+      "A": "Keep the current log groups, and create a daily export task that copies the logs to Amazon S3 Glacier Flexible Retrieval.",
+      "B": "Keep the Standard log class, and change the retention setting of the existing log groups to 90 days.",
+      "C": "Send the debug logs to new log groups that use the Infrequent Access log class, and set their retention to 90 days.",
+      "D": "Add a subscription filter that streams the logs through Amazon Data Firehose to Amazon S3, and query them with Amazon Athena."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Lower ingestion price:** The CloudWatch Logs Infrequent Access log class charges about 50% less per GB ingested than the Standard class. Ingestion is the dominant cost for 30 TB of logs each month.\n* **Still queryable:** Infrequent Access log groups support CloudWatch Logs Insights queries, which is the only feature the engineers use. Features such as metric filters and Live Tail are not needed.\n* **Stop paying for old data:** A 90-day retention setting deletes older log events automatically, which ends storage charges for logs kept forever. The log class is set when a log group is created, so new log groups are required.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Exporting does not reduce ingestion charges, which are the largest cost, and keeping the logs forever in both CloudWatch and S3 adds storage cost.\n* **Option B is incorrect:** Retention reduces storage cost, but every GB is still ingested at the higher Standard price.\n* **Option D is incorrect:** Logs are still ingested into CloudWatch Logs at the Standard price before they are streamed, so Firehose and S3 charges are added on top.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **CloudWatch Logs cost levers:** Choose the right log class (Standard or Infrequent Access), set retention on every log group, and reduce noisy log levels at the source.\n2. **Log class selection:** Use Standard for logs that drive alarms, metric filters or real-time features. Use Infrequent Access for logs that are kept for occasional ad hoc queries, audits or forensics."
+  },
+  {
+    "domain": 4,
+    "task": "4.1",
+    "topics": [
+      "Amazon S3",
+      "S3 Lifecycle",
+      "S3 Glacier Instant Retrieval",
+      "S3 Glacier Deep Archive"
+    ],
+    "prompt": "A company stores application audit logs in Amazon S3 Standard. Logs are analyzed daily for the first 30 days. From day 30 to day 180 they are accessed about once a quarter and must be returned in milliseconds. After 180 days they must be kept until they are 5 years old for compliance, are almost never accessed, and can take up to 48 hours to retrieve. All data must survive the loss of an Availability Zone. Which combination of S3 Lifecycle actions is MOST cost-effective? (Select TWO.)",
+    "options": {
+      "A": "Transition objects to S3 One Zone-Infrequent Access (S3 One Zone-IA) 30 days after creation.",
+      "B": "Transition objects to S3 Glacier Instant Retrieval 30 days after creation.",
+      "C": "Transition objects to S3 Glacier Flexible Retrieval 30 days after creation.",
+      "D": "Transition objects to S3 Glacier Deep Archive 180 days after creation and expire them 5 years after creation.",
+      "E": "Transition objects to S3 Intelligent-Tiering 180 days after creation and expire them 5 years after creation."
+    },
+    "isMulti": true,
+    "requiredCount": 2,
+    "correctAnswers": [
+      "B",
+      "D"
+    ],
+    "explanation": "### ✅ Why Options B & D are Correct\n\n* **Days 30-180:** S3 Glacier Instant Retrieval is the lowest-cost multi-AZ storage class that still returns data in milliseconds, and it is designed for data accessed about once a quarter. Objects stay in it for 150 days, which exceeds its 90-day minimum.\n* **After 180 days:** S3 Glacier Deep Archive is the lowest-cost storage class. Standard retrieval completes within 12 hours and bulk within 48 hours, which meets the retrieval requirement. The objects stay well beyond its 180-day minimum.\n* **Expiration:** An expiration action at 5 years deletes the logs automatically when retention ends.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** One Zone-IA stores data in a single AZ, which violates the requirement to survive the loss of an AZ.\n* **Option C is incorrect:** Glacier Flexible Retrieval requires a restore that takes minutes to hours, so it cannot return logs in milliseconds during days 30-180.\n* **Option E is incorrect:** The access pattern after 180 days is known (almost never accessed), so Intelligent-Tiering adds monitoring fees and starts objects in the Frequent Access tier. Deep Archive costs less from the first day.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Known patterns:** Use explicit lifecycle transitions that move down through the storage classes. Unknown patterns: use Intelligent-Tiering.\n2. **Check minimum durations:** Standard-IA and One Zone-IA: 30 days. Glacier Instant Retrieval and Flexible Retrieval: 90 days. Deep Archive: 180 days. Transitioning or deleting earlier incurs pro-rated charges."
+  },
+  {
+    "domain": 4,
+    "task": "4.2",
+    "topics": [
+      "Amazon EC2",
+      "Burstable performance instances",
+      "AWS Graviton"
+    ],
+    "prompt": "A Java service runs on t3.large instances in unlimited mode. Amazon CloudWatch shows that average CPU utilization stays near 85% around the clock, and the bill shows significant charges for surplus CPU credits. The service has already been validated on arm64. The company wants to reduce cost without degrading performance. Which solution meets these requirements?",
+    "options": {
+      "A": "Move the service to m7g.large instances.",
+      "B": "Switch the t3.large instances from unlimited mode to standard mode.",
+      "C": "Move the service to t3.xlarge instances in unlimited mode.",
+      "D": "Move the service to t4g.large instances in standard mode."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Wrong instance family:** Burstable instances suit workloads with low average CPU and occasional spikes. A t3.large has a baseline of 30% per vCPU, so running at 85% constantly incurs surplus credit charges on top of the hourly rate.\n* **Fixed performance at lower cost:** m7g.large provides 2 vCPUs and 8 GiB of memory (the same as t3.large) with full, sustained CPU and no credit charges, at Graviton price performance.\n* **Validated:** The service already runs on arm64, so the move is low risk.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** In standard mode the instance is throttled to its 30% baseline once credits run out, which degrades performance.\n* **Option C is incorrect:** A t3.xlarge has a baseline of only 40% per vCPU. Doubling the size raises the hourly rate, and the larger instance still incurs some surplus charges.\n* **Option D is incorrect:** A t4g.large in standard mode would also be throttled to its baseline when credits are exhausted, so performance would degrade.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Selecting an instance family:** Spiky with low average CPU: T family. Sustained CPU: M, C or R families, preferably Graviton (g suffix) for lower cost.\n2. **Credit monitoring:** Watch the CPUSurplusCreditsCharged and CPUCreditBalance metrics. Steady surplus charges signal the wrong family."
+  },
+  {
+    "domain": 4,
+    "task": "4.2",
+    "topics": [
+      "AWS Compute Optimizer",
+      "Amazon CloudWatch agent",
+      "Rightsizing"
+    ],
+    "prompt": "A company runs 300 memory-optimized r6i instances. The operations team suspects that many instances are overprovisioned on memory. AWS Compute Optimizer currently produces recommendations for the fleet that are based only on CPU, network, and disk metrics. The company wants data-driven rightsizing recommendations that account for memory, with the LEAST operational overhead. What should a solutions architect do?",
+    "options": {
+      "A": "Use the AWS Trusted Advisor Low Utilization Amazon EC2 Instances check across all accounts to identify the instances to downsize, and downsize them during the next maintenance window.",
+      "B": "Use AWS Cost Explorer Reserved Instance purchase recommendations for the r6i family.",
+      "C": "Manually downsize every instance by one size and roll back any instance that shows performance problems.",
+      "D": "Install and configure the Amazon CloudWatch agent on the instances to publish memory utilization so that Compute Optimizer includes memory in its recommendations."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Memory is an OS metric:** EC2 does not see guest memory usage from the hypervisor. The CloudWatch agent publishes memory utilization from inside the instance.\n* **Compute Optimizer uses it:** When memory metrics are available, Compute Optimizer factors them into instance-type recommendations. It can then suggest smaller sizes or different families, such as Graviton or M instances.\n* **Fleet scale:** The agent can be deployed and configured across all 300 instances with AWS Systems Manager. Activating enhanced infrastructure metrics extends the lookback period to 93 days.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** The Trusted Advisor check is based on CPU and network I/O, not memory, so it cannot identify memory overprovisioning.\n* **Option B is incorrect:** RI recommendations cover purchasing commitments for current usage. They do not right-size instances and could lock in oversized ones.\n* **Option C is incorrect:** Trial-and-error downsizing risks outages and is not data driven.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Rightsizing workflow:** Collect metrics (including memory through the CloudWatch agent), use Compute Optimizer recommendations, right-size, and then commit with Savings Plans.\n2. **Order matters:** Right-size before buying Savings Plans or RIs so you do not commit to waste."
+  },
+  {
+    "domain": 4,
+    "task": "4.2",
+    "topics": [
+      "Amazon ECS",
+      "AWS Fargate",
+      "AWS Compute Optimizer",
+      "CloudWatch Container Insights"
+    ],
+    "prompt": "A company runs a production API as an Amazon ECS service on AWS Fargate. The service uses target tracking auto scaling and runs between 30 and 80 tasks. Each task is defined with 4 vCPU and 16 GB of memory. CloudWatch Container Insights shows that, even at peak, tasks use about 15% of their CPU and 20% of their memory. The API cannot tolerate task interruptions. Which solution will reduce costs the MOST without affecting availability?",
+    "options": {
+      "A": "Move the service to the EC2 launch type on larger instances so that more tasks fit on each instance.",
+      "B": "Use AWS Compute Optimizer recommendations for ECS services on Fargate to reduce the task-level CPU and memory in a new task definition revision, and deploy it with a rolling update.",
+      "C": "Move all of the service's tasks to the FARGATE_SPOT capacity provider.",
+      "D": "Purchase a 3-year Compute Savings Plan that covers the current Fargate usage."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Pay for what tasks request:** Fargate bills for the vCPU and memory configured for each task, not for what the task uses. Tasks that use only 15-20% of their resources pay for roughly five times the capacity they need.\n* **Data-driven sizing:** Compute Optimizer analyzes ECS-on-Fargate utilization and recommends task CPU and memory sizes. Container Insights metrics confirm the headroom.\n* **No availability impact:** A new task definition revision deployed by a rolling update replaces tasks gradually, and target tracking continues to add tasks when load grows.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** The EC2 launch type adds instance management, and the oversized task reservations would still waste capacity on the instances.\n* **Option C is incorrect:** Fargate Spot tasks can be interrupted with a two-minute warning, which this production API cannot tolerate.\n* **Option D is incorrect:** A Savings Plan discounts the oversized usage instead of eliminating it, and it locks in a spending level that will fall after right-sizing.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Order of operations:** Right-size first (task size, instance size), then commit with Savings Plans to the smaller, steady baseline.\n2. **Fargate cost levers:** Right-size task CPU and memory, use Graviton (arm64), use Fargate Spot for interruptible work, and use Compute Savings Plans for steady usage."
+  },
+  {
+    "domain": 4,
+    "task": "4.2",
+    "topics": [
+      "AWS Graviton",
+      "Amazon EC2 Auto Scaling",
+      "Launch templates",
+      "Instance refresh"
+    ],
+    "prompt": "A company runs a Python web application on c6i instances in an Amazon EC2 Auto Scaling group behind an Application Load Balancer. The instances also run a third-party monitoring agent. AWS Compute Optimizer recommends c7g instances as the lowest-cost option. The company wants to migrate to Graviton safely and cost-effectively without downtime. Which combination of steps should a solutions architect take? (Select TWO.)",
+    "options": {
+      "A": "Build and test an arm64 AMI that includes the application, its native dependencies compiled for arm64, and the vendor's arm64 build of the monitoring agent.",
+      "B": "Stop each running instance, change its instance type to c7g.large, and start it again with the existing AMI.",
+      "C": "Enable x86 binary emulation on the c7g instances so that the existing AMI runs without changes.",
+      "D": "Create a new launch template version that uses the arm64 AMI and c7g instance types, and roll it out with an Auto Scaling instance refresh that uses a minimum healthy percentage and checkpoints.",
+      "E": "Purchase a 3-year EC2 Instance Savings Plan for the c6i family before starting the migration."
+    },
+    "isMulti": true,
+    "requiredCount": 2,
+    "correctAnswers": [
+      "A",
+      "D"
+    ],
+    "explanation": "### ✅ Why Options A & D are Correct\n\n* **Architecture-specific images:** Graviton uses the arm64 instruction set, so the AMI, any compiled Python extensions, and third-party agents must have arm64 builds. Validating this first prevents surprises.\n* **Zero-downtime rollout:** Instance refresh replaces instances gradually while keeping a minimum healthy percentage behind the load balancer. Checkpoints allow verification before the rollout continues.\n* **Payoff:** c7g instances offer better price performance than comparable x86 instances.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** An x86_64 AMI cannot boot on an arm64 instance type, and stopping instances one by one is a manual process that does not use the Auto Scaling group.\n* **Option C is incorrect:** Graviton instances do not provide a built-in x86 emulation option, so the existing AMI cannot run on them without changes.\n* **Option E is incorrect:** An EC2 Instance Savings Plan locks the discount to the c6i family, which will no longer be used after the migration. Any commitment should wait until after the move or use a Compute Savings Plan.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Graviton migration checklist:** Inventory dependencies and agents, build arm64 (or multi-architecture) artifacts, test, then roll out gradually.\n2. **Commitments:** EC2 Instance Savings Plans are family-specific. Compute Savings Plans follow you across families, architectures, Fargate and Lambda."
+  },
+  {
+    "domain": 4,
+    "task": "4.3",
+    "topics": [
+      "Amazon ElastiCache",
+      "Reserved nodes",
+      "Valkey"
+    ],
+    "prompt": "A company runs a node-based Amazon ElastiCache for Valkey cluster of six cache.r7g.xlarge nodes in front of its product database. The cluster has run 24 hours a day at a steady size for 2 years, and the company expects it to keep running at the same size for at least 3 more years. The nodes are billed at On-Demand rates. Which purchasing option will reduce the cost of the cluster the MOST?",
+    "options": {
+      "A": "Purchase a 3-year Compute Savings Plan that covers the hourly cost of the cache nodes.",
+      "B": "Migrate the cluster to ElastiCache Serverless so that the company pays only for the data stored and ElastiCache Processing Units (ECPUs) consumed.",
+      "C": "Purchase 3-year ElastiCache reserved nodes for the cache.r7g.xlarge nodes in the cluster's Region.",
+      "D": "Replace the cluster with cache.t4g nodes that run in unlimited mode."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Discount for steady usage:** ElastiCache reserved nodes give a significant discount over On-Demand node-hours in exchange for a 1-year or 3-year term. A 3-year term gives the largest discount.\n* **Matches the profile:** The cluster size has been stable for 2 years and is expected to stay that way, so the commitment carries little risk of unused reservations.\n* **Automatic application:** The discount applies automatically to matching running nodes. No changes to the cluster are needed.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Compute Savings Plans apply to Amazon EC2, AWS Fargate and AWS Lambda usage. They do not discount ElastiCache nodes.\n* **Option B is incorrect:** ElastiCache Serverless suits spiky or unpredictable workloads. For a cluster that is busy 24/7 at a steady size, its consumption-based pricing usually costs more than reserved nodes.\n* **Option D is incorrect:** Burstable nodes are designed for small or development workloads. A steadily busy production cache would exhaust CPU credits and degrade or incur extra charges.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Commitment discounts beyond EC2:** Steady database and cache fleets use service-specific reservations: RDS Reserved DB Instances, ElastiCache reserved nodes, OpenSearch Service and Redshift reserved instances or nodes. Compute Savings Plans cover only EC2, Fargate and Lambda.\n2. **Serverless vs provisioned:** Use serverless for unpredictable or intermittent load. Use provisioned capacity with reservations for steady, predictable load.\n3. **Engine choice:** ElastiCache for Valkey is priced lower than Redis OSS, so choosing Valkey is another cost lever."
+  },
+  {
+    "domain": 4,
+    "task": "4.3",
+    "topics": [
+      "Amazon RDS",
+      "gp3",
+      "Provisioned IOPS SSD (io2)"
+    ],
+    "prompt": "An Amazon RDS for PostgreSQL DB instance has 2 TB of Provisioned IOPS SSD (io2) storage with 20,000 provisioned IOPS. Amazon CloudWatch metrics for the past 3 months show that combined read and write IOPS never exceed 7,000 and that throughput peaks at 300 MiB/s. The application does not require sub-millisecond storage latency. Which change will reduce storage costs the MOST while still meeting the performance needs?",
+    "options": {
+      "A": "Modify the DB instance storage to General Purpose SSD (gp3) and keep the included baseline performance.",
+      "B": "Keep io2 storage and reduce the provisioned IOPS to 8,000.",
+      "C": "Modify the DB instance storage to magnetic storage.",
+      "D": "Keep io2 storage, reduce the provisioned IOPS to 3,000, and add a read replica to absorb the remaining I/O."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Included performance:** For RDS for PostgreSQL, MySQL and MariaDB, gp3 volumes of 400 GiB or more include a baseline of 12,000 IOPS and 500 MiB/s at no extra charge. This exceeds the observed peaks of 7,000 IOPS and 300 MiB/s.\n* **Cheaper per GB, no IOPS fees:** gp3 storage costs less per GB than io2, and no provisioned IOPS charges apply at the baseline.\n* **Online change:** The storage type can be modified on a running DB instance. More IOPS or throughput can be provisioned later if needed.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Lowering provisioned IOPS reduces cost, but io2 still has a higher per-GB price plus per-IOPS charges. It remains more expensive than gp3 for this workload.\n* **Option C is incorrect:** Magnetic storage is a legacy option with limited performance that cannot sustain 7,000 IOPS, and it is not recommended for new workloads.\n* **Option D is incorrect:** A read replica adds a full instance and its storage. Writes still go to the primary, so 3,000 IOPS would throttle write-heavy peaks.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **RDS storage selection:** gp3 suits most workloads at a lower cost with predictable included performance. io2 suits sustained, latency-critical, high-IOPS workloads that need the highest durability.\n2. **Right-size from metrics:** Compare ReadIOPS, WriteIOPS and throughput metrics with provisioned values before paying for provisioned IOPS."
+  },
+  {
+    "domain": 4,
+    "task": "4.4",
+    "topics": [
+      "Amazon Route 53",
+      "Alias records",
+      "DNS"
+    ],
+    "prompt": "A company's Amazon Route 53 public hosted zone receives about 5 billion DNS queries each month. Most queries are for CNAME records that point to the DNS names of an Application Load Balancer and an Amazon CloudFront distribution. The company also wants the zone apex (example.com) to resolve to the CloudFront distribution. Which solution will reduce DNS query costs and meet the zone apex requirement?",
+    "options": {
+      "A": "Increase the TTL of the existing CNAME records to 24 hours and create a CNAME record at the zone apex.",
+      "B": "Replace the CNAME records with alias records that target the load balancer and the CloudFront distribution, and create an alias record at the zone apex.",
+      "C": "Move all of the records to a Route 53 private hosted zone that is associated with the application VPCs, and delete the public hosted zone to stop paying for public queries.",
+      "D": "Create Route 53 traffic policies with latency-based rules for each record."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Free alias queries:** Route 53 does not charge for alias queries to AWS resources such as Elastic Load Balancing load balancers and CloudFront distributions, so most of the query charges disappear.\n* **Zone apex support:** DNS does not allow a CNAME record at the zone apex, but Route 53 alias records can be created there.\n* **Health awareness:** Alias records follow changes to the target's IP addresses automatically and can evaluate the target's health.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** A higher TTL reduces queries but does not eliminate them, and the remaining CNAME queries are still billed. A CNAME record cannot be created at the zone apex.\n* **Option C is incorrect:** Private hosted zones resolve only within associated VPCs, so internet users could no longer resolve the names.\n* **Option D is incorrect:** Traffic policies add a monthly charge per policy record and do not reduce per-query costs.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Alias vs CNAME:** An alias record can be used at the apex, queries to AWS resource targets are free, and it targets AWS resources. A CNAME cannot be used at the apex and is billed per query.\n2. **DNS cost levers:** Use alias records and sensible TTLs, and avoid unnecessary traffic-policy records."
+  },
+  {
+    "domain": 4,
+    "task": "4.4",
+    "topics": [
+      "Amazon S3",
+      "Amazon CloudFront",
+      "Origin access control",
+      "AWS Certificate Manager"
+    ],
+    "prompt": "A company's marketing website consists only of static HTML, JavaScript, CSS, and image files produced by a static site generator. The site is served by four Amazon EC2 instances behind an Application Load Balancer in two Availability Zones, and NAT gateways allow the instances to download updates. Visitors are global, and the site must use HTTPS on a custom domain. The company wants to minimize cost and operational overhead. Which solution meets these requirements?",
+    "options": {
+      "A": "Enable S3 static website hosting on a public bucket, and point the custom domain directly at the S3 website endpoint over HTTPS.",
+      "B": "Move the site to a single EC2 t4g.small instance with an Elastic IP address and a free certificate installed on the web server.",
+      "C": "Containerize the site and run it as an Amazon ECS service on AWS Fargate behind the existing Application Load Balancer.",
+      "D": "Upload the site to a private S3 bucket, serve it through an Amazon CloudFront distribution that uses origin access control (OAC) and an AWS Certificate Manager (ACM) certificate, and point the domain at CloudFront with a Route 53 alias record."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **No servers to pay for:** Static content needs no compute. S3 storage plus CloudFront requests and data transfer replace the EC2 instances, the load balancer and the NAT gateways, which all charge by the hour.\n* **Edge delivery:** CloudFront caches content at edge locations for global visitors. Data transfer from S3 to CloudFront is free.\n* **HTTPS and security:** Public ACM certificates for CloudFront are free (issued in us-east-1). OAC keeps the bucket private with Block Public Access enabled, and alias queries to CloudFront are free in Route 53.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** S3 website endpoints do not support HTTPS, and this option makes the bucket public without edge caching.\n* **Option B is incorrect:** A single instance is a single point of failure and still has to be patched and managed. Global visitors would also get no edge caching.\n* **Option C is incorrect:** Fargate tasks and the load balancer still run and charge by the hour to serve files that need no compute.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Static websites:** Host them on private Amazon S3 behind Amazon CloudFront with OAC and an ACM certificate. Do not host static content on EC2 or containers.\n2. **S3 website endpoint:** It supports HTTP only. Put CloudFront in front for HTTPS, a custom domain and caching."
+  }
+]

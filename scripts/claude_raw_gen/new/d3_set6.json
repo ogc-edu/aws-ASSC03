@@ -1,0 +1,334 @@
+[
+  {
+    "domain": 3,
+    "task": "3.1",
+    "topics": [
+      "Amazon EFS",
+      "EFS throughput modes"
+    ],
+    "prompt": "A media company runs a rendering pipeline on Amazon EC2 instances that share an Amazon EFS file system in Bursting throughput mode. The file system stores about 200 GiB of data. Several times a day, jobs start that read and write heavily for 30-60 minutes, and during these periods throughput drops sharply after the burst credit balance reaches zero. The timing and size of the spikes are unpredictable, and the company does not want to pay for unused throughput between spikes. Which solution will meet these requirements?",
+    "options": {
+      "A": "Switch the file system to Provisioned Throughput mode and set the throughput to the highest observed peak.",
+      "B": "Add 2 TiB of placeholder files to the file system so that it earns burst credits faster.",
+      "C": "Switch the file system to Elastic Throughput mode.",
+      "D": "Change the file system to the EFS One Zone storage class so that it has a higher baseline throughput."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Elastic Throughput scales automatically:** In Elastic Throughput mode, Amazon EFS scales throughput up and down with the workload's actual demand, so there are no burst credits to exhaust.\n* **Pay for what you use:** Elastic Throughput charges for the data actually read and written, which suits spiky, unpredictable workloads with idle periods between spikes.\n* **No application change:** The throughput mode can be changed on an existing file system without remounting or migrating data.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Provisioned Throughput fixes performance, but the company pays for the peak throughput all day, even between spikes. It also requires the team to predict the peak, which is unpredictable here.\n* **Option B is incorrect:** Padding the file system with dummy data increases the baseline in Bursting mode but makes the company pay for storage it does not need. It is a workaround, not a design, and spikes can still exhaust credits.\n* **Option D is incorrect:** Storage class (One Zone vs Regional) affects durability/availability and price, not the throughput model. Bursting mode would still run out of credits.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Spiky / unpredictable\" EFS throughput -> Elastic Throughput; \"steady, known high throughput regardless of size\" -> Provisioned Throughput; \"small, mostly idle\" -> Bursting.\n2. **Credit exhaustion symptom:** A drop in throughput when the BurstCreditBalance CloudWatch metric reaches zero is the classic sign that Bursting mode no longer fits the workload."
+  },
+  {
+    "domain": 3,
+    "task": "3.1",
+    "topics": [
+      "Amazon EC2 instance store",
+      "Amazon EBS"
+    ],
+    "prompt": "A company runs a distributed in-memory caching and scratch-processing tier on a fleet of Amazon EC2 instances. Each node writes temporary intermediate files that need the highest possible random I/O performance and the lowest latency. The data is replicated across nodes by the application and can be regenerated if a node fails. The company wants the best price-performance for this storage. Which storage option should a solutions architect choose?",
+    "options": {
+      "A": "Storage-optimized EC2 instances with local NVMe SSD instance store volumes.",
+      "B": "Amazon EBS io2 Block Express volumes attached to each instance.",
+      "C": "An Amazon EFS file system with Max I/O performance mode shared by all nodes.",
+      "D": "Amazon S3 Express One Zone directory buckets mounted by using Mountpoint for Amazon S3."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Physically attached NVMe:** Instance store volumes are SSDs physically attached to the host, giving very high random IOPS and the lowest latency because there is no network hop.\n* **Ephemeral data is acceptable:** Instance store data is lost when the instance stops or fails, but this workload's data is temporary, replicated by the application, and can be regenerated.\n* **Price-performance:** Instance store capacity is included in the instance price, so there is no separate per-GiB or per-IOPS charge as with EBS.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** io2 Block Express delivers high, durable performance, but it is network-attached storage with additional per-GiB and per-IOPS cost. Durability is unnecessary for regenerable scratch data, so it is not the best price-performance.\n* **Option C is incorrect:** Amazon EFS is shared network file storage with higher per-operation latency than local NVMe. It is designed for shared access, not for per-node scratch space requiring the lowest latency.\n* **Option D is incorrect:** S3 Express One Zone is low-latency object storage, but it is accessed over the network and is not a block device optimized for random small writes to temporary files.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Temporary data, buffers, caches, scratch\" + \"highest IOPS / lowest latency\" -> EC2 instance store (e.g. storage-optimized I-family instances).\n2. **Persistence trade-off:** Choose EBS when data must survive stop/terminate or be snapshotted; choose instance store only when the application tolerates data loss."
+  },
+  {
+    "domain": 3,
+    "task": "3.2",
+    "topics": [
+      "Amazon EMR",
+      "EMR managed scaling",
+      "Amazon S3"
+    ],
+    "prompt": "A company runs an on-premises Hadoop cluster that hosts Apache Spark batch jobs, Apache Hive queries, and an Apache HBase database used by internal applications. The jobs rely on custom Hadoop configuration and third-party JAR libraries. The company wants to move to AWS with minimal code changes, store data durably in Amazon S3, and have cluster capacity grow and shrink with the workload. Which solution meets these requirements?",
+    "options": {
+      "A": "Rewrite all jobs as AWS Glue ETL jobs and store the HBase tables in Amazon DynamoDB.",
+      "B": "Run the Spark jobs as AWS Lambda functions that are triggered by Amazon S3 event notifications.",
+      "C": "Load all data into Amazon Redshift and convert the Spark and Hive jobs to SQL stored procedures.",
+      "D": "Run Spark, Hive, and HBase on Amazon EMR with Amazon S3 storage and EMR managed scaling."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Same open-source frameworks:** Amazon EMR runs Spark, Hive, HBase, and other Hadoop ecosystem applications, and supports custom configuration classifications, bootstrap actions, and custom JARs, so the jobs move with minimal changes.\n* **Durable storage in S3:** EMR reads and writes Amazon S3 directly, and HBase on EMR can store its data in S3, decoupling storage from compute.\n* **Elastic capacity:** EMR managed scaling automatically adds and removes cluster instances based on workload metrics.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** AWS Glue runs serverless Spark ETL, but it does not run HBase or Hive server workloads, and rewriting jobs and moving HBase data to DynamoDB is a significant re-architecture, not a minimal-change migration.\n* **Option B is incorrect:** Lambda functions have limited run time and memory and cannot host Spark or Hadoop jobs. This would require a complete rewrite.\n* **Option C is incorrect:** Redshift is a data warehouse. Converting Spark, Hive, and HBase workloads to Redshift SQL is a major redesign and does not provide an HBase-compatible store.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Existing Hadoop / Spark / Hive / HBase / Presto, custom libraries, minimal changes\" -> Amazon EMR; \"serverless Spark ETL with no cluster to manage\" -> AWS Glue.\n2. **Cost/perf tip:** Use S3 for persistent data, EMR managed scaling, and Spot Instances for task nodes to run elastic, transient clusters."
+  },
+  {
+    "domain": 3,
+    "task": "3.2",
+    "topics": [
+      "Amazon EC2 Auto Scaling",
+      "Amazon SQS",
+      "Amazon CloudWatch"
+    ],
+    "prompt": "A company's video-transcoding workers run on Amazon EC2 instances in an Auto Scaling group and poll an Amazon SQS standard queue. Each message takes about 2 minutes to process, and the business requires that messages wait no longer than about 10 minutes before processing starts. The current scaling policy uses average CPU utilization, and the queue frequently backs up even when CPU utilization is moderate. Which scaling approach will meet the requirement MOST effectively?",
+    "options": {
+      "A": "Use a scheduled scaling action that doubles the group's capacity every day during business hours.",
+      "B": "Publish a custom CloudWatch metric for queue backlog per instance and use a target tracking policy that keeps it at the acceptable backlog per instance.",
+      "C": "Create a step scaling policy based on the ApproximateAgeOfOldestMessage metric that adds one instance at a time.",
+      "D": "Change the scaling policy to track average network throughput of the instances."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Scale on the work waiting:** Backlog per instance (ApproximateNumberOfMessagesVisible divided by the number of InService instances) directly measures how much queued work each worker has, unlike CPU.\n* **Derived target:** The acceptable backlog per instance is the acceptable latency divided by the processing time per message (here about 10 / 2 = 5 messages per instance), which gives target tracking a precise target.\n* **AWS-recommended pattern:** This is the approach AWS documents for scaling an Auto Scaling group based on Amazon SQS.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Scheduled scaling cannot react to unpredictable queue growth and wastes capacity when the queue is empty.\n* **Option C is incorrect:** The age of the oldest message lags behind demand and adding one instance at a time reacts slowly. It also does not account for how many instances are already working on the queue.\n* **Option D is incorrect:** Network throughput, like CPU, is an indirect signal that does not reflect how many messages are waiting.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Workers consume from SQS, scale on queue depth\" -> custom backlog-per-instance metric + target tracking.\n2. **Metric selection:** Pick the scaling metric that is proportional to the work and that changes inversely with capacity; queue length alone does not change when instances are added, backlog per instance does."
+  },
+  {
+    "domain": 3,
+    "task": "3.2",
+    "topics": [
+      "Amazon EC2 Auto Scaling",
+      "Warm pools"
+    ],
+    "prompt": "A company runs a web application on Amazon EC2 instances in an Auto Scaling group. Each new instance runs a startup script that loads a large dataset into memory and warms local caches, which takes about 12 minutes before the instance can serve traffic. During sudden traffic spikes, users experience errors because new capacity arrives too late. The company wants to reduce scale-out time without keeping many extra instances running all the time. Which solution meets these requirements?",
+    "options": {
+      "A": "Add a warm pool of pre-initialized instances in the Stopped state to the Auto Scaling group.",
+      "B": "Increase the health check grace period of the Auto Scaling group to 15 minutes.",
+      "C": "Replace the launch template's instance type with a burstable T-family instance type.",
+      "D": "Enable instance scale-in protection for all instances in the Auto Scaling group."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Pre-initialized capacity:** A warm pool keeps instances that have already completed the lengthy initialization. On scale-out, the group moves them into service far faster than launching and initializing new instances.\n* **Low standing cost:** Warm pool instances can be kept in the Stopped (or Hibernated) state, so the company pays for their EBS storage rather than for running compute.\n* **Lifecycle hooks:** Lifecycle hooks let the startup script finish before an instance enters the warm pool, so it is ready when needed.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** A longer grace period only prevents premature health check failures; it does not make capacity become ready any faster.\n* **Option C is incorrect:** Burstable instances do not shorten the data-loading time and can be throttled when CPU credits run out.\n* **Option D is incorrect:** Scale-in protection prevents instances from being terminated but does nothing to speed up scale-out during spikes.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Long boot / initialization time delays scale-out\" -> EC2 Auto Scaling warm pools.\n2. **Related options:** For predictable daily peaks, combine with predictive or scheduled scaling to launch capacity ahead of demand."
+  },
+  {
+    "domain": 3,
+    "task": "3.3",
+    "topics": [
+      "Amazon Redshift",
+      "Concurrency scaling",
+      "Materialized views"
+    ],
+    "prompt": "A company uses a provisioned Amazon Redshift RA3 cluster for its business intelligence dashboards. Every Monday morning, hundreds of users open dashboards at the same time and queries wait in the queue for several minutes. Most dashboard queries run the same expensive aggregations that join a large sales fact table with several dimension tables, and the underlying data is loaded every hour. Which combination of actions will improve dashboard query performance with the LEAST operational effort? (Select TWO.)",
+    "options": {
+      "A": "Create a Redshift read replica in another Availability Zone and point the dashboards to it.",
+      "B": "Enable concurrency scaling for the WLM queue that the dashboard queries use.",
+      "C": "Run a classic resize every Monday morning to double the number of nodes, and resize back in the evening.",
+      "D": "Export the sales tables to Amazon S3 every hour and query them with Amazon Athena instead.",
+      "E": "Create materialized views for the common aggregations and enable auto refresh."
+    },
+    "isMulti": true,
+    "requiredCount": 2,
+    "correctAnswers": [
+      "B",
+      "E"
+    ],
+    "explanation": "### ✅ Why Options B & E are Correct\n\n* **Concurrency scaling:** When concurrency scaling is enabled for a WLM queue, Amazon Redshift automatically adds transient cluster capacity to run queued queries during bursts, then removes it. No manual resizing is required.\n* **Materialized views:** Materialized views store precomputed results of expensive joins and aggregations, so repeated dashboard queries read far less data. Auto refresh keeps them current as hourly loads arrive.\n* **Complementary fixes:** Concurrency scaling addresses the queueing (too many simultaneous queries); materialized views reduce the cost of each query.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Amazon Redshift does not offer read replicas in the way Amazon RDS does. This is not a feature that can be configured.\n* **Option C is incorrect:** Classic resize is slow and puts the cluster in a read-only mode during the operation. Scheduling it twice weekly adds operational effort and disruption compared with automatic concurrency scaling.\n* **Option D is incorrect:** Hourly exports and moving dashboards to Athena add pipelines and do not reuse precomputed aggregations, so it is more effort and not faster.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Burst of concurrent Redshift queries queuing\" -> concurrency scaling; \"same expensive aggregations repeated\" -> materialized views (with auto refresh); \"query S3 data from Redshift\" -> Redshift Spectrum.\n2. **Serverless alternative:** Amazon Redshift Serverless scales compute automatically, but for an existing provisioned cluster, concurrency scaling is the targeted fix."
+  },
+  {
+    "domain": 3,
+    "task": "3.3",
+    "topics": [
+      "Amazon API Gateway",
+      "API caching",
+      "Amazon DynamoDB",
+      "AWS Lambda"
+    ],
+    "prompt": "A company exposes a product-pricing API through an Amazon API Gateway REST API. The API invokes an AWS Lambda function that reads from an Amazon DynamoDB table. Prices change only a few times each hour, but the API receives thousands of identical GET requests per second for the same products. Latency and Lambda and DynamoDB costs have increased with traffic. The company wants to improve response time with the fewest changes to the application code. Which solution meets these requirements?",
+    "options": {
+      "A": "Configure provisioned concurrency for the Lambda function.",
+      "B": "Add a DynamoDB Accelerator (DAX) cluster and change the Lambda function to use the DAX client.",
+      "C": "Enable API caching on the stage with the product ID in the cache key and a TTL of a few minutes.",
+      "D": "Migrate the REST API to an HTTP API to reduce per-request overhead."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Responses served from cache:** With stage-level API caching, API Gateway returns cached responses for repeated requests until the TTL expires, without invoking the Lambda function or reading DynamoDB.\n* **Correct cache key:** Adding the product ID as a cache key parameter keeps responses for different products separate, and a TTL of a few minutes is acceptable because prices change only a few times per hour.\n* **No code change:** Caching is a configuration setting on the REST API stage and requires no changes to the function.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Provisioned concurrency removes cold starts but every request still invokes Lambda and reads DynamoDB, so cost and latency from repeated identical reads remain.\n* **Option B is incorrect:** DAX speeds up DynamoDB reads, but requests still invoke Lambda, and the function code must be changed to use the DAX client.\n* **Option D is incorrect:** HTTP APIs do not support API Gateway response caching, so migrating would remove the option that best solves this problem.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Many identical GET requests, data changes infrequently, API Gateway REST API\" -> enable stage caching with a TTL.\n2. **Caching layers:** Cache as close to the client as possible: CloudFront at the edge, API Gateway caching at the API, DAX or ElastiCache in front of the database."
+  },
+  {
+    "domain": 3,
+    "task": "3.4",
+    "topics": [
+      "Amazon CloudFront",
+      "Cache policies",
+      "Origin request policies"
+    ],
+    "prompt": "A company serves product listing pages through an Amazon CloudFront distribution that uses legacy cache settings to forward all headers, all cookies, and all query strings to an Application Load Balancer origin. The cache hit ratio is below 5%, and the origin is overloaded. The page content varies only by the category and page query strings. The origin still needs to receive the CloudFront-Viewer-Country header and the users' cookies for analytics logging, but these values do not change the response. Which combination of steps will increase the cache hit ratio while meeting these requirements? (Select TWO.)",
+    "options": {
+      "A": "Attach a cache policy whose cache key includes only the category and page query strings, with no headers or cookies.",
+      "B": "Keep the legacy settings and increase the default TTL and maximum TTL to one year.",
+      "C": "Enable CloudFront Origin Shield and keep forwarding all headers, cookies, and query strings in the cache key.",
+      "D": "Attach an origin request policy that forwards all cookies and the CloudFront-Viewer-Country header to the origin.",
+      "E": "Enable automatic compression of objects on the cache behavior."
+    },
+    "isMulti": true,
+    "requiredCount": 2,
+    "correctAnswers": [
+      "A",
+      "D"
+    ],
+    "explanation": "### ✅ Why Options A & D are Correct\n\n* **Smaller cache key:** Every value in the cache key creates a separate cached object. A cache policy that includes only the category and page query strings lets all users with the same parameters share one cached object, which raises the hit ratio.\n* **Origin request policy:** An origin request policy sends additional headers, cookies, and query strings to the origin on cache misses without adding them to the cache key, so the analytics data still reaches the origin.\n* **Separation of concerns:** Cache policy = what makes a response unique; origin request policy = what the origin needs to see.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** With all headers and cookies forwarded, nearly every request has a unique cache key, so longer TTLs barely help. Forwarding all headers with legacy settings effectively disables caching.\n* **Option C is incorrect:** Origin Shield adds a central caching layer, but if the cache key still contains every header and cookie, almost every request remains unique and misses the cache.\n* **Option E is incorrect:** Compression reduces transfer size and improves download time but does not change how many requests are served from cache.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Low cache hit ratio\" -> trim the cache key with a cache policy; \"origin still needs a header/cookie\" -> origin request policy.\n2. **Exam trap:** Do not put headers like User-Agent or all cookies into the cache key unless the response really varies by them."
+  },
+  {
+    "domain": 3,
+    "task": "3.4",
+    "topics": [
+      "Amazon CloudFront",
+      "CloudFront Functions",
+      "Lambda@Edge"
+    ],
+    "prompt": "A news website serves several million requests per second at peak through Amazon CloudFront. The company must rewrite incoming URLs to normalize them (for example, convert mixed-case paths to lowercase and add index.html to directory paths) and add security response headers to every response. The logic is a few lines of JavaScript, needs no network calls or request body access, and must add the least possible latency at the lowest cost. Which solution meets these requirements?",
+    "options": {
+      "A": "Lambda@Edge functions on the origin request and origin response events.",
+      "B": "An AWS Lambda function URL placed in front of the CloudFront distribution.",
+      "C": "Amazon API Gateway with request and response mapping templates configured as the CloudFront origin.",
+      "D": "CloudFront Functions associated with the viewer request and viewer response events."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Built for this use case:** CloudFront Functions run lightweight JavaScript at CloudFront edge locations for viewer request and viewer response events, such as URL rewrites, redirects, and header manipulation.\n* **Scale and latency:** CloudFront Functions are designed to scale to millions of requests per second with sub-millisecond startup, adding minimal latency.\n* **Lowest cost:** CloudFront Functions are priced lower than Lambda@Edge, and this logic needs none of the extra capabilities (network access, body access, longer run time) that Lambda@Edge provides.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Lambda@Edge supports these tasks but costs more and has higher startup latency. Origin request/response events also run only on cache misses, after the cache lookup, so differently cased URLs would still create separate cache entries before being normalized.\n* **Option B is incorrect:** A Lambda function URL is a regional HTTPS endpoint for a single function. It cannot sit in front of CloudFront and would add a regional round trip to every request.\n* **Option C is incorrect:** API Gateway as the origin would process only cache misses, add regional latency and cost, and is not designed to rewrite viewer URLs for static content.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Simple header/URL manipulation, viewer events, millions of RPS, cheapest\" -> CloudFront Functions; \"network calls, body access, origin events, longer processing\" -> Lambda@Edge.\n2. **CloudFront KeyValueStore:** CloudFront Functions can read from CloudFront KeyValueStore for data such as redirect maps without changing function code."
+  },
+  {
+    "domain": 3,
+    "task": "3.4",
+    "topics": [
+      "AWS Direct Connect",
+      "SiteLink",
+      "Direct Connect gateway"
+    ],
+    "prompt": "A company has data centers in Frankfurt and Singapore. Each data center connects to AWS through a dedicated AWS Direct Connect connection at a nearby Direct Connect location, and both connections use private virtual interfaces attached to the same Direct Connect gateway to reach VPCs. The company now needs high-bandwidth, low-latency connectivity directly between the two data centers. Traffic should take the shortest path across the AWS global network without passing through any AWS Region. Which solution meets these requirements with the LEAST operational overhead?",
+    "options": {
+      "A": "Deploy a transit gateway in eu-central-1 and in ap-southeast-1, peer them, and route data center traffic through the peering connection.",
+      "B": "Enable SiteLink on the private virtual interfaces of both Direct Connect connections.",
+      "C": "Create an AWS Global Accelerator standard accelerator with endpoints in both data centers.",
+      "D": "Configure AWS Site-to-Site VPN connections between the two data centers by using accelerated VPN."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Data center to data center over AWS:** SiteLink lets on-premises sites connected to different Direct Connect locations send traffic to each other over the AWS global network, using the shortest path between Direct Connect locations.\n* **Bypasses AWS Regions:** SiteLink traffic flows between Direct Connect locations without needing to traverse an AWS Region or a VPC.\n* **Simple to enable:** SiteLink is enabled per virtual interface that is attached to a Direct Connect gateway, which the company already uses; no new appliances or tunnels are required.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Transit gateway peering would work only by sending traffic into and between AWS Regions, adding hops, cost, and components to manage. It does not meet the requirement to avoid Regions.\n* **Option C is incorrect:** Global Accelerator improves internet user traffic to AWS endpoints such as load balancers and EC2 instances. It cannot use on-premises data centers as endpoints or connect sites to each other.\n* **Option D is incorrect:** Accelerated Site-to-Site VPN terminates on a transit gateway in an AWS Region; it does not create direct site-to-site VPN connectivity between two on-premises data centers, and VPN tunnels offer less bandwidth than Direct Connect.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Connect on-premises sites to each other over the AWS backbone using existing Direct Connect, without going through a Region\" -> Direct Connect SiteLink.\n2. **Direct Connect gateway:** A Direct Connect gateway is the global object that links virtual interfaces to VGWs/transit gateways in any Region and is required for SiteLink."
+  },
+  {
+    "domain": 3,
+    "task": "3.4",
+    "topics": [
+      "Amazon VPC",
+      "IP addressing",
+      "Subnets"
+    ],
+    "prompt": "A company runs containerized services as Amazon ECS tasks that use the awsvpc network mode, so each task receives its own IP address from the VPC. The VPC has a /22 IPv4 CIDR block, and the subnets are almost out of free IP addresses, which blocks new tasks from launching during scale-out. The company wants to keep the existing VPC, its connections, and its running workloads. Which solution will provide more IP addresses with the LEAST disruption?",
+    "options": {
+      "A": "Modify the VPC's primary CIDR block to a larger /16 range.",
+      "B": "Increase the size of each existing subnet by editing the subnet CIDR blocks.",
+      "C": "Associate a secondary IPv4 CIDR block with the VPC, create new subnets from it, and add them to the ECS service network configuration.",
+      "D": "Create a new VPC with a /16 CIDR block, peer it with the existing VPC, and redeploy all services into the new VPC."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **VPCs can grow:** You can associate additional (secondary) IPv4 CIDR blocks with an existing VPC without affecting the existing subnets or workloads.\n* **New subnets from the new range:** New subnets created from the secondary CIDR block can be added to the ECS service so tasks get IP addresses from the larger pool.\n* **No redeployment:** Existing route tables, gateways, and connections remain in place; local routes for the secondary CIDR are added automatically.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** The primary CIDR block of a VPC cannot be modified after creation.\n* **Option B is incorrect:** A subnet's CIDR block cannot be changed after the subnet is created.\n* **Option D is incorrect:** Building a new VPC and moving every service works but causes the most disruption and effort, which the company wants to avoid.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"VPC running out of IP addresses\" -> add a secondary CIDR block (or use IPv6) and create new subnets.\n2. **Design tip:** Plan VPC CIDRs for growth and avoid overlap with on-premises and other VPCs, because overlapping ranges block peering and transit gateway routing."
+  },
+  {
+    "domain": 3,
+    "task": "3.5",
+    "topics": [
+      "Amazon Kinesis Data Streams",
+      "Enhanced fan-out"
+    ],
+    "prompt": "A financial company streams market data into an Amazon Kinesis Data Streams data stream. Five separate consumer applications (fraud detection, risk, alerting, archiving, and analytics) read every record from the stream. As more consumers were added, consumers began falling behind, receiving ReadProvisionedThroughputExceeded errors and seeing higher read latency. Each consumer needs its own read throughput and the lowest possible latency. Which solution meets these requirements?",
+    "options": {
+      "A": "Register each consumer application as an enhanced fan-out consumer and read with SubscribeToShard.",
+      "B": "Increase the data retention period of the stream to 7 days.",
+      "C": "Increase the polling frequency of each consumer's GetRecords calls.",
+      "D": "Replace the stream with an Amazon SQS standard queue that all five applications poll."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Dedicated throughput:** With enhanced fan-out, each registered consumer receives its own 2 MB per second of read throughput per shard instead of sharing the shard's standard 2 MB per second read limit with all other consumers.\n* **Lower latency:** Enhanced fan-out pushes records to consumers over HTTP/2 through SubscribeToShard, so consumers do not need to poll, which lowers propagation latency.\n* **Scales with consumers:** Adding consumers no longer reduces the throughput available to the existing ones.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Retention controls how long records are stored, not how fast consumers can read them.\n* **Option C is incorrect:** With shared-throughput consumers, each shard supports a limited number of GetRecords calls per second (5) shared by all consumers. Polling more often makes throttling worse.\n* **Option D is incorrect:** In SQS, each message is delivered to and deleted by one consumer, so five independent applications could not each receive every record without a fan-out design. It also loses the ordering and replay semantics of the stream.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Multiple consumers, each needs full throughput, low latency\" -> Kinesis Data Streams enhanced fan-out.\n2. **Producer side vs consumer side:** Write throttling (ProvisionedThroughputExceeded on PutRecord) is fixed with more shards / on-demand mode and better partition keys; read contention among many consumers is fixed with enhanced fan-out."
+  },
+  {
+    "domain": 3,
+    "task": "3.5",
+    "topics": [
+      "Amazon Data Firehose",
+      "Dynamic partitioning",
+      "Amazon S3",
+      "Amazon Athena"
+    ],
+    "prompt": "A SaaS company ingests JSON usage events for thousands of tenants through Amazon Data Firehose into a single Amazon S3 prefix. Each event contains a tenant_id field. Tenant-specific Amazon Athena queries now scan the entire dataset, and the company must also be able to apply per-tenant S3 lifecycle and access rules. The company wants the data written to S3 under prefixes such as tenant_id=123/year=2026/month=10/ with the LEAST operational overhead. Which solution meets these requirements?",
+    "options": {
+      "A": "Run an hourly AWS Glue job that reads new objects and rewrites them into tenant-specific prefixes.",
+      "B": "Configure an S3 event notification that invokes an AWS Lambda function to copy each new object into the correct tenant prefix.",
+      "C": "Create a separate Firehose stream for each tenant and route events to the correct stream in the producer code.",
+      "D": "Enable Firehose dynamic partitioning with inline JQ parsing of tenant_id and the event timestamp."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Partition in flight:** Firehose dynamic partitioning extracts keys from the records (with inline JQ parsing for JSON, or a Lambda function) and writes each record to an S3 prefix built from those keys.\n* **Better queries and controls:** Data lands already partitioned by tenant and date, so Athena can prune partitions, and per-tenant prefixes allow prefix-based lifecycle rules and access policies.\n* **Fully managed:** No extra jobs, functions, or per-tenant streams are needed.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** A scheduled Glue job duplicates data, adds latency, and is an additional pipeline to build and operate.\n* **Option B is incorrect:** Copying every object with Lambda doubles writes and storage until cleanup, and an object can contain events from many tenants, so it would need to be split, adding custom code.\n* **Option C is incorrect:** Thousands of Firehose streams and routing logic in every producer create significant operational overhead and do not scale with tenant growth.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Firehose + partition S3 data by a field in the record\" -> dynamic partitioning; \"convert JSON to Parquet in flight\" -> record format conversion.\n2. **Athena performance:** Partition on the columns most used in WHERE clauses, and avoid very high-cardinality partition keys that create many small files."
+  },
+  {
+    "domain": 3,
+    "task": "3.5",
+    "topics": [
+      "Amazon Quick Sight",
+      "SPICE",
+      "Amazon Athena"
+    ],
+    "prompt": "A company has a data lake in Amazon S3 that is queried with Amazon Athena. It wants to give 800 business users interactive dashboards with filters and drill-downs, and it wants the dashboards to respond quickly without running an Athena query every time a user changes a filter. The data is refreshed once each night. The company wants a fully managed solution with no servers to manage. Which solution meets these requirements?",
+    "options": {
+      "A": "Build dashboards in Amazon Managed Grafana that query Athena directly for every panel refresh.",
+      "B": "Build dashboards in Amazon Quick Sight that import the Athena datasets into SPICE with a nightly scheduled refresh.",
+      "C": "Export query results to CSV files in S3 each night and share presigned URLs with users.",
+      "D": "Install an open-source BI tool on Amazon EC2 instances in an Auto Scaling group and connect it to Athena."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Managed BI:** Amazon Quick Sight (part of Amazon Quick Suite, formerly Amazon QuickSight) is a serverless business intelligence service for interactive dashboards with filters and drill-downs that scale to many users.\n* **SPICE in-memory engine:** Importing data into SPICE lets dashboards serve interactions from an in-memory engine instead of sending a new Athena query each time, giving fast response and fewer Athena scans.\n* **Matches refresh pattern:** A scheduled nightly SPICE refresh aligns with the nightly data update.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Managed Grafana is aimed at operational metrics and observability. Querying Athena for every panel refresh is slower and scans data repeatedly.\n* **Option C is incorrect:** CSV files and presigned URLs are not interactive dashboards and provide no filters or drill-downs.\n* **Option D is incorrect:** Self-managed BI servers on EC2 add patching, scaling, and availability work, which conflicts with the no-servers requirement.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Business dashboards / BI visualization for many users\" -> Amazon Quick Sight; \"fast interactive dashboards\" -> SPICE; \"operational metrics dashboards\" -> Managed Grafana / CloudWatch dashboards.\n2. **Direct query vs SPICE:** Use direct query when data must be real time; use SPICE when periodic refresh is acceptable and speed and concurrency matter."
+  },
+  {
+    "domain": 3,
+    "task": "3.5",
+    "topics": [
+      "Amazon Redshift Spectrum",
+      "Amazon S3",
+      "AWS Glue Data Catalog"
+    ],
+    "prompt": "A company keeps the most recent 12 months of sales data in an Amazon Redshift cluster. Seven years of older sales history is stored in Amazon S3 as Apache Parquet files that are cataloged in the AWS Glue Data Catalog. Analysts occasionally need to run SQL queries that join the recent data in Redshift with the historical data in S3. The company does not want to load the historical data into the cluster or increase the cluster size. Which solution meets these requirements?",
+    "options": {
+      "A": "Use the COPY command to load the historical data into temporary tables before each analysis.",
+      "B": "Use AWS DMS to replicate the historical Parquet files into the Redshift cluster.",
+      "C": "Create an external schema in Redshift that references the Glue Data Catalog database and query the S3 data with Redshift Spectrum.",
+      "D": "Use Amazon Athena federated queries to join the S3 data with Redshift, and copy the results back to Redshift."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Query S3 in place:** Redshift Spectrum lets Redshift query data in S3 through external tables without loading it into the cluster.\n* **Reuse the catalog:** An external schema can point to the existing Glue Data Catalog database, so the Parquet tables are immediately usable.\n* **Join in one SQL statement:** Analysts can join external S3 tables with local Redshift tables in the same query; Spectrum's separate fleet scans S3, so the cluster does not need to grow.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Loading seven years of history each time uses cluster storage and time, which the company wants to avoid.\n* **Option B is incorrect:** AWS DMS is designed for database migration and replication. Replicating seven years of history into Redshift loads it into the cluster, which contradicts the requirement and adds a replication task to operate.\n* **Option D is incorrect:** This adds an extra service and a copy step. Analysts can do the join directly in Redshift with Spectrum.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Query S3 data from Redshift without loading / join warehouse with data lake\" -> Redshift Spectrum.\n2. **Lake house pattern:** Keep hot data in Redshift managed storage and cold history in S3 (Parquet, partitioned) queried through Spectrum or Athena."
+  }
+]

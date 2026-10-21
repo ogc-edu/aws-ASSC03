@@ -1,0 +1,130 @@
+set1 D1 1.1 [IAM, AWS STS] A company has signed up for a third-party SaaS cost-monitoring service. The vendor's platform runs in the vend
+set1 D1 1.1 [AWS Organizations, SCPs] A company uses AWS Organizations with all features enabled to manage 60 member accounts. Because of data resid
+set1 D1 1.1 [IAM Access Analyzer, AWS Organizations] A security team must continuously identify every S3 bucket, KMS key, IAM role, Lambda function, and SQS queue 
+set1 D1 1.1 [IAM, Root user] A startup has a single standalone AWS account that is not part of AWS Organizations. An audit found that the r
+set1 D1 1.1 [IAM, Permissions boundaries] A platform team wants developers to create IAM roles for their own Lambda functions without waiting for the ce
+set1 D1 1.1 [Amazon SQS, Resource-based policies] A company runs an order-processing system that consumes messages from an Amazon SQS queue in its AWS account. 
+set1 D1 1.1 [Shared responsibility model, Amazon RDS] A company is migrating a self-managed PostgreSQL database from Amazon EC2 to Amazon RDS for PostgreSQL. The co
+set1 D1 1.2 [Amazon VPC, VPC endpoints, Amazon S3] An analytics application runs on Amazon EC2 instances in private subnets that have no NAT gateway. The applica
+set1 D1 1.2 [AWS WAF, Application Load Balancer] A company hosts a public web application on Amazon EC2 instances behind an Application Load Balancer (ALB). Ap
+set1 D1 1.2 [AWS Secrets Manager, Amazon RDS] A company runs an application on Amazon ECS that connects to an Amazon RDS for MySQL DB instance. The applicat
+set1 D1 1.2 [Amazon Cognito, Amazon S3] A company is building a mobile photo-sharing app for millions of consumers. Users must be able to sign up with
+set1 D1 1.2 [Amazon VPC, Security groups, Network segmentation] A company is deploying a three-tier web application in a VPC across two Availability Zones. The tiers are an i
+set1 D1 1.2 [AWS Site-to-Site VPN, AWS Transit Gateway] A company must connect its on-premises data center to 12 VPCs in one AWS Region within one week. Traffic must 
+set1 D1 1.2 [Amazon GuardDuty, AWS Organizations] A company has 40 AWS accounts in AWS Organizations. The security team wants to automatically detect threats su
+set1 D1 1.3 [AWS CloudTrail, AWS Organizations, Log integrity] A company has 50 accounts in AWS Organizations and adds new accounts every month. Auditors require that API ac
+set1 D1 1.3 [AWS KMS, Amazon S3, Cross-account access] Account A stores objects in an S3 bucket encrypted with SSE-KMS using a customer managed key in Account A. An 
+set1 D1 1.3 [AWS Certificate Manager, Amazon CloudFront, Application Load Balancer] A company serves a public website through Amazon CloudFront with an Application Load Balancer as the origin. T
+set1 D1 1.3 [Amazon Macie, Data classification] A healthcare company has thousands of S3 buckets across 25 AWS accounts. A new data governance policy requires
+set1 D1 1.3 [AWS Backup, Vault Lock, Cross-account backup] A company runs workloads on Amazon EC2 with Amazon EBS volumes and on Amazon RDS in a production account in AW
+set1 D1 1.3 [AWS KMS, Key rotation] A company encrypts data in Amazon S3, Amazon EBS, and Amazon DynamoDB with an AWS KMS customer managed symmetr
+set2 D1 1.1 [AWS Control Tower, AWS Organizations] A newly formed company plans to run workloads in dozens of AWS accounts. It needs a well-architected multi-acc
+set2 D1 1.1 [IAM Roles Anywhere, IAM] A company runs batch scripts on on-premises Linux servers that upload files to Amazon S3. The scripts currentl
+set2 D1 1.1 [AWS Organizations, Resource control policies (RCPs)] A company with 200 accounts in AWS Organizations wants to establish a data perimeter. Its S3 buckets, KMS keys
+set2 D1 1.1 [IAM, ABAC, AWS IAM Identity Center] A company creates new projects every week. Engineers sign in through AWS IAM Identity Center, and the identity
+set2 D1 1.1 [IAM, Root user, AWS Organizations] A company manages 300 member accounts in AWS Organizations. Each member account still has root user credential
+set2 D1 1.1 [AWS IAM Identity Center, AWS Directory Service] A company has a self-managed Microsoft Active Directory in its on-premises data center. Employees must use the
+set2 D1 1.1 [Shared responsibility model, AWS Lambda] A company is refactoring an application from Amazon EC2 instances to AWS Lambda functions that use an AWS mana
+set2 D1 1.2 [AWS PrivateLink, AWS Secrets Manager, AWS Lambda] A Lambda function runs in private subnets of a VPC so that it can query an Amazon Aurora database. The functio
+set2 D1 1.2 [AWS Network Firewall, AWS Transit Gateway] A company has 20 VPCs connected through AWS Transit Gateway. Outbound internet traffic from all VPCs must be r
+set2 D1 1.2 [AWS Shield Advanced, Amazon CloudFront, Amazon Route 53] An online gaming company serves its platform through Amazon CloudFront, Application Load Balancers, and Amazon
+set2 D1 1.2 [NAT gateway, Amazon VPC] A company runs application servers in private subnets in two Availability Zones. The servers need outbound IPv
+set2 D1 1.2 [Network ACLs, Amazon VPC] A company runs web servers on EC2 instances in a public subnet. The security team has identified ongoing malic
+set2 D1 1.2 [Amazon ECS, AWS Fargate, AWS Secrets Manager] A company runs a containerized API on Amazon ECS with AWS Fargate. The containers need a third-party API token
+set2 D1 1.2 [AWS Client VPN, Remote access] A company has 500 employees who work remotely from many locations. They need secure access from their laptops 
+set2 D1 1.3 [Amazon S3, AWS KMS, S3 Bucket Keys] A media company writes millions of small objects per hour to an S3 bucket that uses SSE-KMS with a customer ma
+set2 D1 1.3 [Amazon RDS, Encryption at rest] During an audit, a company discovers that an existing Amazon RDS for PostgreSQL DB instance was created withou
+set2 D1 1.3 [AWS KMS, Multi-Region keys, Disaster recovery] An application in us-east-1 performs client-side encryption of sensitive fields before writing items to Amazon
+set2 D1 1.3 [AWS CloudHSM, AWS KMS custom key store] A bank must encrypt data in Amazon S3 and Amazon EBS by using native AWS service integration with AWS KMS. Its
+set2 D1 1.3 [Amazon S3, S3 Object Ownership, Cross-account access] A company's S3 bucket receives data files from five partner companies. Each partner uploads with its own AWS a
+set2 D1 1.3 [Amazon S3, Encryption, S3 Block Public Access] A company is creating an S3 bucket to store confidential contracts. Requirements: objects must never be public
+set1 D2 2.1 [Amazon SQS, Amazon EC2 Auto Scaling, Amazon CloudWatch] A company runs an order-processing application on Amazon EC2 instances. A web tier receives orders and sends t
+set1 D2 2.1 [Amazon SNS, Amazon SQS] A retail company has an inventory service that emits an event every time stock levels change. Three downstream
+set1 D2 2.1 [AWS Step Functions, AWS Lambda] A financial services company is building a loan-approval process. The workflow runs several AWS Lambda functio
+set1 D2 2.1 [Amazon RDS, Read replicas] A company runs an Amazon RDS for PostgreSQL DB instance that supports an online order system. The business int
+set1 D2 2.1 [Amazon ECS, AWS Fargate, Elastic Load Balancing, Amazon ECR] A company wants to migrate a monolithic Java web application from on-premises virtual machines to containers o
+set1 D2 2.1 [Amazon CloudFront, Amazon S3, Elastic Load Balancing] A media company serves a global audience from a single AWS Region. Static assets (images, JavaScript, CSS) are
+set1 D2 2.1 [Amazon API Gateway] A company exposes a public REST API through Amazon API Gateway for third-party partners. Each partner has a co
+set1 D2 2.1 [AWS Transfer Family, Amazon S3] A logistics company receives shipment files from dozens of external partners who upload them with SFTP to a se
+set1 D2 2.1 [Amazon EC2 Auto Scaling, Amazon ElastiCache, Amazon S3, Elastic Load Balancing] A company runs a web application on a fixed group of four Amazon EC2 instances behind an Application Load Bala
+set1 D2 2.2 [Amazon Aurora, Aurora Global Database] A gaming company runs its player-profile database on Amazon Aurora PostgreSQL in us-east-1. The company's DR p
+set1 D2 2.2 [Disaster recovery, Amazon RDS, AWS CloudFormation] A company runs a three-tier application in a single AWS Region with an Amazon RDS for MySQL database. The comp
+set1 D2 2.2 [Amazon RDS Proxy, AWS Lambda, Amazon Aurora] A company has a serverless API built with AWS Lambda functions that query an Amazon Aurora MySQL DB cluster. D
+set1 D2 2.2 [Amazon Route 53, Amazon S3, Health checks] A company hosts its public website on Amazon EC2 instances behind an Application Load Balancer in one AWS Regi
+set1 D2 2.2 [Amazon EC2 Auto Scaling, Availability Zones, Legacy applications] A company runs a legacy, stateless licensing service on a single Amazon EC2 instance. The vendor license allow
+set1 D2 2.2 [Service Quotas, Disaster recovery, AWS Regions] A company uses a warm standby DR strategy. The production Region runs 400 vCPUs of On-Demand EC2 instances, wh
+set1 D2 2.2 [Amazon VPC, NAT gateway, Amazon RDS Multi-AZ] A company runs an application on EC2 instances in private subnets in two Availability Zones behind an Applicat
+set1 D2 2.2 [Amazon S3, S3 Object Lock, S3 Cross-Region Replication, S3 Versioning] A healthcare company stores medical imaging files in an Amazon S3 bucket in eu-west-1. Compliance rules requir
+set2 D2 2.1 [Amazon EventBridge, AWS Lambda, Amazon SQS] A company uses a SaaS customer-support platform that is an Amazon EventBridge partner. The company wants to re
+set2 D2 2.1 [Amazon SQS FIFO] A bank processes account transactions through a queue. Transactions for the same account must be processed str
+set2 D2 2.1 [AWS Fargate, Amazon ECS, Amazon EventBridge Scheduler] A company has a containerized nightly batch job that reconciles financial records. The job runs for about 2 ho
+set2 D2 2.1 [Amazon Kinesis Data Streams] An e-commerce company captures clickstream events from its website. Three independent applications (fraud dete
+set2 D2 2.1 [Amazon FSx for Windows File Server, Storage types] A company is migrating a .NET application that runs on Windows Server to Amazon EC2 instances in two Availabil
+set2 D2 2.1 [Amazon DynamoDB, DynamoDB Accelerator (DAX), Caching strategies] A gaming company stores leaderboard and player data in Amazon DynamoDB. The workload is extremely read-heavy, 
+set2 D2 2.1 [Amazon API Gateway, Amazon SQS, AWS Lambda] A company exposes an API through Amazon API Gateway for submitting document-conversion jobs. Each conversion t
+set2 D2 2.1 [Amazon EKS, Kubernetes autoscaling] A company runs a microservices application on an Amazon EKS cluster with managed node groups. During daily tra
+set2 D2 2.2 [AWS Backup, AWS Organizations] A company runs workloads that use Amazon EC2 instances with EBS volumes, Amazon RDS databases, and Amazon EFS 
+set2 D2 2.2 [Amazon DynamoDB global tables, Amazon Route 53, Multi-Region active-active] A global payments startup needs its customer-profile service to remain fully available for both reads and writ
+set2 D2 2.2 [AWS Global Accelerator, Network Load Balancer] A company runs a multiplayer game backend that uses UDP on Network Load Balancers in two AWS Regions. Players'
+set2 D2 2.2 [AWS X-Ray, Workload visibility] A company runs an order API composed of Amazon API Gateway, several AWS Lambda functions, and calls to Amazon 
+set2 D2 2.2 [Immutable infrastructure, Amazon EC2 Auto Scaling, Launch templates] A company runs a web application on Amazon EC2 instances in an Auto Scaling group. Administrators currently pa
+set2 D2 2.2 [Amazon EC2 Auto Scaling, Elastic Load Balancing, Health checks] A company runs an application on Amazon EC2 instances in an Auto Scaling group behind an Application Load Bala
+set2 D2 2.2 [Amazon Aurora, Aurora Replicas, Availability Zones] A company runs an Amazon Aurora MySQL DB cluster that has a single writer DB instance and no other DB instance
+set2 D2 2.2 [Amazon SQS, Dead-letter queues, AWS Lambda] A company uses an AWS Lambda function to process messages from an Amazon SQS standard queue. Each message take
+set2 D2 2.2 [Disaster recovery, Warm standby, Amazon Route 53, Amazon RDS] A company runs a web application on Amazon EC2 instances in an Auto Scaling group behind an Application Load B
+set1 D3 3.1 [Amazon FSx for Lustre, Amazon S3] A research company runs genomics workloads on a fleet of several hundred Amazon EC2 instances. Every job reads
+set1 D3 3.1 [Amazon EBS, Amazon EC2] A company runs a self-managed, latency-sensitive OLTP database on a single Nitro-based Amazon EC2 instance. Lo
+set1 D3 3.1 [Amazon S3, S3 Transfer Acceleration, S3 multipart upload] A media company stores user-submitted video files in an Amazon S3 bucket in the us-east-1 Region. Users in Asi
+set1 D3 3.2 [Amazon EC2, Cluster placement groups, Elastic Fabric Adapter (EFA)] A research institute runs a tightly coupled computational fluid dynamics simulation that uses MPI across 64 Am
+set1 D3 3.2 [AWS Lambda] A company has an AWS Lambda function that resizes and watermarks images uploaded to Amazon S3. The function is
+set1 D3 3.2 [AWS Batch, Amazon EC2 Spot Instances, Amazon ECS] An engineering firm runs thousands of containerized simulation jobs each night. Each job runs for 1-3 hours, s
+set1 D3 3.3 [Amazon Aurora, Aurora Replicas] A company runs an order-management application on an Amazon Aurora MySQL-Compatible DB cluster that has a sing
+set1 D3 3.3 [Amazon Redshift, Amazon RDS for PostgreSQL] A retail company runs its order-processing application on Amazon RDS for PostgreSQL. Analysts also run complex
+set1 D3 3.3 [Amazon DynamoDB, DynamoDB Accelerator (DAX)] A retail company uses an Amazon DynamoDB table to store product availability for its mobile app. The workload 
+set1 D3 3.4 [AWS Global Accelerator, Network Load Balancer] A gaming company hosts a multiplayer game backend that uses a custom UDP protocol. The backend runs behind Net
+set1 D3 3.4 [AWS Transit Gateway, AWS Direct Connect, AWS RAM] A company has 60 VPCs across multiple AWS accounts in one Region and expects to add more each quarter. Workloa
+set1 D3 3.4 [Gateway Load Balancer, Amazon VPC] A financial services company must inspect all traffic entering and leaving its application VPCs by using a fle
+set1 D3 3.5 [Amazon Data Firehose, AWS Glue Data Catalog, Amazon S3] A company collects JSON clickstream events from its web servers at a rate of several thousand events per secon
+set1 D3 3.5 [AWS DataSync, AWS Direct Connect, Amazon S3] A company must migrate 500 TB of files from an on-premises NFS file server to Amazon S3 within 3 weeks. The da
+set1 D3 3.5 [Amazon Athena, AWS Glue, Amazon S3] A company stores 30 TB of application logs in Amazon S3 as uncompressed CSV files under a single prefix. Analy
+set2 D3 3.1 [Amazon S3 Express One Zone, Amazon S3] A company runs machine learning training jobs on Amazon EC2 instances in a single Availability Zone. Each trai
+set2 D3 3.1 [AWS Storage Gateway, Amazon S3 File Gateway, Amazon S3] A manufacturing company wants to store engineering files in Amazon S3 so that cloud-based analytics can use th
+set2 D3 3.1 [Amazon EFS, AWS Fargate, Amazon ECS] A company runs a Linux-based content management application as Amazon ECS tasks on AWS Fargate across three Av
+set2 D3 3.2 [Amazon SNS, Amazon SQS] A company's order service currently calls an inventory service, a shipping service, and an analytics service s
+set2 D3 3.2 [AWS Lambda, Lambda SnapStart] A company runs a Java 21 Spring Boot application on AWS Lambda behind Amazon API Gateway. Traffic is unpredict
+set2 D3 3.2 [Amazon EKS, AWS Fargate] A company is migrating dozens of containerized microservices from an on-premises Kubernetes cluster. The devel
+set2 D3 3.3 [Amazon Aurora Serverless v2, Amazon Aurora] A software company is launching a new MySQL-compatible SaaS application. Database load is unpredictable: it is
+set2 D3 3.3 [Amazon Aurora Global Database, Amazon Aurora PostgreSQL] A global logistics company runs its application on Amazon Aurora PostgreSQL-Compatible in eu-west-1. The compa
+set2 D3 3.3 [Amazon ElastiCache, Amazon RDS for MySQL] An ecommerce company's product catalog pages query an Amazon RDS for MySQL DB instance. Monitoring shows that 
+set2 D3 3.4 [Amazon CloudFront, Amazon S3, Origin access control (OAC)] A company hosts static assets (images, JavaScript, and CSS) for its website in a private Amazon S3 bucket in u
+set2 D3 3.4 [Network Load Balancer, Elastic Load Balancing] A financial trading platform uses a proprietary TCP-based protocol and must handle millions of requests per se
+set2 D3 3.4 [AWS PrivateLink, Network Load Balancer, Amazon VPC] A SaaS provider runs an API in its own VPC and must make it available to hundreds of customer VPCs in differen
+set2 D3 3.5 [Amazon Kinesis Data Streams] A ride-sharing company ingests vehicle location updates from its mobile apps into an Amazon Kinesis Data Strea
+set2 D3 3.5 [AWS Lake Formation, Amazon Athena, Amazon S3] A company is building a data lake in Amazon S3 that is cataloged in the AWS Glue Data Catalog and queried with
+set2 D3 3.5 [Amazon MSK, Amazon MSK Serverless, Apache Kafka] A company runs dozens of on-premises producer and consumer applications that use the Apache Kafka client APIs 
+set1 D4 4.1 [Amazon S3, S3 Intelligent-Tiering] A media company stores 400 TB of user-uploaded assets in Amazon S3 Standard. Access patterns are unpredictable
+set1 D4 4.1 [Amazon EBS, gp3] A company runs a fleet of Amazon EC2 instances that each use a 1 TiB General Purpose SSD (gp2) data volume. Mo
+set1 D4 4.1 [Amazon S3, Requester Pays] A research institute publishes a 2 PB genomics dataset in an Amazon S3 bucket. Hundreds of partner organizatio
+set1 D4 4.1 [Amazon S3, S3 Lifecycle, S3 Versioning] A company has an S3 bucket with S3 Versioning enabled that stores application build artifacts. S3 Storage Lens
+set1 D4 4.2 [Amazon EC2, Spot Instances, Amazon EC2 Auto Scaling] A company runs a nightly batch job that renders video frames on a fleet of 200 Amazon EC2 instances. The job c
+set1 D4 4.2 [Savings Plans, Amazon EC2, AWS Fargate, AWS Lambda] A company has a steady baseline of compute usage of about $40 per hour across Amazon EC2, AWS Fargate, and AWS
+set1 D4 4.2 [Amazon EC2, Amazon EventBridge Scheduler, AWS Compute Optimizer] A company runs 120 non-production Amazon EC2 instances for development and testing. The instances run 24 hours
+set1 D4 4.3 [Amazon Aurora Serverless v2] A company has an internal reporting application that uses a MySQL-compatible database. The application is used
+set1 D4 4.3 [Amazon Aurora, Aurora I/O-Optimized, AWS Cost Explorer] A company runs an I/O-intensive OLTP application on an Amazon Aurora PostgreSQL cluster that uses the Aurora S
+set1 D4 4.3 [Amazon DynamoDB, DynamoDB TTL] A company stores user session records in an Amazon DynamoDB table that uses provisioned capacity. Each session
+set1 D4 4.4 [Amazon VPC, VPC endpoints, NAT gateway, Amazon S3] An application running on Amazon EC2 instances in private subnets processes about 50 TB of data each month tha
+set1 D4 4.4 [Amazon VPC, Public IPv4 addresses, Elastic IP addresses] A company's AWS Cost and Usage Report shows rising charges for public IPv4 addresses. The company has 300 Amaz
+set1 D4 4.4 [NAT gateway, Amazon VPC] A company has a development VPC that spans three Availability Zones. Each AZ has its own NAT gateway for outbo
+set2 D4 4.1 [Amazon EFS, EFS lifecycle management] A company uses an Amazon EFS file system (EFS Standard storage class) as shared storage for a fleet of Linux a
+set2 D4 4.1 [Amazon S3 Glacier Deep Archive, S3 Lifecycle] A financial services company must retain scanned account documents for 10 years to meet regulatory requirement
+set2 D4 4.1 [Amazon EBS, st1] A company runs a log analytics application on Amazon EC2. Each night, the application reads 12 TiB of log file
+set2 D4 4.1 [Cost allocation tags, AWS Budgets, AWS Cost Explorer] Several project teams share a single AWS account and store data in many Amazon S3 buckets and Amazon EFS file 
+set2 D4 4.2 [AWS Fargate, AWS Graviton] A company runs a production REST API as Amazon ECS services on AWS Fargate by using the x86 architecture. The 
+set2 D4 4.2 [AWS Lambda, Amazon S3, Amazon EC2] A company generates thumbnails for images that customers upload to an Amazon S3 bucket. About 2,000 images are
+set2 D4 4.2 [Amazon EC2 Auto Scaling, Savings Plans, Spot Instances] A company runs a stateless web application on an Amazon EC2 Auto Scaling group behind an Application Load Bala
+set2 D4 4.3 [Amazon DynamoDB, Provisioned capacity, Reserved capacity] An Amazon DynamoDB table uses on-demand capacity mode. Over the past year, traffic has been steady and highly 
+set2 D4 4.3 [Amazon ElastiCache, Amazon RDS] An ecommerce application uses an Amazon RDS for MySQL DB instance. The same product catalog queries are execut
+set2 D4 4.3 [AWS DMS, Amazon Aurora PostgreSQL, DMS Schema Conversion] A company runs a 5 TB Oracle Database Enterprise Edition database on premises. License and support renewal cos
+set2 D4 4.4 [AWS Direct Connect, Data transfer] A company's on-premises analytics cluster downloads about 60 TB each month from Amazon S3 and Amazon EC2 in on
+set2 D4 4.4 [VPC peering, AWS Transit Gateway] A company has exactly two VPCs in the same AWS Region: an application VPC and a shared data VPC. The VPCs are 
+set2 D4 4.4 [Elastic Load Balancing, Application Load Balancer] A company runs 15 internal HTTP microservices on Amazon ECS. Each microservice has its own Application Load Ba

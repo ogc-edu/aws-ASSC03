@@ -1,0 +1,333 @@
+[
+  {
+    "domain": 3,
+    "task": "3.1",
+    "topics": [
+      "Amazon FSx for OpenZFS",
+      "File storage migration"
+    ],
+    "prompt": "A company runs a Linux-based software build farm that uses an on-premises ZFS file server exported over NFS. Builds depend on ZFS features: engineers create instant point-in-time snapshots and writable clones of large source trees for each build. The workload consists of many small-file operations and needs sub-millisecond latency. The company wants to move the file server to a fully managed AWS service without changing its workflows. Which service should a solutions architect recommend?",
+    "options": {
+      "A": "Amazon FSx for OpenZFS",
+      "B": "Amazon EFS with Elastic throughput",
+      "C": "Amazon FSx for Windows File Server",
+      "D": "Amazon S3 with Mountpoint for Amazon S3 on each build server"
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **ZFS feature parity:** FSx for OpenZFS is a fully managed file system built on OpenZFS. It provides instant point-in-time snapshots and writable clones, so the existing build workflow carries over.\n* **Performance:** It is accessed over NFS (v3 and v4.x) from Linux clients and delivers sub-millisecond latency, which suits metadata-heavy, small-file workloads such as builds.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** EFS is a scalable managed NFS file system, but it does not provide ZFS-style instant writable clones, and its per-operation latency is generally higher for small-file workloads.\n* **Option C is incorrect:** FSx for Windows File Server is for SMB clients and Windows workloads. It does not provide ZFS snapshots and clones to Linux NFS clients.\n* **Option D is incorrect:** Mountpoint for Amazon S3 provides file access to S3 objects with limited file system semantics, such as no in-place modification of existing files. It cannot provide snapshots or writable clones.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **FSx for OpenZFS:** Choose it for migrating ZFS or Linux NFS file servers that need snapshots, clones, compression, and low latency.\n2. **Clues:** \"ZFS,\" \"writable clones,\" or \"Linux NFS with sub-millisecond latency\" point to FSx for OpenZFS. \"NetApp\" or \"multiprotocol\" points to FSx for ONTAP."
+  },
+  {
+    "domain": 3,
+    "task": "3.1",
+    "topics": [
+      "Amazon EBS",
+      "EBS fast snapshot restore"
+    ],
+    "prompt": "A company uses an EBS-backed Amazon EC2 Auto Scaling group for a read-intensive search tier. Each new instance creates a 2 TiB data volume from the latest Amazon EBS snapshot of a prebuilt index. New instances show high I/O latency for a long time after launch because blocks are loaded from Amazon S3 the first time they are read. The company needs new instances to deliver full volume performance immediately after launch, without adding custom initialization scripts. Which solution meets these requirements?",
+    "options": {
+      "A": "Change the data volumes from gp3 to io2 and provision higher IOPS.",
+      "B": "Run a user data script that reads every block of the volume with dd or fio before the instance joins the load balancer.",
+      "C": "Enable EBS fast snapshot restore on the snapshot in each Availability Zone that the Auto Scaling group uses.",
+      "D": "Copy the snapshot to the Amazon EBS Snapshots Archive tier so that it can be restored faster."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Fully initialized at creation:** Volumes created from a snapshot that has fast snapshot restore (FSR) enabled are fully initialized when they are created. They deliver all of their provisioned performance immediately, without the first-touch latency of lazy loading from S3.\n* **Per-AZ setting:** FSR is enabled for specific snapshots in specific Availability Zones. Enable it in every AZ that the Auto Scaling group launches into.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Lazy loading affects every EBS volume type. Higher provisioned IOPS do not remove the first-read latency of blocks that have not been fetched from the snapshot yet.\n* **Option B is incorrect:** Pre-warming by reading every block works, but it is a custom initialization script that the company wants to avoid. It also delays when instances can serve traffic, especially for 2 TiB volumes.\n* **Option D is incorrect:** The Archive tier is a low-cost tier for rarely accessed snapshots. Restoring from it takes hours, which is the opposite of faster.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Volume initialization:** Volumes restored from snapshots are lazy-loaded from S3 by default. Use fast snapshot restore when restored volumes need full performance immediately (for example, Auto Scaling, VDI, or DR).\n2. **Archive tier:** The EBS Snapshots Archive tier is for long-term, rarely restored snapshots. It is a cost optimization, not a performance feature."
+  },
+  {
+    "domain": 3,
+    "task": "3.1",
+    "topics": [
+      "Amazon FSx for Lustre",
+      "Scratch file systems",
+      "Amazon S3"
+    ],
+    "prompt": "A financial analytics firm runs a quarterly risk simulation that reads 40 TB of input data from Amazon S3, runs for about 8 hours on hundreds of Amazon EC2 instances, and writes results back to Amazon S3. The simulation needs a shared high-throughput POSIX file system only for the duration of the run, and the file system is deleted afterward. All source data is safely stored in Amazon S3, so data on the file system does not need to be replicated. Which file system configuration is MOST cost-effective while meeting the performance requirements?",
+    "options": {
+      "A": "An Amazon FSx for Lustre Persistent file system with daily automatic backups enabled",
+      "B": "An Amazon FSx for Lustre Scratch file system linked to the S3 bucket",
+      "C": "An Amazon EFS file system with Provisioned throughput mode",
+      "D": "An Amazon FSx for NetApp ONTAP Multi-AZ file system"
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Scratch is built for short-term processing:** FSx for Lustre Scratch file systems are designed for temporary storage and short-term processing. Data is not replicated within the file system, which keeps the cost lower than Persistent deployments while providing high burst throughput.\n* **S3 linkage:** Linking the file system to S3 lets jobs load the input data from S3 and export results back to S3. Because S3 holds the durable copy, the lack of replication is acceptable.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Persistent file systems replicate data within an AZ and support backups for long-running workloads. The extra durability is unnecessary and costs more for an 8-hour run with source data in S3.\n* **Option C is incorrect:** EFS is a general-purpose shared file system, not a parallel file system for HPC. Provisioned throughput at HPC-level rates is expensive, and EFS has no automatic S3 import and export.\n* **Option D is incorrect:** FSx for ONTAP Multi-AZ is designed for highly available enterprise file shares. It is not optimized for HPC parallel throughput, and Multi-AZ resiliency is wasted on temporary data.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Lustre deployment types:** Scratch = temporary, short-term, cost-optimized, data not replicated. Persistent = long-term or long-running workloads, data replicated within an AZ, backups supported.\n2. **Pattern:** HPC burst + data lake in S3 = FSx for Lustre linked to S3. Create it for the job and delete it afterward."
+  },
+  {
+    "domain": 3,
+    "task": "3.2",
+    "topics": [
+      "Amazon EC2",
+      "Spread placement groups"
+    ],
+    "prompt": "A company runs a small cluster of five Amazon EC2 instances that act as a primary-replica coordination service for a critical trading application. All five instances must run in one Availability Zone to keep inter-node latency low, but the company wants to minimize the risk that a single hardware failure affects more than one instance at the same time. Which solution meets these requirements?",
+    "options": {
+      "A": "Launch the instances in a cluster placement group.",
+      "B": "Launch the instances on a single Dedicated Host.",
+      "C": "Launch the instances in an Auto Scaling group that spans three Availability Zones.",
+      "D": "Launch the instances in a spread placement group."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Distinct hardware:** A spread placement group places each instance on a distinct rack, with its own network and power source. A single hardware failure can affect at most one instance in the group.\n* **Within limits:** Spread placement groups support up to seven running instances per Availability Zone per group, so five critical instances in one AZ fit.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** A cluster placement group packs instances close together on the same network segment for maximum network performance, which increases the risk of correlated hardware failure.\n* **Option B is incorrect:** Running all instances on one Dedicated Host places them on the same physical server, so a single host failure takes them all down.\n* **Option C is incorrect:** Spreading across three AZs violates the requirement to keep all instances in one AZ for low latency.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Spread placement groups:** Use them for a small number of critical instances that must be kept on separate hardware. The limit is seven running instances per AZ per group.\n2. **Compare:** Cluster = performance. Partition = large, topology-aware distributed systems. Spread = maximum isolation for a few instances."
+  },
+  {
+    "domain": 3,
+    "task": "3.2",
+    "topics": [
+      "Amazon ECS",
+      "Capacity providers",
+      "Cluster auto scaling"
+    ],
+    "prompt": "A company runs Amazon ECS services on an ECS cluster backed by an Amazon EC2 Auto Scaling group. ECS Service Auto Scaling correctly increases the desired task count during traffic spikes, but new tasks often stay in the PROVISIONING state because no container instance has enough free CPU or memory. Operators currently add EC2 instances by hand. The company wants the cluster's EC2 capacity to scale automatically with task demand and wants to keep using EC2 instances. What should a solutions architect do?",
+    "options": {
+      "A": "Create an ECS capacity provider for the Auto Scaling group with managed scaling enabled, and use it in the services' capacity provider strategy.",
+      "B": "Create a CloudWatch alarm on the cluster's average CPU utilization that triggers a step scaling policy on the Auto Scaling group.",
+      "C": "Increase the CPU and memory reservations in each task definition so that fewer tasks are placed on each instance.",
+      "D": "Change the task placement strategy from binpack to spread across Availability Zones."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Cluster auto scaling:** With managed scaling, an ECS capacity provider tracks a CapacityProviderReservation metric and scales the Auto Scaling group out when tasks need capacity and in when it is unused.\n* **Fixes PROVISIONING tasks:** Tasks that cannot be placed count toward the required capacity, so the Auto Scaling group launches instances for them automatically. No manual intervention is needed.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Average cluster CPU does not reflect pending tasks that cannot be placed. The cluster may look underutilized while tasks wait for capacity, so scaling would lag or never happen.\n* **Option C is incorrect:** Larger reservations reduce how many tasks fit on each instance, which makes the capacity shortage worse.\n* **Option D is incorrect:** Placement strategies only decide where tasks go on existing capacity. They do not add instances when the cluster is full.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Two layers of ECS scaling:** Service Auto Scaling changes the task count. Capacity providers with managed scaling (cluster auto scaling) change the EC2 capacity. With Fargate, only the task layer is needed.\n2. **Keyword:** \"Tasks stuck in PROVISIONING\" plus \"EC2 launch type\" points to capacity providers with managed scaling."
+  },
+  {
+    "domain": 3,
+    "task": "3.2",
+    "topics": [
+      "Amazon EC2 Auto Scaling",
+      "Predictive scaling",
+      "Target tracking"
+    ],
+    "prompt": "A company's web application runs on Amazon EC2 instances in an Auto Scaling group. Traffic follows a strong daily pattern: it rises sharply every weekday at 09:00 local time and falls in the evening. Instances take about 7 minutes to become ready, so users see high latency each morning while dynamic scaling catches up. The company also occasionally experiences unexpected traffic surges from marketing campaigns. Which combination of scaling configurations should a solutions architect apply? (Select TWO.)",
+    "options": {
+      "A": "A predictive scaling policy that forecasts load from historical metrics and launches capacity ahead of the forecast demand",
+      "B": "A scheduled action that sets the group's maximum capacity to its current value every morning",
+      "C": "A target tracking scaling policy on average CPU utilization to respond to unforecasted changes in load",
+      "D": "A simple scaling policy with a 30-minute cooldown period",
+      "E": "Termination protection on all instances in the Auto Scaling group"
+    },
+    "isMulti": true,
+    "requiredCount": 2,
+    "correctAnswers": [
+      "A",
+      "C"
+    ],
+    "explanation": "### ✅ Why Options A & C are Correct\n\n* **Predictive scaling (A):** Predictive scaling analyzes historical load to forecast daily and weekly patterns. It launches instances before the forecast demand, which accounts for the 7-minute warmup, so capacity is ready at 09:00.\n* **Target tracking (C):** Predictive scaling cannot foresee campaign-driven surges. A target tracking policy reacts to actual utilization in real time. When both policies are active, Auto Scaling uses whichever specifies the higher capacity. AWS recommends this combination.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Setting maximum capacity to the current value prevents the group from scaling out at all. It does not add capacity before the morning ramp.\n* **Option D is incorrect:** Simple scaling with a long cooldown responds slowly and only after load has already risen, which makes morning latency worse.\n* **Option E is incorrect:** Termination protection prevents instances from being terminated during scale-in. It does not add capacity or improve scale-out timing.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Choose by traffic shape:** Recurring cyclical patterns = predictive scaling (or scheduled actions). Unpredictable changes = target tracking or step scaling. Long instance boot = warm pools or predictive scaling.\n2. **Combine policies:** Predictive + target tracking covers both forecastable and unexpected load."
+  },
+  {
+    "domain": 3,
+    "task": "3.3",
+    "topics": [
+      "Amazon DynamoDB",
+      "Composite primary key",
+      "Query"
+    ],
+    "prompt": "A fleet-management company is designing an Amazon DynamoDB table to store GPS readings that thousands of vehicles send every few seconds. The most frequent request retrieves all readings for a specific vehicle within a time range, such as the last 2 hours, and must return in single-digit milliseconds as the table grows to billions of items. Which key design should a solutions architect choose?",
+    "options": {
+      "A": "Partition key: reading timestamp; no sort key. Use a Scan with a filter on vehicle ID.",
+      "B": "Partition key: vehicle ID; sort key: reading timestamp. Use a Query with a BETWEEN key condition on the timestamp.",
+      "C": "Partition key: a randomly generated UUID for each reading; global secondary index on the timestamp. Query the index and filter on vehicle ID.",
+      "D": "Partition key: date (YYYY-MM-DD); sort key: vehicle ID. Query each date and filter on the timestamp."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Composite key matches the access pattern:** Using the vehicle ID as the partition key keeps each vehicle's readings together, and the timestamp sort key stores them in time order. A Query with a range condition on the sort key reads only the requested window.\n* **Scales evenly:** Thousands of vehicles provide a high-cardinality partition key, so writes and reads are distributed across many partitions. Query latency stays consistent as the table grows.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** A timestamp-only key forces a full-table Scan with a filter for every request. That is slow and expensive at billions of items.\n* **Option C is incorrect:** A random UUID spreads writes well but scatters a vehicle's data. An index keyed on timestamp would create hot partitions and still require filtering on vehicle ID.\n* **Option D is incorrect:** Using the date as the partition key sends all of a day's writes from every vehicle to one partition key value, creating a severe hot partition. Time-range queries would also require filtering.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **DynamoDB modeling:** Design keys from access patterns. Use a high-cardinality partition key and put the range dimension (time, version) in the sort key.\n2. **Query vs. Scan:** Query targets one partition key and optionally a sort key range. Scan reads the entire table. Prefer Query and add GSIs for other access patterns."
+  },
+  {
+    "domain": 3,
+    "task": "3.3",
+    "topics": [
+      "Amazon OpenSearch Service",
+      "Amazon DynamoDB",
+      "Full-text search"
+    ],
+    "prompt": "An online marketplace stores its product catalog in Amazon DynamoDB. The company wants to add a search bar that supports full-text search across product titles and descriptions, typo tolerance (fuzzy matching), relevance ranking, and faceted filtering by brand and price range. Search results must reflect catalog changes within seconds. The company wants to minimize custom pipeline code. Which solution meets these requirements?",
+    "options": {
+      "A": "Create global secondary indexes on the title and description attributes and use Query operations with begins_with key conditions on them.",
+      "B": "Use Scan operations with contains filter expressions on the title and description attributes.",
+      "C": "Replicate the catalog to Amazon OpenSearch Service with the DynamoDB zero-ETL integration, and serve searches from OpenSearch.",
+      "D": "Export the table to Amazon S3 every hour and run Amazon Athena queries with LIKE predicates."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Search engine for search features:** OpenSearch Service provides full-text search, fuzzy matching, relevance scoring, and aggregations for faceted navigation. DynamoDB does not natively provide these capabilities.\n* **Near real-time sync without code:** The DynamoDB zero-ETL integration with OpenSearch Service (built on OpenSearch Ingestion and DynamoDB Streams) continuously replicates item changes within seconds, so no custom pipeline is needed.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** GSIs support exact-match and prefix lookups on key attributes, not full-text search, fuzzy matching, or relevance ranking. Long descriptions are also poor key candidates.\n* **Option B is incorrect:** Scan with a contains filter reads the entire table for every search. It is slow and costly and still provides no fuzzy matching or relevance ranking.\n* **Option D is incorrect:** Hourly exports violate the within-seconds freshness requirement, and Athena is an ad hoc analytics engine, not a low-latency search service.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Search use cases:** Full-text search, log analytics, autocomplete, and relevance ranking = Amazon OpenSearch Service.\n2. **Zero-ETL integrations:** AWS increasingly offers managed zero-ETL integrations (for example, DynamoDB to OpenSearch, and Aurora or DynamoDB to Redshift) that remove the need for custom ETL pipelines."
+  },
+  {
+    "domain": 3,
+    "task": "3.3",
+    "topics": [
+      "Amazon Aurora PostgreSQL",
+      "Database engine selection",
+      "PostGIS"
+    ],
+    "prompt": "A logistics startup is building a route-planning service on AWS. The service relies on the PostGIS extension for geospatial functions such as nearest-neighbor searches, polygon containment, and distance calculations. The team wants a managed relational database that scales storage automatically and supports up to 15 low-latency read replicas. Which database should a solutions architect recommend?",
+    "options": {
+      "A": "Amazon Aurora MySQL-Compatible Edition",
+      "B": "Amazon DynamoDB with geohash-based partition keys",
+      "C": "Amazon Redshift Serverless",
+      "D": "Amazon Aurora PostgreSQL-Compatible Edition"
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Engine requirement:** PostGIS is a PostgreSQL extension. Aurora PostgreSQL-Compatible Edition supports PostGIS, so the existing geospatial SQL functions work unchanged.\n* **Aurora capabilities:** Aurora storage grows automatically, and a cluster supports up to 15 Aurora Replicas that share the cluster storage volume, with low replica lag.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** MySQL has spatial data types, but it does not support the PostGIS extension that the service relies on, so geospatial code would need to be rewritten.\n* **Option B is incorrect:** DynamoDB can approximate proximity lookups with geohash keys and custom code, but it does not offer relational SQL or PostGIS functions such as polygon containment.\n* **Option C is incorrect:** Redshift is a data warehouse for analytical queries. It is not designed for low-latency transactional lookups from an application.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **MySQL vs. PostgreSQL:** Pick PostgreSQL when the scenario needs PostGIS, advanced SQL features, or rich extension support. Pick MySQL for MySQL-specific compatibility.\n2. **Clues:** Specific extensions, drivers, or SQL dialect features in the scenario usually decide the engine."
+  },
+  {
+    "domain": 3,
+    "task": "3.3",
+    "topics": [
+      "Amazon ElastiCache",
+      "Valkey",
+      "Sorted sets",
+      "Cluster mode"
+    ],
+    "prompt": "A mobile game maintains thousands of real-time leaderboards (global, regional, and per-level) that rank tens of millions of players by score with sub-millisecond reads and updates. The combined rate of score updates across all leaderboards exceeds what a single cache node can handle, and the total data set is expected to outgrow the memory of the largest single node. Which combination of choices meets these requirements? (Select TWO.)",
+    "options": {
+      "A": "Use Amazon ElastiCache for Memcached and store each player's rank as a separate key.",
+      "B": "Use Amazon ElastiCache for Valkey and store scores in sorted sets.",
+      "C": "Enable cluster mode on the ElastiCache cluster and distribute the data across multiple shards.",
+      "D": "Add read replicas to a single-shard ElastiCache cluster to scale score updates.",
+      "E": "Store scores in Amazon DynamoDB and compute rankings with a Scan sorted by score."
+    },
+    "isMulti": true,
+    "requiredCount": 2,
+    "correctAnswers": [
+      "B",
+      "C"
+    ],
+    "explanation": "### ✅ Why Options B & C are Correct\n\n* **Sorted sets (B):** Valkey (and Redis OSS) sorted sets keep members ordered by score. Commands such as ZADD, ZINCRBY, ZREVRANGE, and ZREVRANK update scores and return ranks in logarithmic time with sub-millisecond latency.\n* **Cluster mode (C):** With cluster mode enabled, data is partitioned across multiple shards, each with its own primary node. Each leaderboard is its own sorted set key, and keys are distributed across shards by hash slot, so write throughput and memory capacity scale beyond a single node.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Memcached is a simple key-value cache without sorted data structures. Maintaining ranks across tens of millions of keys would require recomputing and rewriting many keys on every score change.\n* **Option D is incorrect:** Read replicas scale reads only. All writes still go to the single primary node, and memory is limited to one node's size.\n* **Option E is incorrect:** Scanning and sorting tens of millions of items for every leaderboard request is slow and expensive and cannot provide sub-millisecond rankings.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Leaderboards:** Real-time ranking = ElastiCache (Valkey or Redis OSS) sorted sets.\n2. **Scaling ElastiCache:** Scale reads with replicas. Scale writes and memory with cluster mode shards. Choose Memcached only for simple, multithreaded key-value caching without persistence or advanced data structures."
+  },
+  {
+    "domain": 3,
+    "task": "3.4",
+    "topics": [
+      "Amazon CloudFront",
+      "CloudFront Functions"
+    ],
+    "prompt": "A company serves a global website through Amazon CloudFront. For every viewer request, the company needs to normalize the URL (for example, adding index.html to directory paths), redirect some legacy paths, and add security headers to responses. The logic is lightweight, needs no network calls, and must run with the lowest possible latency and cost at millions of requests per second. Which solution meets these requirements?",
+    "options": {
+      "A": "Implement the logic in Lambda@Edge functions on the origin request and origin response events.",
+      "B": "Implement the logic in CloudFront Functions associated with the viewer request and viewer response events.",
+      "C": "Implement the logic in the origin web servers behind an Application Load Balancer.",
+      "D": "Implement the logic in AWS WAF custom rules attached to the distribution."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Purpose-built for lightweight edge logic:** CloudFront Functions run lightweight JavaScript at CloudFront edge locations with sub-millisecond execution. They scale to millions of requests per second at a lower cost than Lambda@Edge.\n* **Right trigger points:** URL rewrites, redirects, and header manipulation on viewer request and viewer response events are the main CloudFront Functions use cases. The functions have no network access, which the logic does not need.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Lambda@Edge supports network calls, longer execution, and body access, but it costs more and has higher latency. Origin-facing triggers also do not run on cache hits, so viewer-request rewrites and response headers would not be applied consistently.\n* **Option C is incorrect:** Running the logic at the origin forces requests back to the Region, which adds latency and origin load and loses the benefit of edge caching for redirects.\n* **Option D is incorrect:** AWS WAF filters, blocks, or counts requests based on rules. It is not designed to rewrite URLs or add response security headers.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **CloudFront Functions vs. Lambda@Edge:** CloudFront Functions = viewer events only, sub-millisecond, no network or body access, cheapest. Lambda@Edge = viewer and origin events, network calls, longer runtime, body access.\n2. **Response headers:** CloudFront response headers policies can also add standard security headers without code."
+  },
+  {
+    "domain": 3,
+    "task": "3.4",
+    "topics": [
+      "AWS Direct Connect",
+      "Direct Connect gateway",
+      "Hybrid networking"
+    ],
+    "prompt": "A company has a 10 Gbps AWS Direct Connect dedicated connection at a location near its data center in Frankfurt. The company is deploying new VPCs in eu-central-1, us-east-1, and ap-northeast-1 and wants the data center to reach all of them privately over the existing Direct Connect connection with consistent performance. The company wants to avoid ordering additional circuits or building VPN tunnels. Which solution meets these requirements?",
+    "options": {
+      "A": "Create a Direct Connect gateway, attach it to a private virtual interface on the connection, and associate the VPCs' virtual private gateways in all three Regions.",
+      "B": "Create a separate private virtual interface for each VPC on the existing connection, and attach each virtual interface directly to the virtual private gateway of a VPC in a different Region.",
+      "C": "Create inter-Region VPC peering connections from the eu-central-1 VPC to the VPCs in the other Regions, and route all on-premises traffic through the eu-central-1 VPC.",
+      "D": "Create a public virtual interface on the connection and reach the other Regions' VPCs through their public endpoints."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Global reach from one connection:** A Direct Connect gateway is a globally available resource. It lets a private virtual interface (or a transit virtual interface with Transit Gateway) on one Direct Connect connection reach VPCs in multiple AWS Regions, except the China Regions.\n* **No extra circuits:** Traffic flows over the existing dedicated connection and the AWS global network, providing private, consistent connectivity to every Region without new circuits or VPNs.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** A private virtual interface attached directly to a virtual private gateway can reach only VPCs in the same Region as the connection's home Region. Cross-Region VPCs require a Direct Connect gateway.\n* **Option C is incorrect:** VPC peering is not transitive. On-premises traffic cannot transit the eu-central-1 VPC to reach peered VPCs in other Regions.\n* **Option D is incorrect:** A public virtual interface reaches AWS public service endpoints, not private IP addresses inside VPCs.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Direct Connect building blocks:** Private VIF = VPC access. Public VIF = AWS public services. Transit VIF = Transit Gateway. A Direct Connect gateway connects VIFs to VPCs or transit gateways in many Regions.\n2. **Scaling hybrid networks:** Direct Connect gateway + Transit Gateway scales to many VPCs across Regions and accounts."
+  },
+  {
+    "domain": 3,
+    "task": "3.5",
+    "topics": [
+      "Amazon Redshift",
+      "Streaming ingestion",
+      "Amazon Kinesis Data Streams"
+    ],
+    "prompt": "A retailer captures point-of-sale transactions in an Amazon Kinesis Data Streams data stream. Business analysts already use Amazon Redshift for reporting and need dashboards that query the transactions in Redshift within seconds of their arrival, alongside historical data. The company wants to avoid staging the data in Amazon S3 and wants the LEAST operational overhead. Which solution meets these requirements?",
+    "options": {
+      "A": "Use Amazon Data Firehose to deliver the stream to Amazon S3, then run COPY commands into Redshift every 15 minutes.",
+      "B": "Write an AWS Lambda consumer that reads the stream and runs INSERT statements against Redshift for each record.",
+      "C": "Run a nightly AWS Glue job that reads the stream and loads it into Redshift.",
+      "D": "Configure Amazon Redshift streaming ingestion by creating an external schema for the Kinesis data stream and a materialized view that is refreshed automatically."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Native streaming ingestion:** Redshift streaming ingestion reads directly from Kinesis Data Streams (or Amazon MSK) into a materialized view, with no S3 staging. Data is available to query within seconds.\n* **Low overhead:** Auto refresh keeps the materialized view current, and the analysts query it with SQL alongside historical tables. No intermediate services or custom code are required.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Firehose delivery to S3 followed by periodic COPY adds latency (minutes, not seconds) and stages data in S3, which the company wants to avoid.\n* **Option B is incorrect:** Row-by-row INSERTs are inefficient for a columnar warehouse and create custom code to maintain, scale, and retry.\n* **Option C is incorrect:** A nightly batch job cannot meet the within-seconds latency requirement.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Streaming to Redshift:** Kinesis or MSK to Redshift in near real time = Redshift streaming ingestion with materialized views.\n2. **Ingestion frequency:** Match the tool to the latency requirement: seconds = streaming ingestion; minutes = Firehose buffering; hours or daily = batch COPY or Glue."
+  },
+  {
+    "domain": 3,
+    "task": "3.5",
+    "topics": [
+      "Amazon Athena",
+      "Partition projection",
+      "AWS Glue Data Catalog"
+    ],
+    "prompt": "A company stores IoT telemetry in Amazon S3 under prefixes that are partitioned by device_id, year, month, day, and hour, producing millions of partitions. Analysts query the data with Amazon Athena by using the AWS Glue Data Catalog. Queries that filter on a narrow time range for one device spend most of their time in query planning, and new partitions must currently be added by running MSCK REPAIR TABLE or a crawler before their data can be queried. Which solution will MOST improve query performance and remove the partition maintenance step?",
+    "options": {
+      "A": "Run an AWS Glue crawler on a 5-minute schedule so that new partitions are registered in the Data Catalog more quickly after data arrives.",
+      "B": "Convert the data to Apache Parquet but keep the same partition registration process.",
+      "C": "Enable partition projection on the table and define the partition key ranges, formats, and S3 location template in table properties.",
+      "D": "Combine all data into a single unpartitioned table so that Athena does not need to load partition metadata."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Partition projection:** With partition projection, Athena calculates partition values and locations from configuration in the table properties instead of retrieving partition metadata from the Data Catalog. For highly partitioned tables this greatly reduces query planning time.\n* **No maintenance:** Because partitions are projected, new data written to S3 under the defined template is queryable immediately, with no MSCK REPAIR TABLE, ALTER TABLE ADD PARTITION, or crawler runs.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** More frequent crawlers shorten the delay but still add maintenance and cost. Planning remains slow because Athena still has to retrieve metadata for millions of catalog partitions.\n* **Option B is incorrect:** Parquet reduces the amount of data scanned, but it does not address slow planning or the partition registration step.\n* **Option D is incorrect:** Removing partitions forces Athena to scan the entire data set for every query, which makes performance and cost much worse.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Athena performance tuning:** Partition data (and use partition projection for very large numbers of partitions), use columnar formats (Parquet/ORC) with compression, and avoid many small files.\n2. **Keywords:** \"Millions of partitions,\" \"slow query planning,\" or \"avoid MSCK REPAIR\" point to Athena partition projection."
+  },
+  {
+    "domain": 3,
+    "task": "3.5",
+    "topics": [
+      "AWS Transfer Family",
+      "Amazon S3",
+      "SFTP"
+    ],
+    "prompt": "A healthcare claims processor receives thousands of files each day from hundreds of external partners, who can send files only over SFTP. The company currently runs a pair of self-managed SFTP servers that struggle at peak volume. The company wants files to land directly in Amazon S3 for downstream processing, wants partners to keep using their existing SFTP clients with per-partner access to their own folders, and wants a fully managed, scalable service. Which solution meets these requirements?",
+    "options": {
+      "A": "Create an AWS Transfer Family server with the SFTP protocol, use Amazon S3 as the storage domain, and map each partner user to a home directory in the bucket with a scoped IAM role.",
+      "B": "Deploy an AWS DataSync agent at each partner site to copy files into the S3 bucket.",
+      "C": "Give each partner IAM user access keys and ask partners to upload with the AWS CLI by using S3 multipart upload.",
+      "D": "Deploy an Amazon S3 File Gateway and expose its file share to partners over the internet."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Managed SFTP endpoint:** AWS Transfer Family provides a fully managed, highly available, and auto-scaling SFTP (also FTPS, FTP, and AS2) endpoint. Files are stored directly in Amazon S3 or Amazon EFS, so partners need no client changes.\n* **Secure per-partner access:** Each user can be mapped to a logical home directory and an IAM role (with a session policy if needed) that restricts access to that partner's own folder. Uploads can trigger downstream processing through S3 event notifications or Transfer Family managed workflows.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** DataSync requires deploying agents in partner environments and does not provide an SFTP endpoint that partners' existing clients can use.\n* **Option C is incorrect:** Partners can use only SFTP. Issuing long-term IAM access keys to hundreds of external parties is also a security and management burden.\n* **Option D is incorrect:** S3 File Gateway exposes NFS or SMB shares for on-premises applications. It is not an internet-facing SFTP service and is not designed for external partners.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **File-transfer protocols:** SFTP, FTPS, FTP, or AS2 into S3 or EFS = AWS Transfer Family.\n2. **Ingestion endpoints:** Secure each ingestion access point with scoped IAM roles, logical directories, and (if needed) a VPC-hosted endpoint with security groups and Elastic IP addresses for partner allowlists."
+  }
+]

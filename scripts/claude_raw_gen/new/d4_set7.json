@@ -1,0 +1,291 @@
+[
+  {
+    "domain": 4,
+    "task": "4.1",
+    "topics": [
+      "Amazon S3",
+      "S3 Storage Lens",
+      "S3 Lifecycle",
+      "Multipart upload"
+    ],
+    "prompt": "A video platform lets users upload large files directly to an Amazon S3 bucket by using multipart uploads. Amazon S3 Storage Lens shows that the bucket holds 90 TB of incomplete multipart upload bytes, many of them older than 6 months, from uploads that users abandoned. These parts do not appear when the application lists objects in the bucket. Which solution will reduce the storage cost with the LEAST operational overhead?",
+    "options": {
+      "A": "Enable S3 Intelligent-Tiering on the bucket so that the incomplete parts move to lower-cost access tiers automatically.",
+      "B": "Add an S3 Lifecycle rule to the bucket with the AbortIncompleteMultipartUpload action set to 7 days after initiation.",
+      "C": "Write an AWS Lambda function that lists all objects in the bucket each day and deletes objects that are smaller than the expected upload size.",
+      "D": "Enable S3 Versioning and add a lifecycle rule that permanently deletes noncurrent object versions after 7 days."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Parts are billed until aborted:** Parts of a multipart upload that is never completed or aborted remain stored and billed at the storage class rate, even though they are not visible as objects.\n* **Native cleanup:** An S3 Lifecycle rule with the AbortIncompleteMultipartUpload action automatically aborts uploads that are not completed within the specified number of days and deletes their parts. It is configured once and applies to existing and future uploads.\n* **Visibility:** S3 Storage Lens reports incomplete multipart upload bytes, which is how the problem was found and how the fix can be confirmed.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Incomplete parts are not objects; Intelligent-Tiering does not manage them, and tiering them would still keep paying for useless data.\n* **Option C is incorrect:** Listing objects does not return incomplete multipart upload parts, so the function would not find them, and it adds code to maintain.\n* **Option D is incorrect:** Incomplete multipart uploads are not object versions; noncurrent-version expiration does not remove them, and enabling Versioning can add storage cost.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'Abandoned/failed large uploads' or 'incomplete multipart upload bytes' = lifecycle rule with AbortIncompleteMultipartUpload.\n2. **Best practice:** Add an abort-incomplete-multipart-upload rule to every bucket that receives multipart uploads.\n3. **Find hidden costs:** S3 Storage Lens shows incomplete multipart upload bytes, noncurrent version bytes, and delete markers across accounts and buckets."
+  },
+  {
+    "domain": 4,
+    "task": "4.1",
+    "topics": [
+      "AWS Backup",
+      "Amazon EFS",
+      "Backup cold storage"
+    ],
+    "prompt": "A company uses AWS Backup to protect an Amazon EFS file system. A backup plan creates daily backups that are kept for 35 days and monthly backups that must be kept for 7 years for compliance. Monthly backups are almost never restored, and backup storage is now the largest cost for the workload. Which solution will reduce the backup cost the MOST while meeting the retention requirements?",
+    "options": {
+      "A": "Reduce the retention of the monthly backups to 1 year and export older backups to Amazon S3 Glacier Deep Archive by using AWS DataSync.",
+      "B": "Replace the monthly backups with EFS replication to a second file system that uses the EFS Archive storage class.",
+      "C": "Change the daily backup rule to transition backups to cold storage after 1 day and delete them after 35 days.",
+      "D": "Add a lifecycle setting to the monthly backup rule that transitions the backups to cold storage after 30 days, and keep the 7-year retention."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Cold storage tier:** AWS Backup supports transitioning Amazon EFS backups to cold storage, which costs significantly less per GB-month than warm backup storage.\n* **Fits long retention:** Backups in cold storage must remain there for at least 90 days. The monthly backups are kept for 7 years, so moving them after 30 days easily satisfies that minimum and stores almost all of their lifetime in the cheaper tier.\n* **No process change:** The change is a lifecycle setting on the existing backup rule; retention and restore capability are unchanged.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Reducing retention to 1 year violates the 7-year requirement, and DataSync copies files, not AWS Backup recovery points, so this creates an unmanaged second copy.\n* **Option B is incorrect:** A replica file system is not a point-in-time backup; it mirrors changes (including deletions and corruption) and cannot provide 84 separate monthly recovery points.\n* **Option C is incorrect:** Recovery points in cold storage must be retained for at least 90 days, so a rule that deletes them after 35 days is not allowed. Daily backups are also short-lived and benefit little from cold storage.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'AWS Backup' + 'long-term retention' + 'rarely restored' = lifecycle transition to cold storage (minimum 90 days in cold).\n2. **Supported resources:** Cold storage transition is available for resource types such as Amazon EFS and Amazon DynamoDB (with advanced features); check support per resource type.\n3. **Retention rule:** The delete-after value must be at least 90 days greater than the transition-to-cold value."
+  },
+  {
+    "domain": 4,
+    "task": "4.1",
+    "topics": [
+      "Amazon RDS",
+      "RDS storage autoscaling",
+      "gp3"
+    ],
+    "prompt": "A company is launching a new application on Amazon RDS for MySQL with gp3 storage. The database will start with about 150 GiB of data and is expected to grow unevenly to about 3 TiB over the next 3 years. The company wants to avoid paying for unused storage and wants to avoid outages caused by the database running out of space, with the LEAST operational overhead. Which solution meets these requirements?",
+    "options": {
+      "A": "Allocate 200 GiB of storage and enable RDS storage autoscaling with a maximum storage threshold of 4 TiB.",
+      "B": "Allocate 3 TiB of storage when the DB instance is created so that the database never needs to be resized.",
+      "C": "Allocate 200 GiB of storage and create an Amazon CloudWatch alarm on FreeStorageSpace that notifies an administrator to increase storage manually.",
+      "D": "Allocate 200 GiB of storage and schedule an AWS Lambda function that doubles the allocated storage every 6 months."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Grow on demand:** RDS storage autoscaling automatically increases allocated storage when free space runs low (for example, below 10% for 5 minutes), up to the maximum storage threshold that you set, with no downtime.\n* **Pay for what is needed:** Starting at 200 GiB avoids paying for nearly 3 TiB of empty storage in the early years, and growth is handled automatically even if it is uneven.\n* **Storage cannot shrink:** Allocated RDS storage cannot be reduced later, so over-allocating up front permanently locks in cost.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Allocating 3 TiB on day one means paying for about 20 times more storage than needed for a long time, and RDS storage cannot be decreased later.\n* **Option C is incorrect:** A manual process adds operational overhead and risks an outage if the alarm is missed or the resize is delayed.\n* **Option D is incorrect:** A fixed schedule ignores actual usage: it can over-provision when growth is slow or run out of space when growth is fast, and it is custom code to maintain.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'Unpredictable database storage growth' + 'avoid running out of space' + 'least overhead' = RDS storage autoscaling with a maximum threshold.\n2. **Right-size storage:** Determining when storage auto scaling is required is an explicit exam skill; start small when growth is uncertain.\n3. **Aurora difference:** Aurora cluster storage grows (and shrinks) automatically and is billed for what is used, so no allocation is needed."
+  },
+  {
+    "domain": 4,
+    "task": "4.2",
+    "topics": [
+      "AWS Cost Anomaly Detection",
+      "Amazon SNS"
+    ],
+    "prompt": "A company has 60 AWS accounts in an organization in AWS Organizations. Last month, a misconfigured AWS Lambda function in one account ran in a loop for a week and the cost was not noticed until the invoice arrived. Spend varies widely by account and by season, so the finance team does not want to maintain fixed thresholds for each service and account. The team wants to be alerted soon after unusual spend begins, along with the likely root cause. Which solution meets these requirements with the LEAST operational overhead?",
+    "options": {
+      "A": "Create a cost budget in AWS Budgets for each account and each service with a fixed monthly threshold, and send alerts to an Amazon SNS topic.",
+      "B": "Create an AWS Lambda function that runs every day, queries the Cost Explorer API for each linked account and service, compares the results with the previous day, and publishes large changes to an Amazon SNS topic.",
+      "C": "Configure AWS Cost Anomaly Detection in the management account with linked-account and AWS services monitors, and send individual alerts to the finance team through Amazon SNS.",
+      "D": "Enable AWS Trusted Advisor cost optimization checks and configure weekly email notifications."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Machine-learning baselines:** AWS Cost Anomaly Detection uses machine learning to learn each monitored dimension's normal spend pattern, including seasonality, so the team does not maintain fixed thresholds.\n* **Root cause:** Each anomaly includes root cause analysis, such as the account, service, Region, and usage type that drove the increase.\n* **Fast, low-effort alerts:** Monitors can cover all linked accounts and all services from the management account, and alert subscriptions can send individual alerts through Amazon SNS as anomalies are detected, or daily or weekly summaries by email.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Hundreds of fixed-threshold budgets are exactly what the team wants to avoid, and fixed thresholds miss anomalies that stay below the threshold.\n* **Option B is incorrect:** A custom comparison job is code to build and maintain, has no seasonality awareness, and gives no root cause analysis.\n* **Option D is incorrect:** Trusted Advisor identifies idle or underutilized resources and Savings Plans opportunities; it does not detect sudden spend anomalies, and weekly emails are not timely.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'Unexpected/unusual spend' + 'no fixed thresholds' + 'root cause' = AWS Cost Anomaly Detection.\n2. **Complementary tools:** Budgets = known limits and forecasts (with actions); Cost Anomaly Detection = unknown spikes; Cost Explorer = investigation and trends.\n3. **Monitor types:** Monitors can track AWS services, linked accounts, cost categories, or cost allocation tags."
+  },
+  {
+    "domain": 4,
+    "task": "4.2",
+    "topics": [
+      "Amazon EC2",
+      "EC2 hibernation"
+    ],
+    "prompt": "A company runs 40 On-Demand Amazon EC2 instances for a development team. Each instance runs an application that loads a 20 GB in-memory dataset and takes about 25 minutes to warm up after a restart. Developers use the instances only during working hours, but the instances currently run 24 hours a day because the warm-up time is unacceptable each morning. The instance types support hibernation, and memory is less than 150 GB. Which solution will reduce cost while letting developers resume work within a few minutes?",
+    "options": {
+      "A": "Launch the instances with hibernation enabled and encrypted EBS root volumes, and schedule the instances to hibernate each evening and start each morning.",
+      "B": "Stop the instances each evening and start them each morning, and pre-warm the application by using an EC2 Auto Scaling warm pool.",
+      "C": "Purchase EC2 Instance Savings Plans for the instances and keep them running 24 hours a day.",
+      "D": "Replace the instances with Spot Instances that use a capacity-optimized allocation strategy and keep them running 24 hours a day."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **RAM is preserved:** Hibernation saves the contents of instance memory to the encrypted EBS root volume and restores it on start, so applications resume with their in-memory dataset already loaded instead of warming up for 25 minutes.\n* **Stop paying for compute:** While an instance is hibernated, there is no instance-hour charge; the company pays only for EBS storage (and any Elastic IP addresses).\n* **Prerequisites:** Hibernation must be enabled at launch, requires an encrypted EBS root volume large enough to hold RAM, and is supported for instance memory under 150 GB on supported families.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** A normal stop clears memory, so the 25-minute warm-up still occurs. Warm pools apply to Auto Scaling groups that scale out; they do not keep the in-memory state of these individual developer instances.\n* **Option C is incorrect:** Savings Plans discount usage but still pay for the roughly 13 idle hours each day; stopping or hibernating idle hours saves more for a part-time workload.\n* **Option D is incorrect:** Spot Instances can be interrupted at any time, which would lose the in-memory state and disrupt developers, and running 24/7 still pays for idle hours.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'Long warm-up / in-memory state' + 'stop when idle' = EC2 hibernation.\n2. **Non-production availability:** Development workloads rarely need to run 24/7; schedule them off outside working hours.\n3. **Hibernation vs stop:** Stop = RAM lost, fast to resume the OS; Hibernate = RAM saved to EBS, application state resumes as it was."
+  },
+  {
+    "domain": 4,
+    "task": "4.2",
+    "topics": [
+      "Cost allocation tags",
+      "AWS Organizations",
+      "Tag policies",
+      "AWS Cost Explorer"
+    ],
+    "prompt": "A company has 50 AWS accounts in an organization in AWS Organizations. Several business units share some of the accounts, so costs cannot be allocated by account. The company wants every business unit to see its costs in AWS Cost Explorer by using a CostCenter tag. Teams currently use inconsistent keys and values such as costcenter, Cost-Center, and cc-1234. Which combination of steps should a solutions architect take to meet these requirements? (Select TWO.)",
+    "options": {
+      "A": "Activate CostCenter as a user-defined cost allocation tag in the Billing and Cost Management console of the organization's management account.",
+      "B": "Activate CostCenter as a cost allocation tag separately in the Billing and Cost Management console of each member account.",
+      "C": "Create a tag policy in AWS Organizations that defines the CostCenter key capitalization and allowed values, enable enforcement for the required resource types, and attach it to the organization root.",
+      "D": "Enable the AWS-generated aws:createdBy cost allocation tag and map each IAM user to a business unit.",
+      "E": "Create a separate AWS Budgets cost budget for each member account and share the budget reports with each business unit."
+    },
+    "isMulti": true,
+    "requiredCount": 2,
+    "correctAnswers": [
+      "A",
+      "C"
+    ],
+    "explanation": "### ✅ Why Options A & C are Correct\n\n* **Option A - activate in the management account:** User-defined tags appear in Cost Explorer and the Cost and Usage Report only after they are activated as cost allocation tags. In an organization, activation is done in the management (payer) account and applies to the consolidated bill.\n* **Option C - standardize with tag policies:** Tag policies define the allowed tag key capitalization and values, report noncompliant resources, and, when enforcement is enabled for specific resource types, prevent noncompliant tagging operations across all attached accounts.\n* **Together:** Consistent tags plus activation give clean, per-business-unit cost groupings even in shared accounts.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Member accounts in an organization cannot activate cost allocation tags for the consolidated bill; activation happens in the management account.\n* **Option D is incorrect:** aws:createdBy identifies the creator of a resource, not its cost center; mapping users to business units is unreliable and does not fix the inconsistent CostCenter tags.\n* **Option E is incorrect:** Per-account budgets do not split costs in shared accounts and do not create tag-based cost groupings in Cost Explorer.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'Allocate costs by team/project in shared accounts' = cost allocation tags activated in the management account.\n2. **Governance:** Use tag policies to standardize tags, and consider SCPs with aws:RequestTag conditions to require tags at creation.\n3. **Not retroactive by default:** Activated tags apply from activation onward in billing data unless you request a backfill, so activate them early."
+  },
+  {
+    "domain": 4,
+    "task": "4.3",
+    "topics": [
+      "Amazon DynamoDB",
+      "On-demand capacity mode"
+    ],
+    "prompt": "A startup is launching a new mobile game that stores player profiles and game state in Amazon DynamoDB. The company has no historical traffic data. Marketing campaigns could cause traffic to jump from almost nothing to tens of thousands of requests per second within minutes, and traffic could also stay very low for days between campaigns. The company wants to avoid throttling and avoid paying for unused capacity. Which DynamoDB configuration is MOST cost-effective?",
+    "options": {
+      "A": "Provisioned capacity mode sized for the highest expected campaign peak, with reserved capacity purchased for 1 year.",
+      "B": "Provisioned capacity mode with auto scaling that uses a 70% target utilization and a low minimum capacity.",
+      "C": "Provisioned capacity mode with a scheduled AWS Lambda function that raises capacity every morning and lowers it every night.",
+      "D": "On-demand capacity mode."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Pay per request:** On-demand mode bills per read and write request, so the table costs very little during quiet days and nothing is paid for idle capacity.\n* **Handles sudden spikes:** On-demand tables instantly accommodate traffic up to double the previous peak and continue to adapt, which suits unknown and spiky workloads much better than reactive scaling.\n* **No capacity planning:** With no historical data, on-demand avoids guessing capacity; the company can switch to provisioned mode later once traffic becomes predictable.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Sizing for an unknown peak and reserving it for a year pays for large unused capacity on quiet days, and the peak may still be guessed wrong.\n* **Option B is incorrect:** Auto scaling reacts to CloudWatch metrics over several minutes, so a jump from almost nothing to tens of thousands of requests per second would be throttled before capacity catches up.\n* **Option C is incorrect:** A time-based schedule does not match campaign-driven spikes and would still throttle or over-provision.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'New table / unknown traffic' or 'spiky, unpredictable' = DynamoDB on-demand. 'Steady, predictable' = provisioned with auto scaling (plus reserved capacity).\n2. **Switching modes:** You can switch a table between on-demand and provisioned modes (limited number of times per 24 hours).\n3. **Warm throughput:** For a known launch event, DynamoDB warm throughput can pre-warm an on-demand table for an expected peak."
+  },
+  {
+    "domain": 4,
+    "task": "4.3",
+    "topics": [
+      "Amazon RDS Proxy",
+      "Amazon RDS",
+      "AWS Lambda"
+    ],
+    "prompt": "A company's API uses AWS Lambda functions that connect to an Amazon RDS for PostgreSQL DB instance. During traffic bursts, thousands of concurrent Lambda invocations each open a new database connection. The company had to scale the DB instance up to db.r6g.8xlarge only to support the number of connections, and average CPU utilization is now 8%. The company wants to reduce the database cost without changing the database engine. Which solution meets these requirements?",
+    "options": {
+      "A": "Add two RDS read replicas and distribute the Lambda connections across them, then downsize the primary DB instance.",
+      "B": "Create an Amazon RDS Proxy for the DB instance, configure the Lambda functions to connect through the proxy, and then downsize the DB instance to a size that fits the actual CPU and memory load.",
+      "C": "Increase the max_connections parameter in a custom DB parameter group on the existing DB instance and enable Performance Insights.",
+      "D": "Set reserved concurrency on the Lambda functions to 1 so that only one database connection is open at any time."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Connection pooling:** RDS Proxy maintains a pool of database connections and multiplexes many client connections onto a smaller number of database connections, which absorbs bursts of Lambda connections.\n* **Enables right-sizing:** Once connection count no longer dictates instance size, the DB instance can be downsized to match the real 8% CPU load, which reduces cost far more than the proxy costs.\n* **Resilience bonus:** RDS Proxy also reduces failover time and can use Secrets Manager and IAM authentication.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Read replicas add instances and cost, and writes still require connections to the primary; the connection storm remains.\n* **Option C is incorrect:** Raising max_connections on the oversized instance does not reduce cost, and each connection still consumes memory.\n* **Option D is incorrect:** Reserved concurrency of 1 would throttle the API so severely that it could not serve traffic bursts.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'Lambda + RDS' + 'too many connections' = Amazon RDS Proxy.\n2. **Connections drive sizing:** On RDS, max_connections scales with instance memory; pooling lets you choose instance size by real workload.\n3. **Right-size after fixing the cause:** Fix the inefficiency first (pooling, caching), then downsize the instance or purchase Reserved Instances for the new size."
+  },
+  {
+    "domain": 4,
+    "task": "4.3",
+    "topics": [
+      "Amazon Athena",
+      "Amazon S3",
+      "Apache Parquet",
+      "AWS Glue"
+    ],
+    "prompt": "A company loads about 60 GB of clickstream data each day into an Amazon RDS for PostgreSQL DB instance so that analysts can run ad hoc SQL queries a few times each week. Most queries aggregate a few columns over a date range. The DB instance has been scaled to a large size and storage keeps growing, which makes this the company's most expensive database. Which solution will meet the analysts' needs MOST cost-effectively?",
+    "options": {
+      "A": "Migrate the data to an Amazon DynamoDB table with on-demand capacity and use PartiQL for the analysts' queries.",
+      "B": "Migrate the data to a 24/7 Amazon Redshift provisioned cluster with dense compute nodes.",
+      "C": "Store the data in Amazon S3 in Apache Parquet format partitioned by date, catalog it in the AWS Glue Data Catalog, and query it with Amazon Athena.",
+      "D": "Move the data to an Amazon Aurora PostgreSQL cluster with Aurora I/O-Optimized storage."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Pay per query:** Athena is serverless and charges by the amount of data scanned, so a few queries a week cost very little and nothing is paid while idle. S3 storage is much cheaper than database storage.\n* **Columnar + partitions:** Parquet is a compressed columnar format, so queries that read a few columns scan only those columns, and date partitions let Athena skip data outside the queried range. This sharply reduces cost and improves speed.\n* **Standard SQL:** Analysts keep using ad hoc SQL through Athena, using table definitions in the Glue Data Catalog.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** DynamoDB is designed for key-value access patterns; ad hoc aggregations over date ranges would require full table scans that are slow and expensive.\n* **Option B is incorrect:** A provisioned Redshift cluster running 24/7 is costly for queries that run only a few times a week.\n* **Option D is incorrect:** Aurora is still a row-oriented OLTP database billed for running instances 24/7; I/O-Optimized helps I/O-heavy OLTP workloads, not occasional analytics.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'Occasional ad hoc SQL on large log/clickstream data' = S3 data lake + Athena. 'Few columns over many rows' = columnar format (Parquet/ORC).\n2. **Cost levers in Athena:** Compress, partition, and use columnar formats to reduce bytes scanned.\n3. **Pick the database type by access pattern:** OLTP = RDS/Aurora/DynamoDB; analytics = Redshift (frequent) or Athena (ad hoc)."
+  },
+  {
+    "domain": 4,
+    "task": "4.3",
+    "topics": [
+      "Amazon Aurora",
+      "Aurora backups",
+      "AWS Backup"
+    ],
+    "prompt": "A company runs an Amazon Aurora MySQL cluster. A cron job creates a manual cluster snapshot every hour, and all manual snapshots are kept for 1 year, which has made snapshot storage a major cost. The company's requirements are the ability to restore to any point in time within the last 14 days and one snapshot per month retained for 1 year. Which combination of steps will meet these requirements MOST cost-effectively? (Select TWO.)",
+    "options": {
+      "A": "Enable Aurora Backtrack with a 14-day backtrack window.",
+      "B": "Set the cluster's automated backup retention period to 14 days and use point-in-time restore for recovery.",
+      "C": "Export the hourly snapshots to Amazon S3 in Apache Parquet format and delete the snapshots.",
+      "D": "Create an AWS Backup plan that takes a monthly backup of the cluster with a 12-month retention period, and then stop the cron job and delete the hourly manual snapshots.",
+      "E": "Increase the automated backup retention period to 365 days and delete all manual snapshots."
+    },
+    "isMulti": true,
+    "requiredCount": 2,
+    "correctAnswers": [
+      "B",
+      "D"
+    ],
+    "explanation": "### ✅ Why Options B & D are Correct\n\n* **Option B - continuous automated backups:** Aurora automated backups are continuous and incremental and support point-in-time restore to any second within the retention period (1-35 days). A 14-day retention exactly meets the PITR requirement without storing hourly full snapshots.\n* **Option D - monthly retention with AWS Backup:** An AWS Backup plan creates one snapshot per month and deletes each one automatically after 12 months, replacing about 8,760 retained hourly snapshots with 12 monthly ones.\n* **Retention matched to requirements:** Snapshot frequency and retention should match the actual recovery requirements; anything beyond them is pure cost.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Backtrack supports a maximum window of 72 hours, cannot meet a 14-day requirement, and is not a backup (it rewinds the same cluster).\n* **Option C is incorrect:** Snapshot exports to S3 are for analytics; an exported Parquet copy cannot be restored as an Aurora cluster, so recovery requirements would not be met.\n* **Option E is incorrect:** The maximum automated backup retention period is 35 days, so 365 days is not possible.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'Point-in-time recovery within N days (N <= 35)' = automated backups. 'Monthly/yearly copies for long retention' = AWS Backup plan or manual snapshots with a lifecycle.\n2. **Limits to remember:** Automated backup retention: 1-35 days. Aurora Backtrack: up to 72 hours, Aurora MySQL only.\n3. **Snapshot exports:** Exporting snapshots to S3 (Parquet) is for querying with Athena or other analytics tools, not for restore."
+  },
+  {
+    "domain": 4,
+    "task": "4.4",
+    "topics": [
+      "Amazon S3",
+      "S3 Replication",
+      "Data transfer"
+    ],
+    "prompt": "A company runs analytics jobs on Amazon EMR in us-west-2. Every night the jobs read the same 20 TB reference dataset from an Amazon S3 bucket in eu-central-1. The dataset changes by less than 1% each day. The AWS Cost and Usage Report shows large inter-Region data transfer charges. The bucket in eu-central-1 must remain the system of record for European applications. Which solution will reduce the data transfer cost the MOST?",
+    "options": {
+      "A": "Configure S3 Replication from the eu-central-1 bucket to a new bucket in us-west-2 (using S3 Batch Replication for existing objects), and point the EMR jobs at the us-west-2 bucket.",
+      "B": "Create an S3 Multi-Region Access Point for the eu-central-1 bucket and have the EMR jobs read through it.",
+      "C": "Enable S3 Transfer Acceleration on the eu-central-1 bucket and use the accelerate endpoint from the EMR jobs.",
+      "D": "Create a VPC peering connection between a VPC in eu-central-1 and the EMR VPC, and read the bucket through an S3 gateway endpoint in eu-central-1."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Pay inter-Region transfer once:** Replication copies each object to us-west-2 once and then only replicates the small daily changes, instead of transferring 20 TB across Regions every night.\n* **Local reads are cheap:** Reads from an S3 bucket in the same Region as the EMR cluster have no data transfer charge.\n* **Source stays authoritative:** The eu-central-1 bucket remains the system of record; the us-west-2 copy is a read-only replica for analytics.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** With only one bucket behind it, a Multi-Region Access Point still serves data from eu-central-1, so the inter-Region transfer continues, plus request routing charges.\n* **Option C is incorrect:** Transfer Acceleration adds a per-GB charge on top of transfer costs and does not avoid inter-Region transfer.\n* **Option D is incorrect:** Gateway endpoints work only for same-Region S3 access and cannot be used across a peering connection; inter-Region peering traffic is also billed per GB.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'Repeatedly reading the same data across Regions' = copy/replicate it once into the consuming Region.\n2. **Data transfer pricing:** Same-AZ private traffic is free; cross-AZ and inter-Region traffic are billed per GB; data transfer out to the internet costs the most.\n3. **Move compute or move data:** Alternatively, run the compute in the data's Region if latency and data residency allow."
+  },
+  {
+    "domain": 4,
+    "task": "4.4",
+    "topics": [
+      "AWS Direct Connect",
+      "Hosted connections"
+    ],
+    "prompt": "A company connects its data center to AWS with a 10 Gbps AWS Direct Connect dedicated connection. After moving its backups to a different provider, CloudWatch metrics show that the connection's peak utilization over the last 6 months is 1.3 Gbps, and growth is expected to stay below 1.8 Gbps for the next 2 years. The company still requires a private connection with consistent network performance. Which solution is the MOST cost-effective?",
+    "options": {
+      "A": "Keep the existing 10 Gbps dedicated connection and add a second 10 Gbps dedicated connection at a different Direct Connect location so that the company has resilient connectivity.",
+      "B": "Replace the Direct Connect connection with an AWS Site-to-Site VPN connection over the internet with two tunnels.",
+      "C": "Replace the dedicated connection with a 10 Gbps hosted connection from an AWS Direct Connect Partner.",
+      "D": "Order a 2 Gbps hosted connection from a Direct Connect Partner, move the virtual interfaces to it, and delete the 10 Gbps connection."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Right-size the port:** Direct Connect port-hour charges increase with capacity. A 2 Gbps hosted connection covers the 1.3 Gbps peak and the expected 1.8 Gbps growth at a much lower port-hour rate than 10 Gbps.\n* **Same characteristics:** A hosted connection is still a private Direct Connect circuit with consistent performance, and Direct Connect data transfer out rates continue to apply.\n* **Flexible capacities:** Partners offer hosted connections from 50 Mbps up to 25 Gbps (including 1, 2, and 5 Gbps), which allows sizing between the dedicated port sizes.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Adding another 10 Gbps port doubles cost; resiliency was not the stated problem, and both ports would be heavily underused.\n* **Option B is incorrect:** VPN runs over the public internet and cannot guarantee consistent performance; each tunnel is also limited to about 1.25 Gbps.\n* **Option C is incorrect:** A 10 Gbps hosted connection keeps the same oversized capacity, so it does not address the underutilization.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'Direct Connect underutilized' = right-size the connection; 'need a speed between dedicated port sizes' = hosted connection from a Partner.\n2. **Bandwidth allocation:** Select the Direct Connect speed from measured utilization (CloudWatch ConnectionBpsEgress/Ingress) plus expected growth.\n3. **Dedicated port sizes:** Dedicated connections come in 1, 10, 100, and 400 Gbps."
+  },
+  {
+    "domain": 4,
+    "task": "4.4",
+    "topics": [
+      "AWS WAF",
+      "Amazon CloudFront",
+      "Rate-based rules"
+    ],
+    "prompt": "An ecommerce company serves its product catalog through an Amazon CloudFront distribution in front of an Application Load Balancer and an Auto Scaling group of Amazon EC2 instances. Scraper bots now send thousands of uncached search requests per minute from changing IP addresses, which causes the Auto Scaling group to scale out and increases EC2 and data transfer costs. Legitimate users never send more than 300 requests in 5 minutes. Which solution will reduce cost with the LEAST operational overhead?",
+    "options": {
+      "A": "Add network ACL rules to the ALB subnets that deny the scrapers' IP addresses, and update the rules daily.",
+      "B": "Associate an AWS WAF web ACL with the CloudFront distribution, with a rate-based rule that blocks IPs exceeding 300 requests in 5 minutes.",
+      "C": "Increase the maximum size of the Auto Scaling group and purchase a Compute Savings Plan for the additional instances.",
+      "D": "Subscribe to AWS Shield Advanced, add the ALB and the CloudFront distribution as protected resources, and enable automatic application layer DDoS mitigation for both."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Throttle at the edge:** A rate-based rule counts requests per IP address (or other aggregation key) over a time window and automatically blocks sources that exceed the limit, without manual IP lists.\n* **Stops cost before the origin:** Applying the web ACL to CloudFront blocks abusive requests at edge locations, so they never reach the ALB and EC2 instances, which prevents unnecessary scale-out and origin data transfer.\n* **Adapts to changing IPs:** Because the rule evaluates request rates continuously, new scraper IP addresses are blocked automatically when they exceed the threshold.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Network ACLs have a small rule limit, require manual daily updates for changing IPs, and the ALB sees CloudFront edge IP addresses rather than the scrapers' addresses.\n* **Option C is incorrect:** Adding capacity and committing to more spend increases cost instead of stopping the unwanted traffic.\n* **Option D is incorrect:** Shield Advanced has a significant monthly subscription fee and is aimed at DDoS events; a WAF rate-based rule is the simpler and cheaper throttling control for scraping.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'Too many requests from individual clients/IPs' at the web layer = AWS WAF rate-based rule (on CloudFront, ALB, or API Gateway).\n2. **Throttling strategy:** Block or throttle unwanted traffic as close to the edge as possible so it does not drive scaling and transfer costs.\n3. **Other throttling options:** API Gateway stage/method throttling and usage plans for APIs; SQS buffering to protect downstream databases."
+  }
+]

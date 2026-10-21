@@ -1,0 +1,296 @@
+[
+  {
+    "domain": 4,
+    "task": "4.1",
+    "topics": [
+      "Amazon S3 Glacier Flexible Retrieval",
+      "S3 Batch Operations",
+      "Retrieval options"
+    ],
+    "prompt": "A company must give external auditors access to 90 TB of records, about 2 million objects, that are stored in the S3 Glacier Flexible Retrieval storage class. The auditors need the data within 5 days. The company wants to minimize retrieval cost and avoid writing custom scripts. Which solution meets these requirements?",
+    "options": {
+      "A": "Use S3 Batch Operations to run a Restore operation with the Expedited retrieval tier, and purchase provisioned retrieval capacity units.",
+      "B": "Use S3 Batch Operations to copy the objects directly from S3 Glacier Flexible Retrieval to a new bucket in the S3 Standard storage class.",
+      "C": "Initiate restores for each object from the Amazon S3 console by using the Standard retrieval tier.",
+      "D": "Use S3 Batch Operations with a manifest of the objects to run a Restore operation with the Bulk retrieval tier."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Cheapest tier:** Bulk is the lowest-cost retrieval option for S3 Glacier Flexible Retrieval (no per-GB retrieval charge) and typically completes within 5-12 hours, well within the 5-day deadline.\n* **Scale without scripts:** S3 Batch Operations can start a restore for millions of objects from a manifest (for example, an S3 Inventory report) as a single managed job, with completion reports.\n* **Temporary copies:** Restored objects stay available for the number of days that you specify, while the archived originals remain in the archive class.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Expedited retrievals (1-5 minutes) have the highest per-GB price, and provisioned capacity units add a fixed cost. Speed is not required here.\n* **Option B is incorrect:** Archived objects must be restored before they can be copied. A copy request against an object that has not been restored fails.\n* **Option C is incorrect:** Restoring 2 million objects one at a time in the console is not practical, and the Standard tier costs more than Bulk.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Glacier Flexible Retrieval tiers:** Expedited: 1-5 minutes. Standard: 3-5 hours. Bulk: 5-12 hours and the lowest cost.\n2. **Deep Archive tiers:** Standard: within 12 hours. Bulk: within 48 hours. Deep Archive has no Expedited tier.\n3. **Mass restores:** Use S3 Batch Operations (Restore) together with S3 Inventory instead of custom scripts."
+  },
+  {
+    "domain": 4,
+    "task": "4.1",
+    "topics": [
+      "Amazon S3",
+      "S3 Glacier Instant Retrieval",
+      "S3 Lifecycle"
+    ],
+    "prompt": "A hospital stores diagnostic imaging studies in Amazon S3 Standard. After 60 days, a study is typically opened about once each quarter when a patient returns for a follow-up. A radiologist who opens a study must see it immediately, with millisecond retrieval. The studies must be kept for 10 years. Which storage strategy is MOST cost-effective?",
+    "options": {
+      "A": "Transition the studies to S3 Standard-Infrequent Access (S3 Standard-IA) 60 days after creation.",
+      "B": "Transition the studies to S3 Glacier Instant Retrieval 60 days after creation.",
+      "C": "Transition the studies to S3 Glacier Flexible Retrieval 60 days after creation and use Expedited retrievals when a study is opened.",
+      "D": "Transition the studies to S3 Glacier Deep Archive 60 days after creation and restore a patient's studies when an appointment is booked."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Built for quarterly access:** S3 Glacier Instant Retrieval is designed for long-lived data that is accessed about once per quarter and still needs millisecond retrieval.\n* **Lower storage price:** It costs up to 68% less to store than S3 Standard-IA, with a higher per-GB retrieval fee that is outweighed at roughly quarterly access.\n* **Same performance:** First-byte latency and throughput are the same as S3 Standard and S3 Standard-IA.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Standard-IA meets the latency requirement, but its storage price is higher than Glacier Instant Retrieval. It is optimal for data accessed about once a month.\n* **Option C is incorrect:** Expedited retrievals take 1-5 minutes, which is not immediate, and each one incurs the highest retrieval price.\n* **Option D is incorrect:** Deep Archive restores take up to 12 hours, and patients may arrive without an appointment. This does not meet the requirement for immediate access.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Access frequency mapping:** About monthly with millisecond access: Standard-IA. About quarterly with millisecond access: Glacier Instant Retrieval. Yearly or less, and minutes to hours is acceptable: Glacier Flexible Retrieval or Deep Archive.\n2. **Minimum durations:** Glacier Instant Retrieval and Flexible Retrieval: 90 days. Deep Archive: 180 days. Standard-IA and One Zone-IA: 30 days."
+  },
+  {
+    "domain": 4,
+    "task": "4.1",
+    "topics": [
+      "Amazon EBS",
+      "EBS snapshots",
+      "AWS Trusted Advisor",
+      "Launch templates"
+    ],
+    "prompt": "AWS Cost Explorer shows that a company's Amazon EBS spend has grown steadily. An investigation finds more than 500 EBS volumes in the available (unattached) state. These volumes were left behind when instances in Auto Scaling groups were terminated, because their launch templates set DeleteOnTermination to false for the data volumes. The data on the volumes might be needed for up to 1 year. Which solution will reduce costs and prevent the problem from recurring?",
+    "options": {
+      "A": "Create a snapshot of each unattached volume, delete the volumes, and update the launch templates to set DeleteOnTermination to true for the data volumes.",
+      "B": "Modify the unattached volumes to the Cold HDD (sc1) volume type and leave the launch templates unchanged.",
+      "C": "Use Amazon EBS Elastic Volumes to reduce the size of each unattached volume to the minimum allowed size.",
+      "D": "Attach the unattached volumes to a single EC2 instance and back them up nightly with AWS Backup."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Pay only for data:** Unattached volumes are billed for their full provisioned size. Snapshots are stored incrementally and billed only for the changed blocks that were written, which costs much less.\n* **Recoverable:** Any volume can be recreated from its snapshot during the 1-year period. The snapshots can be moved to the EBS Snapshots Archive tier for further savings.\n* **Fix the root cause:** Setting DeleteOnTermination to true in the launch templates prevents new volumes from being left behind.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** sc1 is cheaper per GB, but the volumes are still billed for their full provisioned size and new volumes would keep accumulating. sc1 also has a minimum volume size of 125 GiB.\n* **Option C is incorrect:** EBS Elastic Volumes can increase a volume's size but cannot decrease it.\n* **Option D is incorrect:** This keeps all the volumes and adds an instance and backup storage, so cost goes up.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Finding waste:** Use AWS Trusted Advisor (Underutilized Amazon EBS Volumes), AWS Compute Optimizer and Cost Explorer to identify idle volumes.\n2. **Volumes vs snapshots:** Volumes are billed for provisioned GiB. Snapshots are billed for stored data, incrementally."
+  },
+  {
+    "domain": 4,
+    "task": "4.1",
+    "topics": [
+      "AWS Storage Gateway",
+      "Tape Gateway",
+      "S3 Glacier Deep Archive"
+    ],
+    "prompt": "A company's on-premises backup application writes weekly full backups to a physical tape library, and the tapes are shipped to an offsite vaulting provider. Backups must be retained for 7 years and are restored only a few times each year. The company wants to remove the cost of tape hardware and offsite vaulting without changing its backup application or procedures. Which solution is MOST cost-effective?",
+    "options": {
+      "A": "Deploy an S3 File Gateway and reconfigure the backup jobs to write backup files to an NFS share.",
+      "B": "Install an AWS DataSync agent on premises and run a weekly task that copies the backup output to an S3 bucket that uses the S3 Glacier Deep Archive storage class.",
+      "C": "Deploy a Tape Gateway, point the backup application to its virtual tape library, and archive ejected virtual tapes to the S3 Glacier Deep Archive pool.",
+      "D": "Deploy a Volume Gateway in stored mode and back up the volumes as Amazon EBS snapshots."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Drop-in replacement:** Tape Gateway presents an iSCSI virtual tape library (VTL) that common backup applications support, so existing jobs and procedures continue to work.\n* **Low-cost archive:** When the backup application ejects a tape, the gateway moves it to the archive pool. The S3 Glacier Deep Archive pool is the lowest-cost storage on AWS.\n* **No physical media:** Tape hardware, media and offsite vaulting are no longer needed.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** S3 File Gateway requires reconfiguring the backup jobs to write to a file share, which changes the procedures, and lifecycle rules would be needed for archive pricing.\n* **Option B is incorrect:** The backup application writes to tape, not to files that DataSync can read, so the backup workflow would have to be redesigned.\n* **Option D is incorrect:** Volume Gateway provides block storage and stores backups as EBS snapshots, which cost far more than Deep Archive for 7-year retention and do not provide a tape interface.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Storage Gateway types:** S3 File Gateway: NFS/SMB to S3. FSx File Gateway: SMB access to FSx for Windows File Server. Volume Gateway: iSCSI block storage with EBS snapshots. Tape Gateway: VTL to S3 Glacier Flexible Retrieval or Deep Archive.\n2. **Keyword:** Replace physical tapes without changing backup software: Tape Gateway."
+  },
+  {
+    "domain": 4,
+    "task": "4.1",
+    "topics": [
+      "Amazon FSx for Windows File Server",
+      "Data deduplication",
+      "HDD storage"
+    ],
+    "prompt": "A company uses a 60 TB Amazon FSx for Windows File Server Multi-AZ file system with SSD storage for user home directories and departmental shares. Monitoring shows low IOPS and latency-tolerant general-purpose access. Many users keep copies of the same large files. The file system must remain Multi-AZ and accessible over SMB. Which combination of actions will reduce storage cost the MOST? (Select TWO.)",
+    "options": {
+      "A": "Enable data deduplication on the file system.",
+      "B": "Migrate the shares to an Amazon FSx for Lustre scratch file system.",
+      "C": "Migrate the data to a new FSx for Windows File Server Multi-AZ file system that uses HDD storage.",
+      "D": "Increase the file system's throughput capacity so that the data compresses more efficiently.",
+      "E": "Change the deployment type to Single-AZ to halve the storage cost."
+    },
+    "isMulti": true,
+    "requiredCount": 2,
+    "correctAnswers": [
+      "A",
+      "C"
+    ],
+    "explanation": "### ✅ Why Options A & C are Correct\n\n* **Deduplication:** FSx for Windows File Server data deduplication stores duplicate chunks only once. AWS cites typical savings of 50-60% for general-purpose file shares.\n* **HDD storage:** HDD storage costs much less per GB than SSD and is designed for general-purpose workloads such as home directories and departmental shares. A new file system is needed because existing SSD storage cannot be converted to HDD.\n* **Requirements kept:** Both actions keep SMB access and the Multi-AZ deployment.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** FSx for Lustre is a POSIX file system for high-performance computing. It does not provide SMB or Windows ACLs, and scratch file systems do not replicate data.\n* **Option D is incorrect:** Throughput capacity is billed separately and does not compress data. Increasing it raises cost.\n* **Option E is incorrect:** The requirement explicitly says the file system must remain Multi-AZ.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **FSx for Windows cost levers:** HDD storage for general-purpose shares, data deduplication, and right-sized throughput capacity.\n2. **Choosing an FSx type:** Windows, SMB or Active Directory: FSx for Windows File Server. HPC or ML with S3 data: FSx for Lustre. Multiprotocol with automatic tiering: FSx for NetApp ONTAP."
+  },
+  {
+    "domain": 4,
+    "task": "4.2",
+    "topics": [
+      "Amazon ECS",
+      "AWS Fargate",
+      "Fargate Spot",
+      "Capacity providers"
+    ],
+    "prompt": "An Amazon ECS service on AWS Fargate runs worker tasks that process messages from an Amazon SQS queue. The work is idempotent and can tolerate task interruptions. The service scales from 2 to 60 tasks based on queue depth. The company requires that at least 2 tasks always run on capacity that cannot be interrupted, and wants the remaining tasks to run at the lowest possible cost. Which solution meets these requirements?",
+    "options": {
+      "A": "Use a capacity provider strategy with FARGATE_SPOT only and set its base to 2.",
+      "B": "Keep all tasks on the FARGATE capacity provider and purchase a 3-year Compute Savings Plan that is sized to cover the peak usage of 60 tasks.",
+      "C": "Run all tasks on FARGATE and configure ECS Service Auto Scaling with a lower maximum task count.",
+      "D": "Use a capacity provider strategy with FARGATE (base 2, weight 1) and FARGATE_SPOT (base 0, weight 4)."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Guaranteed baseline:** The base value places the first 2 tasks on the regular FARGATE capacity provider, which is not subject to Spot interruption.\n* **Discounted burst:** Weights split additional tasks so that most of the scaled-out tasks run on Fargate Spot, which costs up to 70% less than Fargate On-Demand.\n* **Interruption handling:** Fargate Spot sends a two-minute warning (SIGTERM). Because the work is idempotent and queue-based, interrupted messages are simply processed again.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** A base on FARGATE_SPOT still runs on interruptible capacity, so the requirement that 2 tasks always run on capacity that cannot be interrupted is not met.\n* **Option B is incorrect:** A Savings Plan sized for the peak commits to spending that is unused most of the time, and Fargate Spot is cheaper for interruptible burst capacity.\n* **Option C is incorrect:** Lowering the maximum task count limits throughput and does not change the price per task.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Fargate Spot pattern:** Use a capacity provider strategy with a base on FARGATE for steady capacity and weighted FARGATE_SPOT for scale-out.\n2. **Good Spot candidates:** Queue workers, batch jobs and CI tasks, which are interruption tolerant and idempotent."
+  },
+  {
+    "domain": 4,
+    "task": "4.2",
+    "topics": [
+      "AWS Lambda",
+      "AWS Graviton",
+      "AWS Compute Optimizer",
+      "Lambda Power Tuning"
+    ],
+    "prompt": "A company runs a CPU-intensive Python AWS Lambda function that processes about 600 million events each month. The function uses the x86_64 architecture and a memory setting of 3,008 MB that was chosen arbitrarily. All of its dependencies are pure Python or publish arm64 wheels. Which combination of actions will MOST reduce the function's cost? (Select TWO.)",
+    "options": {
+      "A": "Enable Lambda SnapStart for the function.",
+      "B": "Change the function's architecture to arm64 (AWS Graviton) after testing it.",
+      "C": "Increase the function timeout to the maximum of 15 minutes.",
+      "D": "Attach the function to a VPC so that it uses private networking.",
+      "E": "Use AWS Lambda Power Tuning or AWS Compute Optimizer recommendations to choose the memory setting with the lowest cost per invocation."
+    },
+    "isMulti": true,
+    "requiredCount": 2,
+    "correctAnswers": [
+      "B",
+      "E"
+    ],
+    "explanation": "### ✅ Why Options B & E are Correct\n\n* **Graviton pricing:** Lambda functions on arm64 are billed at about 20% less per GB-second than x86_64 and offer up to 34% better price performance. Pure Python code usually needs no changes.\n* **Right-size memory:** Memory also controls CPU allocation, so cost depends on memory multiplied by duration. Power Tuning measures cost and duration at different memory settings, and Compute Optimizer recommends memory settings based on observed usage.\n* **Combined effect:** Together these changes lower both the unit price and the number of GB-seconds billed.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** SnapStart reduces cold-start latency. For Python functions it adds caching and restore charges and does not lower the cost of steady processing.\n* **Option C is incorrect:** The timeout limits how long a function can run. Raising it does not lower cost and can make runaway invocations more expensive.\n* **Option D is incorrect:** Attaching the function to a VPC does not change Lambda pricing and may require NAT gateways or VPC endpoints, which add cost.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Lambda cost formula:** Requests plus GB-seconds (memory multiplied by duration). Use arm64 for a lower GB-second price and tune memory so that duration multiplied by memory is as small as possible.\n2. **Tools:** AWS Lambda Power Tuning (open-source tool based on Step Functions) and AWS Compute Optimizer Lambda recommendations."
+  },
+  {
+    "domain": 4,
+    "task": "4.2",
+    "topics": [
+      "Amazon EC2 Dedicated Hosts",
+      "AWS License Manager",
+      "BYOL"
+    ],
+    "prompt": "A company is migrating 60 Windows Server and SQL Server Enterprise workloads to Amazon EC2. The company owns Microsoft licenses that are licensed per physical core and are not eligible for License Mobility. Paying again for license-included instances would roughly double the cost of the migration. The company must stay compliant with its license terms and track license usage. Which solution is MOST cost-effective?",
+    "options": {
+      "A": "Launch the workloads on EC2 Dedicated Hosts with the company's own licenses, and use AWS License Manager host resource groups to manage the hosts and track license usage.",
+      "B": "Launch the workloads on EC2 Dedicated Instances with the company's own licenses.",
+      "C": "Launch the workloads on license-included Windows Server with SQL Server Enterprise instances on shared tenancy, and cover them with a Compute Savings Plan.",
+      "D": "Launch the workloads on shared-tenancy instances with the company's own licenses, and record the license counts in AWS License Manager."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Dedicated physical servers:** Licenses that are tied to physical cores or sockets and lack License Mobility must run on dedicated hardware. Dedicated Hosts give you a physical server and show its sockets and physical cores, so you can count licenses against it.\n* **Reuse what you own:** Bringing existing licenses avoids paying for Windows Server and SQL Server Enterprise again in license-included pricing, which is the largest cost here.\n* **Managed compliance:** License Manager host resource groups can allocate and release Dedicated Hosts automatically and enforce license rules.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Dedicated Instances run on single-tenant hardware but do not expose sockets or physical cores and do not keep instances on the same host. Per-core licenses therefore cannot be counted against them, which licensing terms like these typically require.\n* **Option C is incorrect:** License-included pricing charges again for licenses the company already owns. A Savings Plan discounts only the compute portion, not the license fees.\n* **Option D is incorrect:** Licenses without License Mobility cannot be brought to shared-tenancy instances. Recording counts in License Manager does not make the deployment compliant.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** Bring your own license (BYOL) with per-socket or per-core licenses, or software that requires dedicated hardware: EC2 Dedicated Hosts.\n2. **Dedicated Hosts vs Dedicated Instances:** Dedicated Hosts: host-level visibility (sockets and cores), control over instance placement, and host affinity. Dedicated Instances: hardware isolation only, billed per instance.\n3. **Savings:** Dedicated Hosts can also be covered by Dedicated Host Reservations or Savings Plans for steady usage."
+  },
+  {
+    "domain": 4,
+    "task": "4.2",
+    "topics": [
+      "On-Demand Capacity Reservations",
+      "Savings Plans",
+      "Amazon EC2"
+    ],
+    "prompt": "A company runs a critical trading application on 40 m7i.2xlarge instances in a specific Availability Zone, where the application must stay close to a co-located partner. The company must be certain that this capacity is always available, including after instances are stopped or replaced. The workload runs steadily, but the company expects to move to a different instance family within the next 12 months. Which solution meets these requirements MOST cost-effectively?",
+    "options": {
+      "A": "Purchase 3-year zonal Standard Reserved Instances for m7i.2xlarge in the Availability Zone.",
+      "B": "Purchase a 3-year Compute Savings Plan that covers the 40 instances.",
+      "C": "Create an On-Demand Capacity Reservation for 40 m7i.2xlarge instances in the Availability Zone, and purchase a Compute Savings Plan that covers the instances.",
+      "D": "Run the instances as Spot Instances in that Availability Zone with the capacity-optimized allocation strategy."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Capacity guarantee:** An On-Demand Capacity Reservation reserves capacity for a specific instance type in a specific AZ, with no term commitment. It can be modified or cancelled when the company changes instance families.\n* **Discount still applies:** Savings Plans and regional RIs apply their discounts to instances that run in a Capacity Reservation. Steady usage gets Savings Plan pricing, and capacity is still guaranteed.\n* **Flexibility:** A Compute Savings Plan continues to apply after the move to a new instance family. A new Capacity Reservation can then be created for the new instance type.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Zonal RIs do reserve capacity, but they lock the company into m7i.2xlarge in that AZ for 3 years. The discount would be wasted after the planned family change.\n* **Option B is incorrect:** Savings Plans provide a discount only. They do not reserve capacity, so capacity is not guaranteed when instances are stopped or replaced.\n* **Option D is incorrect:** Spot capacity can be reclaimed at any time with a two-minute notice, which is the opposite of guaranteed capacity.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Capacity vs discount:** Capacity Reservations (and zonal RIs) guarantee capacity. Savings Plans and regional RIs provide billing discounts. Combine a Capacity Reservation with a Savings Plan to get both with flexibility.\n2. **Billing note:** A Capacity Reservation is billed at the On-Demand rate whether or not instances run in it. Reserve only what is truly required, and use future-dated reservations or cancel them when they are no longer needed."
+  },
+  {
+    "domain": 4,
+    "task": "4.3",
+    "topics": [
+      "Amazon Athena",
+      "Apache Parquet",
+      "Amazon Redshift",
+      "AWS Glue"
+    ],
+    "prompt": "A company keeps a provisioned Amazon Redshift cluster running 24/7 solely to produce a single monthly compliance report. The report queries 25 TB of historical CSV data that is already stored in Amazon S3 and loaded into the cluster with COPY commands. Each report run scans only 6 of the 80 columns. Which solution will reduce cost the MOST?",
+    "options": {
+      "A": "Purchase 3-year Reserved Nodes for the existing Redshift cluster.",
+      "B": "Convert the CSV data in Amazon S3 to partitioned Apache Parquet format with AWS Glue, and run the monthly report with Amazon Athena.",
+      "C": "Run the monthly report with Amazon Athena directly against the existing CSV files.",
+      "D": "Migrate the data to an Amazon RDS for PostgreSQL DB instance that uses Provisioned IOPS SSD (io2) storage."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Pay per query:** Athena is serverless and charges per TB scanned, so there is no cost between monthly runs.\n* **Columnar format:** Parquet is columnar and compressed, so Athena reads only the 6 columns that are needed. Partitioning prunes data even further. This can reduce the data scanned, and the cost, by 90% or more compared with CSV.\n* **Retire the cluster:** Removing an always-on cluster used once a month eliminates the largest cost.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Reserved Nodes lower the hourly rate, but the company would still pay for a cluster that sits idle about 99% of the time.\n* **Option C is incorrect:** Athena on CSV removes the cluster cost, but each query scans all 80 columns of row-oriented data, which costs much more per run than Parquet.\n* **Option D is incorrect:** An always-on RDS instance with io2 storage is a row-oriented OLTP database. It costs more and performs poorly for large analytical scans.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Infrequent analytics on S3 data:** Use Athena with Parquet or ORC, partitioning and compression to minimize the data scanned.\n2. **Columnar vs row:** Columnar formats and stores (Parquet, Redshift) suit analytics. Row stores (RDS, Aurora) suit transactions."
+  },
+  {
+    "domain": 4,
+    "task": "4.3",
+    "topics": [
+      "AWS Backup",
+      "Amazon RDS",
+      "Backup retention"
+    ],
+    "prompt": "A company's Amazon RDS for PostgreSQL database must support point-in-time recovery for the last 30 days. A new regulation also requires one restorable backup from each month to be kept for 7 years. A developer proposes keeping every daily snapshot for 7 years. Which solution meets the requirements MOST cost-effectively?",
+    "options": {
+      "A": "Set the RDS automated backup retention period to 7 years.",
+      "B": "Use an Amazon EventBridge schedule and an AWS Lambda function to create a manual snapshot every day and delete each one after 7 years.",
+      "C": "Export a snapshot to Amazon S3 in Apache Parquet format each month and transition the exports to S3 Glacier Deep Archive.",
+      "D": "Create an AWS Backup plan with one rule for continuous backups retained for 30 days and a second rule that takes a monthly snapshot retained for 7 years."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Right frequency for each need:** Continuous backup provides point-in-time recovery for 30 days. Only one snapshot per month is kept for the long term, instead of about 2,555 daily snapshots.\n* **Restorable:** AWS Backup recovery points for RDS are DB snapshots that can be restored directly to a new DB instance.\n* **Managed lifecycle:** AWS Backup deletes recovery points automatically when their retention ends, and AWS Backup Vault Lock can protect them from deletion for compliance.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** The maximum RDS automated backup retention period is 35 days.\n* **Option B is incorrect:** Keeping a snapshot from every day for 7 years stores far more backups than required, and the custom automation adds operational overhead.\n* **Option C is incorrect:** Snapshot exports are Parquet files for analytics. They cannot be restored as an RDS DB instance, so they do not meet the restorable backup requirement.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Retention design:** Match backup frequency to retention: daily or continuous for short-term recovery, monthly or yearly for long-term compliance.\n2. **RDS limits:** Automated backups and PITR: up to 35 days. For longer retention use AWS Backup or manual snapshots.\n3. **Compliance:** Use AWS Backup Vault Lock for WORM protection of recovery points."
+  },
+  {
+    "domain": 4,
+    "task": "4.4",
+    "topics": [
+      "AWS Direct Connect",
+      "Hosted connections",
+      "Amazon CloudWatch"
+    ],
+    "prompt": "A company pays for a 10 Gbps dedicated AWS Direct Connect connection. Amazon CloudWatch metrics for the past 6 months show that egress and ingress traffic have never exceeded 320 Mbps, and only modest growth is expected. The company must keep private, consistent connectivity to AWS. Which solution will reduce cost while meeting these requirements?",
+    "options": {
+      "A": "Replace the dedicated connection with a 500 Mbps hosted connection from an AWS Direct Connect Partner.",
+      "B": "Add a second 10 Gbps dedicated connection and create a link aggregation group (LAG) to improve utilization.",
+      "C": "Replace the connection with an accelerated AWS Site-to-Site VPN that uses AWS Global Accelerator over the public internet.",
+      "D": "Keep the 10 Gbps connection and enable AWS Global Accelerator for the application endpoints."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Right-size the port:** Direct Connect port-hour charges increase with connection capacity. A 500 Mbps hosted connection costs much less than a 10 Gbps dedicated port and still leaves headroom above the 320 Mbps peak.\n* **Same benefits:** A hosted connection is still a private, dedicated Direct Connect link with consistent network performance.\n* **Flexible sizes:** Hosted connections are offered in many capacities, from 50 Mbps to multiple Gbps, so capacity can be raised later through the partner.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** A LAG doubles port costs, and utilization is the problem, not capacity.\n* **Option C is incorrect:** Accelerated VPN still runs over the public internet, which does not meet the requirement for private, consistent connectivity.\n* **Option D is incorrect:** Global Accelerator adds cost and does nothing about the oversized Direct Connect port.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Bandwidth allocation:** Size Direct Connect from CloudWatch metrics such as ConnectionBpsEgress and ConnectionBpsIngress. Use hosted connections for sub-1 Gbps needs.\n2. **Connectivity choice:** Low volume or temporary: Site-to-Site VPN. Consistent performance, high volume or lower data transfer out rates: Direct Connect."
+  },
+  {
+    "domain": 4,
+    "task": "4.4",
+    "topics": [
+      "Amazon API Gateway",
+      "Usage plans",
+      "Throttling"
+    ],
+    "prompt": "A company exposes a REST API through Amazon API Gateway to 40 partner companies. The backend uses AWS Lambda and Amazon DynamoDB on-demand capacity. Last month, one partner's misconfigured script sent hundreds of millions of requests, which sharply increased backend costs. The company wants to cap each partner's request rate and the total number of requests each partner can make per month, without affecting other partners. Which solution meets these requirements?",
+    "options": {
+      "A": "Lower the account-level API Gateway throttling limits for the Region.",
+      "B": "Configure reserved concurrency on the Lambda function to limit its maximum concurrent executions.",
+      "C": "Issue an API key to each partner and associate the keys with API Gateway usage plans that define throttling limits and a monthly quota.",
+      "D": "Attach an AWS WAF web ACL to the API stage with a rate-based rule that blocks requests above a set limit from each partner's source IP addresses."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Per-client limits:** Usage plans set steady-state rate and burst limits for each API key, so one partner's spike is throttled (HTTP 429) without affecting others.\n* **Monthly quota:** Usage plans also support daily, weekly or monthly request quotas. This caps total usage and therefore the downstream Lambda and DynamoDB costs.\n* **Stops at the front door:** Requests that are rejected are never sent to the backend, so they generate no Lambda or DynamoDB charges.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Account-level limits apply to all partners together, so one noisy partner could still use up the shared limit and other partners would be throttled.\n* **Option B is incorrect:** Reserved concurrency throttles all callers of the function together and offers no monthly quota.\n* **Option D is incorrect:** WAF rate-based rules count requests over a short rolling window per IP address. They cannot enforce monthly quotas, and a partner can send requests from many IP addresses.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Throttling strategy:** Per-customer limits and quotas: API Gateway usage plans with API keys. Abuse or DDoS protection: AWS WAF rate-based rules. Protecting a downstream resource: Lambda reserved concurrency or SQS buffering.\n2. **API keys:** API keys identify clients for usage plans. Use authorizers such as IAM, Amazon Cognito or Lambda authorizers for authentication."
+  }
+]

@@ -1,0 +1,452 @@
+[
+  {
+    "domain": 1,
+    "task": "1.1",
+    "topics": [
+      "IAM",
+      "Permissions boundaries",
+      "Policy evaluation"
+    ],
+    "prompt": "A developer creates an IAM role for a data-processing application. The role's identity-based policy allows s3:* and dynamodb:* on all resources. The account's security team requires every developer-created role to have a permissions boundary, and this role's boundary allows only s3:GetObject, s3:PutObject, and sqs:SendMessage. No SCPs, session policies, or resource-based policies affect the role. Which actions can the application perform when it uses this role?",
+    "options": {
+      "A": "All Amazon S3 and Amazon DynamoDB actions, because the identity-based policy grants them and a permissions boundary only logs out-of-boundary actions.",
+      "B": "Only s3:GetObject and s3:PutObject, because effective permissions are the intersection of the identity-based policy and the permissions boundary.",
+      "C": "s3:GetObject, s3:PutObject, and sqs:SendMessage, because the permissions boundary grants every action that it lists to the role.",
+      "D": "All actions in the identity-based policy and the permissions boundary combined, because IAM evaluates the two policy types as a union."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Intersection logic:** A permissions boundary sets the maximum permissions that an identity-based policy can grant. An action is allowed only if both the identity-based policy and the boundary allow it.\n* **Applied to this role:** s3:GetObject and s3:PutObject appear in both policies, so they are allowed. dynamodb:* and the other S3 actions are outside the boundary, and sqs:SendMessage is not granted by the identity-based policy.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** A permissions boundary enforces a limit. It does not just log actions. Anything outside the boundary is implicitly denied.\n* **Option C is incorrect:** A boundary never grants permissions by itself. sqs:SendMessage would need to be allowed by the identity-based policy too.\n* **Option D is incorrect:** Boundaries and identity-based policies are evaluated as an intersection, not a union.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Boundary = ceiling, not grant:** Effective permissions = identity policy ∩ boundary (∩ SCP ∩ session policy, if present).\n2. **Exam tip:** If an answer says a boundary or SCP \"grants\" access, it is wrong. Only identity-based and resource-based policies grant access."
+  },
+  {
+    "domain": 1,
+    "task": "1.1",
+    "topics": [
+      "IAM",
+      "AWS STS",
+      "Session policies",
+      "Multi-tenancy"
+    ],
+    "prompt": "A SaaS company stores each tenant's data under a separate prefix in one Amazon S3 bucket. A shared AWS Lambda backend serves more than 4,000 tenants. To limit the impact of application bugs, the company wants the AWS credentials used for each request to allow access only to the requesting tenant's prefix. The company does not want to create or maintain IAM resources for each tenant. Which solution meets these requirements?",
+    "options": {
+      "A": "Create an IAM role for each tenant that allows access to only that tenant's prefix, and have the backend assume the matching role for each request.",
+      "B": "Add a statement to the bucket policy for each tenant that allows access to the tenant's prefix when a request header contains the tenant ID.",
+      "C": "Have the backend call AssumeRole on one shared tenant-access role and pass an inline session policy that allows access only to the requesting tenant's prefix.",
+      "D": "Grant the Lambda execution role access to the whole bucket and validate the tenant ID in application code before every S3 call."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Session policies scope down at runtime:** A session policy passed to AssumeRole limits the temporary credentials to the intersection of the role's permissions and the session policy. The backend can build the policy for each request with the tenant's prefix.\n* **No per-tenant IAM resources:** One role is used for all tenants. The tenant restriction exists only in the session, so nothing has to be created when a tenant is added.\n* **Limits the impact of bugs:** Even if application code builds the wrong object key, S3 denies access outside the prefix that the session allows.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Thousands of per-tenant roles are hard to manage and can hit the IAM roles-per-account quota. The requirement says not to maintain IAM resources for each tenant.\n* **Option B is incorrect:** A bucket policy is limited to 20 KB and cannot hold thousands of tenant statements. A client-supplied header is not a trusted identity.\n* **Option D is incorrect:** The credentials still have access to every tenant's data, so an application bug can expose other tenants. This does not meet the requirement.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Session policy pattern:** \"Scope down temporary credentials per request\" points to AssumeRole with an inline session policy (or session tags with ABAC).\n2. **Remember:** A session policy can only reduce permissions. It can never grant more than the role allows."
+  },
+  {
+    "domain": 1,
+    "task": "1.1",
+    "topics": [
+      "AWS Organizations",
+      "SCPs",
+      "Management account"
+    ],
+    "prompt": "A company attached an SCP to its organization root that denies all actions outside two approved AWS Regions. During an audit, the security team finds Amazon EC2 instances running in an unapproved Region. The instances were launched by administrators who signed in to the organization's management account. Which solution should the company use to enforce the Region restriction for these workloads?",
+    "options": {
+      "A": "Move the workloads into member accounts that are covered by the SCP, and limit use of the management account to organization administration tasks.",
+      "B": "Attach the same SCP directly to the management account as well, so that the Region restriction is evaluated for its IAM users and roles instead of only being inherited from the organization root.",
+      "C": "Add the FullAWSAccess policy to the organization root so that the deny statement in the Region SCP is evaluated for every account.",
+      "D": "Create a permissions boundary for the management account's root user that denies actions outside the approved Regions."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **SCPs do not apply to the management account:** SCPs affect only member accounts. Users and roles in the management account are never restricted by SCPs, wherever the SCP is attached.\n* **Best practice:** AWS recommends running no workloads in the management account and using it only for organization-level tasks. Workloads in member accounts are covered by the Region SCP.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Attaching an SCP to the management account has no effect. SCPs never restrict the management account.\n* **Option C is incorrect:** FullAWSAccess is already attached by default. It does not make SCPs apply to the management account.\n* **Option D is incorrect:** Permissions boundaries cannot be attached to the root user, and boundaries do not solve the underlying design issue of running workloads in the management account.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Management account exemption:** SCPs (and RCPs) do not affect the management account. Keep it free of workloads.\n2. **Exam tip:** If a question says an SCP \"isn't working\" for some principals, check whether they are in the management account or are service-linked roles, which SCPs also do not restrict."
+  },
+  {
+    "domain": 1,
+    "task": "1.1",
+    "topics": [
+      "IAM",
+      "ABAC",
+      "AWS Secrets Manager"
+    ],
+    "prompt": "A company has dozens of development teams that store application secrets in AWS Secrets Manager. Each team's IAM role has a team tag, and each secret has a team tag. Team members must be able to retrieve only secrets whose team tag matches their role's team tag. New teams are added every month, and the security team does not want to update policies when that happens. Team members must not be able to gain access to other teams' secrets by changing tags. Which combination of steps meets these requirements? (Select TWO.)",
+    "options": {
+      "A": "Create a separate customer managed policy for each team that lists the ARNs of that team's secrets, and attach it to the team's role.",
+      "B": "Attach one policy to all team roles that allows secretsmanager:GetSecretValue when aws:ResourceTag/team equals ${aws:PrincipalTag/team}.",
+      "C": "Encrypt each team's secrets with a separate KMS customer managed key, and share each key only with the matching team's role.",
+      "D": "Add a resource-based policy to every secret that lists the ARNs of the IAM roles that are allowed to read it.",
+      "E": "Deny secretsmanager:TagResource and secretsmanager:UntagResource for the team tag key to all team roles, and deny iam:TagRole and iam:UntagRole."
+    },
+    "isMulti": true,
+    "requiredCount": 2,
+    "correctAnswers": [
+      "B",
+      "E"
+    ],
+    "explanation": "### ✅ Why Options B & E are Correct\n\n* **ABAC policy (B):** Comparing the resource tag with the principal tag in one policy works for every current and future team. Adding a team needs only new tags, not new policies.\n* **Protect the tags (E):** ABAC is only as strong as the control over tags. Denying changes to the team tag on secrets and on the roles stops a user from retagging a secret or their own role to reach another team's data.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Per-team policies with explicit ARNs must be created and updated for every new team and secret. This is the RBAC overhead that the company wants to avoid.\n* **Option C is incorrect:** Per-team KMS keys add cost and management work for each new team, and still need per-team policies. They do not replace a scalable tag-based access model.\n* **Option D is incorrect:** Managing a resource policy on every secret is high overhead and must change whenever roles change.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **ABAC keywords:** \"New teams/projects added often\" + \"don't want to update policies\" points to tag-based ABAC with ${aws:PrincipalTag/...}.\n2. **Secure ABAC:** Always restrict who can create or change the authorization tags (aws:TagKeys, aws:RequestTag conditions, or deny Tag/Untag actions)."
+  },
+  {
+    "domain": 1,
+    "task": "1.1",
+    "topics": [
+      "Amazon Cognito",
+      "IAM",
+      "Role-based access control"
+    ],
+    "prompt": "A mobile app authenticates users with an Amazon Cognito user pool and gets temporary AWS credentials from a Cognito identity pool. Standard users may only read from an Amazon DynamoDB table. Premium users must also be able to write to the table. A user's tier can change at any time, and the app must not decide which permissions a user receives. Which solution meets these requirements?",
+    "options": {
+      "A": "Create an IAM user for each premium user and store the access keys in the app after the user upgrades.",
+      "B": "Create two identity pools, one for each tier, and have the app choose which identity pool to call based on the tier stored on the device.",
+      "C": "Use an API key for premium users in Amazon API Gateway, and have the app send write requests through the API only when a key is present.",
+      "D": "Create a user pool group for each tier with its own IAM role, and configure the identity pool to choose the role from the token for authenticated users."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Role-based access control in Cognito:** Each user pool group can have an IAM role. The ID token contains the user's groups and roles, and the identity pool can choose the IAM role from the token.\n* **Server-side decision:** Group membership is managed in the user pool, so changing a user's tier changes their role on the next sign-in. The app on the device cannot choose a higher-privileged role.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** IAM users with long-term access keys on mobile devices are insecure and do not scale to consumer apps.\n* **Option B is incorrect:** The device decides which pool to call, so a user could tamper with the app and get premium permissions.\n* **Option C is incorrect:** API keys identify clients for usage plans. They are not an authorization mechanism and can be extracted from the app.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Pattern:** \"Different AWS permissions for different user groups in a Cognito app\" points to user pool groups mapped to IAM roles, with the identity pool's role selection set to use the token.\n2. **Remember:** User pool = authentication/sign-in and tokens. Identity pool = exchange tokens for temporary AWS credentials."
+  },
+  {
+    "domain": 1,
+    "task": "1.1",
+    "topics": [
+      "IAM",
+      "AWS STS",
+      "MFA",
+      "Cross-account access"
+    ],
+    "prompt": "A company's administrators sign in as IAM users in a central identity account and switch roles into an AdminRole in the production account. The company has not adopted AWS IAM Identity Center yet. A new policy requires that AdminRole can be assumed only by users who authenticated with MFA. Applications in the production account use other roles that must keep working without MFA. Which solution meets these requirements?",
+    "options": {
+      "A": "Add an sts:ExternalId condition to the AdminRole trust policy and give each administrator a unique external ID value.",
+      "B": "Add a condition to the AdminRole trust policy that requires aws:MultiFactorAuthPresent to be true for sts:AssumeRole.",
+      "C": "Attach an SCP to the production account that denies all actions when aws:MultiFactorAuthPresent is false.",
+      "D": "Enable a virtual MFA device for each administrator's IAM user in the identity account."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Enforced at the role:** The aws:MultiFactorAuthPresent condition in the trust policy lets STS issue AdminRole credentials only when the caller signed in with MFA.\n* **Scoped correctly:** Only AdminRole has the condition, so application roles in the production account are not affected.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** External IDs address the confused deputy problem with third parties. They do not prove that a human used MFA.\n* **Option C is incorrect:** An account-wide SCP would also deny application roles and AWS service calls that never have MFA, which breaks production workloads.\n* **Option D is incorrect:** Assigning MFA devices does not force their use. Without a condition on the role, users could still assume AdminRole without MFA.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **MFA-protected role assumption:** Use aws:MultiFactorAuthPresent (or aws:MultiFactorAuthAge) in the role trust policy.\n2. **Modern guidance:** For workforce access, IAM Identity Center with MFA is preferred over IAM users, but the trust-policy condition is the right control in this setup."
+  },
+  {
+    "domain": 1,
+    "task": "1.1",
+    "topics": [
+      "AWS Resource Access Manager (AWS RAM)",
+      "Amazon VPC",
+      "AWS Organizations"
+    ],
+    "prompt": "A central networking team manages the IP address plan, route tables, network ACLs, and NAT gateways for a company's workloads. Application teams each have their own AWS account in the same organization. The application teams must launch EC2 instances, RDS databases, and load balancers into centrally managed subnets, but must not be able to change any networking components. Which solution meets these requirements with the LEAST operational overhead?",
+    "options": {
+      "A": "Create a VPC in each application account, and connect each VPC to a central VPC with VPC peering.",
+      "B": "Create a cross-account IAM role in the networking account that application teams assume to launch their resources in the central VPC.",
+      "C": "Share the subnets of a central VPC with the application accounts by using AWS RAM.",
+      "D": "Attach every application team's VPC to a transit gateway that the networking team owns, and propagate routes centrally."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **VPC sharing:** AWS RAM lets the VPC owner share subnets with other accounts in the organization. Participant accounts create their own resources in the shared subnets.\n* **Separation of duties:** Participants cannot change the VPC, subnets, route tables, network ACLs, or gateways that the owner manages. They own and pay for only their own resources.\n* **Low overhead:** There is one VPC to manage, with no peering or transit gateway attachments for each application account.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Each application team would own and could change its own VPC networking. Managing many peering connections also adds overhead.\n* **Option B is incorrect:** The resources would be owned by the networking account, which mixes ownership, billing, and permissions. Application teams would need broad rights in the networking account.\n* **Option D is incorrect:** The application teams would still own their VPCs and could change their route tables and network ACLs. A transit gateway connects VPCs but does not centralize subnet control.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Shared VPC keywords:** \"Central team manages networking, other accounts deploy into the same subnets\" points to VPC sharing with AWS RAM.\n2. **AWS RAM:** Also shares Transit Gateways, Route 53 Resolver rules, prefix lists, and more across accounts."
+  },
+  {
+    "domain": 1,
+    "task": "1.2",
+    "topics": [
+      "Amazon API Gateway",
+      "Lambda authorizer",
+      "AWS Lambda"
+    ],
+    "prompt": "A company is exposing an Amazon API Gateway REST API to existing customers. Customers already have opaque access tokens that are issued by the company's in-house authentication server, which provides a token introspection endpoint. The API must validate each token with that endpoint and then allow or deny access to each resource based on customer entitlements that are stored in Amazon DynamoDB. Which solution meets these requirements?",
+    "options": {
+      "A": "Configure a Lambda authorizer that calls the introspection endpoint, reads the entitlements from DynamoDB, and returns an IAM policy, with authorizer caching enabled.",
+      "B": "Configure an Amazon Cognito user pool authorizer, and import the existing customers into the user pool.",
+      "C": "Configure AWS_IAM authorization on the API methods, and require customers to sign their requests with Signature Version 4.",
+      "D": "Require API keys on the methods, attach them to a usage plan, and give each customer an API key that maps to their entitlements."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Custom authorization logic:** A Lambda authorizer can run any code. It can call the external introspection endpoint, look up entitlements in DynamoDB, and return an IAM policy that allows or denies specific methods.\n* **Caching:** Authorizer result caching (keyed on the token) reduces calls to the authentication server and DynamoDB.\n* **No customer changes:** Customers keep their existing tokens.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** A Cognito authorizer validates only tokens issued by the Cognito user pool. The existing opaque tokens would not be accepted, and customers would have to sign in again.\n* **Option C is incorrect:** IAM authorization requires AWS credentials and SigV4 signing, which external customers with opaque tokens do not have.\n* **Option D is incorrect:** API keys identify callers for throttling and quotas. AWS says they should not be used for authentication or authorization.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Authorizer selection:** Cognito tokens → Cognito authorizer. AWS principals → IAM (SigV4). Any OIDC JWT on HTTP APIs → JWT authorizer. Custom/opaque tokens or custom logic → Lambda authorizer.\n2. **Exam tip:** API keys are never the right answer for authentication."
+  },
+  {
+    "domain": 1,
+    "task": "1.2",
+    "topics": [
+      "AWS WAF",
+      "Rate-based rules",
+      "Amazon CloudFront"
+    ],
+    "prompt": "A company's website runs behind Amazon CloudFront. Individual IP addresses are repeatedly sending thousands of requests to the /search path, which runs expensive database queries. The company wants to automatically block any IP address that sends more than 500 requests to /search in 5 minutes, while requests to other paths from the same addresses continue to work. The solution must require the LEAST operational overhead. Which solution meets these requirements?",
+    "options": {
+      "A": "Add network ACL deny rules for the offending IP addresses in the subnets that host the origin servers.",
+      "B": "Create an AWS WAF IP set, and run a scheduled AWS Lambda function that adds IP addresses from the CloudFront access logs to the IP set.",
+      "C": "Subscribe to AWS Shield Advanced, add the CloudFront distribution as a protected resource, and ask the Shield Response Team to monitor the /search path.",
+      "D": "Add an AWS WAF rate-based rule that aggregates by IP address with a limit of 500 in a 5-minute window and a scope-down statement for the /search path."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Rate-based rules:** AWS WAF counts requests for each IP address over the evaluation window and blocks addresses that exceed the limit. They are unblocked automatically when their rate drops.\n* **Scope-down statement:** A scope-down statement limits counting and blocking to requests that match /search, so other paths are not affected.\n* **Fully managed:** No custom code or manual IP list maintenance is needed.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Network ACLs are manual, have a small rule limit, block all paths, and see CloudFront edge IPs instead of the client IPs.\n* **Option B is incorrect:** Custom log processing and a scheduled function add operational overhead and react slowly. A rate-based rule does this natively.\n* **Option C is incorrect:** Shield Advanced focuses on DDoS protection. It does not enforce a path-specific per-IP request threshold.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Block IPs that exceed N requests\" points to an AWS WAF rate-based rule. Add a scope-down statement to limit it to a path, header, or other request property.\n2. **Placement:** Attach the web ACL to CloudFront so abusive traffic is blocked at the edge."
+  },
+  {
+    "domain": 1,
+    "task": "1.2",
+    "topics": [
+      "AWS WAF",
+      "Bot Control",
+      "Amazon CloudFront"
+    ],
+    "prompt": "An e-commerce company serves its storefront through Amazon CloudFront. Competitors use scraping tools and HTTP libraries to copy product prices from the site. The company wants to block this automated traffic while still allowing verified search engine crawlers so that its search ranking is not affected. The company wants a managed solution that it does not have to maintain. Which solution meets these requirements?",
+    "options": {
+      "A": "Add an AWS WAF geographic match rule that blocks requests from countries where the competitors are located.",
+      "B": "Enable Amazon GuardDuty, and configure automated remediation with Amazon EventBridge and AWS Lambda that blocks the IP addresses of scraping tools that GuardDuty reports.",
+      "C": "Add the AWS WAF Bot Control managed rule group to the web ACL for the distribution, and block the unverified bot categories.",
+      "D": "Add an AWS WAF rate-based rule with a low request limit that applies to all paths of the site."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Bot Control:** This AWS managed rule group identifies and labels bot traffic, such as scrapers, HTTP libraries, and crawlers, by using signatures that AWS maintains.\n* **Verified bots stay allowed:** Bot Control verifies known good bots, such as major search engines, and does not block them by default. You can block the unverified categories.\n* **Managed:** AWS updates the bot signatures, so the company has nothing to maintain.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Scrapers can use any location or proxies, and geo blocking also blocks real customers in those countries.\n* **Option B is incorrect:** GuardDuty detects threats to AWS accounts and workloads. It does not inspect or block HTTP requests to a CloudFront distribution.\n* **Option D is incorrect:** A low global rate limit can block real shoppers and search engine crawlers, and slow distributed scrapers stay under the limit.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Scrapers / bots but allow search engines\" points to AWS WAF Bot Control (targeted inspection level for advanced bots).\n2. **Related managed rule groups:** Account takeover prevention (ATP) for credential stuffing, and account creation fraud prevention (ACFP) for fake sign-ups."
+  },
+  {
+    "domain": 1,
+    "task": "1.2",
+    "topics": [
+      "Network ACLs",
+      "Security groups",
+      "Amazon VPC"
+    ],
+    "prompt": "A company runs a web server on an EC2 instance in a public subnet. The instance's security group allows inbound TCP 443 from 0.0.0.0/0. The security team replaces the default network ACL of the subnet with a custom network ACL that has an inbound rule that allows TCP 443 from 0.0.0.0/0 and an outbound rule that allows TCP 443 to 0.0.0.0/0. All other traffic is denied. Clients can no longer load the website. What should a solutions architect do to fix the issue?",
+    "options": {
+      "A": "Add an outbound rule to the instance's security group that allows TCP 1024-65535 to 0.0.0.0/0.",
+      "B": "Add an outbound rule to the network ACL that allows TCP 1024-65535 to 0.0.0.0/0.",
+      "C": "Add an inbound rule to the network ACL that allows TCP 1024-65535 from 0.0.0.0/0.",
+      "D": "Replace the network ACL rules with security group deny rules for all ports except TCP 443."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Network ACLs are stateless:** Return traffic is not allowed automatically. Responses from the server go to the client's ephemeral source port, not to port 443.\n* **Fix:** An outbound network ACL rule that allows the ephemeral port range (1024-65535) lets the HTTPS responses reach clients.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Security groups are stateful. Responses to allowed inbound traffic are always allowed, so the security group is not the problem.\n* **Option C is incorrect:** Inbound ephemeral ports are needed for responses to connections that the instance starts. The failing traffic here is the outbound response.\n* **Option D is incorrect:** Security groups support only allow rules. They cannot contain deny rules.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Stateful vs stateless:** Security group = instance level, stateful, allow only. Network ACL = subnet level, stateless, allow and deny, rules evaluated in number order.\n2. **Exam tip:** When a custom network ACL breaks connectivity, check for missing ephemeral port rules on the return path."
+  },
+  {
+    "domain": 1,
+    "task": "1.2",
+    "topics": [
+      "Amazon S3",
+      "VPC endpoints",
+      "Bucket policies"
+    ],
+    "prompt": "A company stores sensitive research data in an S3 bucket. Applications that run in one VPC access the bucket through an S3 gateway VPC endpoint. A new security policy requires that the bucket's data can be accessed only through that specific VPC endpoint, even by IAM principals in the same account that have s3:* permissions. Which solution meets these requirements?",
+    "options": {
+      "A": "Add a bucket policy statement that denies s3:* on the bucket and its objects when aws:SourceVpce does not equal the ID of the VPC endpoint.",
+      "B": "Add a bucket policy statement that denies s3:* when aws:SourceIp is not within the VPC's private CIDR range.",
+      "C": "Attach a VPC endpoint policy that allows access only to this bucket for principals in the account.",
+      "D": "Attach a security group to the gateway VPC endpoint that allows only HTTPS traffic from the application subnets, and remove the default outbound rules."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Resource-side enforcement:** A bucket policy deny with aws:SourceVpce applies to every request, whatever the caller's IAM permissions. An explicit deny overrides any allow.\n* **Works with gateway endpoints:** Requests that arrive through a VPC endpoint carry the endpoint ID, which S3 can evaluate in the bucket policy.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Requests through a VPC endpoint do not carry the private IP in aws:SourceIp, so this condition does not work. Use aws:SourceVpce or aws:SourceVpc instead.\n* **Option C is incorrect:** An endpoint policy controls only traffic that goes through the endpoint. It does not stop principals from reaching the bucket from the internet or another network path.\n* **Option D is incorrect:** Gateway endpoints do not use security groups. They are route table targets.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Two directions:** Endpoint policy = what can be reached through the endpoint. Bucket policy with aws:SourceVpce/aws:SourceVpc = where the bucket can be reached from.\n2. **Caution:** A deny like this also blocks console access from outside the VPC. Add exceptions, such as aws:PrincipalArn for break-glass roles, if needed."
+  },
+  {
+    "domain": 1,
+    "task": "1.2",
+    "topics": [
+      "Amazon API Gateway",
+      "AWS PrivateLink",
+      "VPC endpoints"
+    ],
+    "prompt": "A company is building an internal REST API with Amazon API Gateway. The API must be reachable only from applications that run in one VPC and must never be reachable from the public internet. Requests must not traverse the internet. Which combination of steps meets these requirements? (Select THREE.)",
+    "options": {
+      "A": "Create the API with the private endpoint type.",
+      "B": "Create the API with the edge-optimized endpoint type, and restrict access with an AWS WAF IP set.",
+      "C": "Create an interface VPC endpoint for the execute-api service in the VPC's private subnets.",
+      "D": "Require an API key on every method so that only internal applications can call the API.",
+      "E": "Create a NAT gateway so that the applications can reach the API Gateway endpoint.",
+      "F": "Attach a resource policy to the API that allows execute-api:Invoke only when aws:SourceVpce equals the endpoint ID."
+    },
+    "isMulti": true,
+    "requiredCount": 3,
+    "correctAnswers": [
+      "A",
+      "C",
+      "F"
+    ],
+    "explanation": "### ✅ Why Options A, C & F are Correct\n\n* **Private endpoint type (A):** Private REST APIs are not exposed on the public internet and can be called only through interface VPC endpoints.\n* **Interface endpoint (C):** An execute-api interface endpoint (AWS PrivateLink) gives the VPC a private path to API Gateway with no internet routing.\n* **Resource policy (F):** Private APIs require a resource policy. Allowing invocation only from the specific VPC endpoint limits access to that VPC.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Edge-optimized APIs are public. An IP-based WAF rule does not stop the API from being reachable from the internet.\n* **Option D is incorrect:** API keys are not authorization controls and do not change the API's network exposure.\n* **Option E is incorrect:** A NAT gateway sends traffic to public endpoints over the internet path, which goes against the requirement.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Private API recipe:** Private endpoint type + execute-api interface endpoint + resource policy with aws:SourceVpce/aws:SourceVpc.\n2. **Endpoint types:** Edge-optimized (CloudFront-fronted, public), Regional (public), Private (VPC only)."
+  },
+  {
+    "domain": 1,
+    "task": "1.2",
+    "topics": [
+      "Amazon CloudFront",
+      "Application Load Balancer",
+      "VPC origins"
+    ],
+    "prompt": "A company is moving a web application to AWS. Amazon CloudFront must deliver the application globally, and an Application Load Balancer (ALB) will distribute requests to EC2 instances. The security team requires that the ALB is not internet-facing and has no public IP addresses, so that it cannot be reached directly from the internet. Which solution meets these requirements?",
+    "options": {
+      "A": "Create an internet-facing ALB, and allow inbound traffic only from the CloudFront managed prefix list in the ALB's security group.",
+      "B": "Create an internet-facing ALB, and configure CloudFront origin access control (OAC) for the ALB origin.",
+      "C": "Create an internal ALB, and create a VPC endpoint service so that CloudFront can connect to the ALB through AWS PrivateLink.",
+      "D": "Create an internal ALB in private subnets, and configure it as a CloudFront VPC origin."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **CloudFront VPC origins:** VPC origins let CloudFront deliver content from an internal ALB, NLB, or EC2 instance in private subnets. The origin needs no public IP address.\n* **Single entry point:** The only way to reach the application from the internet is through CloudFront, where AWS WAF and Shield protections can be applied.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** This restricts traffic to CloudFront, but the ALB is still internet-facing with public IPs, which the security team does not allow.\n* **Option B is incorrect:** OAC supports origins such as S3, Lambda function URLs, and AWS Elemental services. It does not apply to ALB origins, and the ALB would still be internet-facing.\n* **Option C is incorrect:** CloudFront cannot use a customer-created PrivateLink endpoint service as an origin. VPC origins are the supported way to reach private origins.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Private origins for CloudFront:** S3 → OAC. Internal ALB/NLB/EC2 → VPC origins. Public ALB → managed prefix list in the security group plus a secret custom header.\n2. **Currency note:** OAI is legacy. Use OAC for S3, and VPC origins for private load balancers."
+  },
+  {
+    "domain": 1,
+    "task": "1.3",
+    "topics": [
+      "AWS KMS",
+      "Encryption context",
+      "AWS CloudTrail"
+    ],
+    "prompt": "A multi-tenant application uses envelope encryption with one AWS KMS customer managed key to protect data for 5,000 tenants. Auditors want AWS CloudTrail logs to show which tenant each Decrypt request relates to. The security team also wants the encrypted data keys of one tenant to fail to decrypt if the application accidentally requests them for a different tenant. The company does not want to create a key for each tenant. Which solution meets these requirements?",
+    "options": {
+      "A": "Add a tag with the tenant ID to the KMS key before each operation, and remove the tag after the operation completes.",
+      "B": "Create a KMS grant for each tenant that allows kms:Decrypt, and use the grant token for that tenant's requests.",
+      "C": "Pass the tenant ID as encryption context in every GenerateDataKey and Decrypt request.",
+      "D": "Create a KMS alias for each tenant that points to the same KMS key, and call Decrypt with the tenant's alias."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Cryptographic binding:** Encryption context is additional authenticated data. Decrypt succeeds only when the exact same context is supplied, so a data key encrypted for tenant A cannot be decrypted with tenant B's context.\n* **Auditability:** KMS records the encryption context in the CloudTrail event for each request, so auditors can see which tenant each Decrypt relates to.\n* **Policy use:** Key policy conditions such as kms:EncryptionContext:tenantId can further restrict use.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Key tags are key-level metadata. Changing them for each request creates race conditions between tenants and does not bind ciphertext to a tenant.\n* **Option B is incorrect:** Thousands of per-tenant grants add management overhead, and grants do not bind the ciphertext to a tenant.\n* **Option D is incorrect:** All aliases resolve to the same key, so they give no cryptographic separation, and Decrypt for symmetric ciphertext does not depend on the alias that was used to encrypt.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Encryption context:** Non-secret key-value pairs, bound to the ciphertext, logged in CloudTrail, usable in policy conditions.\n2. **Exam tip:** \"Audit which record/tenant was decrypted\" or \"bind ciphertext to context\" with one key points to encryption context."
+  },
+  {
+    "domain": 1,
+    "task": "1.3",
+    "topics": [
+      "AWS KMS",
+      "KMS grants",
+      "IAM"
+    ],
+    "prompt": "A nightly batch job runs under an IAM role and must decrypt files that were encrypted with an AWS KMS customer managed key. The security team wants the role to be able to use the key only while the job runs. The permission must be given and removed programmatically by the job orchestrator, without editing the key policy each night. Which solution meets these requirements?",
+    "options": {
+      "A": "Have the orchestrator call CreateGrant to allow the role kms:Decrypt on the key at job start, and retire or revoke the grant when the job completes.",
+      "B": "Have the orchestrator update the key policy to add the role at job start and remove the role when the job completes.",
+      "C": "Add a key policy statement that allows the role kms:Decrypt with an aws:CurrentTime condition for the nightly job window.",
+      "D": "Re-encrypt the files with the AWS managed key for Amazon S3 so that the role can decrypt them without key policy changes."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Grants for temporary delegation:** KMS grants give a principal permission to use a KMS key for specific operations without changing the key policy. They are designed to be created and removed programmatically.\n* **Clean revocation:** RetireGrant or RevokeGrant removes the permission as soon as the job finishes, which keeps access time-bound.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** The requirement says not to edit the key policy each night. Editing it often is error-prone, and a mistake can lock out administrators.\n* **Option C is incorrect:** aws:CurrentTime compares against absolute dates and times, so the statement would have to be rewritten every day. It still means editing the key policy.\n* **Option D is incorrect:** AWS managed key policies cannot be edited. Any principal in the account with S3 access could use the key through S3, so this removes the per-job control.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Key policy vs grant:** Key policy = long-term, primary access control. Grants = temporary, programmatic, specific permissions (used by services such as EBS and RDS).\n2. **Exam tip:** \"Temporary key access without changing the key policy\" points to KMS grants."
+  },
+  {
+    "domain": 1,
+    "task": "1.3",
+    "topics": [
+      "Amazon S3",
+      "S3 Access Points",
+      "Bucket policies"
+    ],
+    "prompt": "A company has a shared data lake bucket in Amazon S3 that is used by 40 applications in several AWS accounts. Each application needs different permissions on different prefixes, and some applications must access data only from their own VPC. The bucket policy is close to its 20 KB size limit and has become difficult to review. Which solution addresses these issues with the LEAST operational overhead?",
+    "options": {
+      "A": "Copy each application's data into a separate bucket that has its own bucket policy, and keep all the copies synchronized with the shared bucket by using S3 Replication rules.",
+      "B": "Create an S3 access point for each application with its own access point policy, using VPC-only network origin where needed, and delegate access control from the bucket policy to the access points.",
+      "C": "Remove the bucket policy and grant access through IAM identity-based policies in each application's account.",
+      "D": "Enable S3 Object Ownership with the bucket owner enforced setting, and use object ACLs to grant each application access to its prefixes."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Access points scale access management:** Each access point has its own policy and name, so permissions for each application are managed and reviewed separately instead of in one large bucket policy.\n* **Network controls:** An access point can be limited to a specific VPC (VPC network origin) for applications that must access data only from their VPC.\n* **Delegation:** A short bucket policy can delegate access control to access points that the account owns, such as with the s3:DataAccessPointAccount condition.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Duplicating data across buckets adds storage cost, replication management, and consistency problems.\n* **Option C is incorrect:** Cross-account access requires the bucket's resource policy to allow it. Identity-based policies in other accounts alone are not enough.\n* **Option D is incorrect:** The bucket owner enforced setting disables ACLs, so ACLs cannot be used to grant access. ACLs are also a legacy access method.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Shared bucket, many applications, complex bucket policy\" points to S3 Access Points (or S3 Access Grants for identity-directory-based access).\n2. **Remember:** Access points can be VPC-only, and Block Public Access can be set for each access point."
+  },
+  {
+    "domain": 1,
+    "task": "1.3",
+    "topics": [
+      "Application Load Balancer",
+      "AWS Certificate Manager (ACM)",
+      "TLS"
+    ],
+    "prompt": "A company's public application runs behind an Application Load Balancer (ALB). A compliance review requires that all client traffic is encrypted in transit with TLS 1.2 or later, and TLS 1.3 must be supported. Users who type the HTTP URL must be sent to HTTPS automatically. Which combination of steps meets these requirements? (Select TWO.)",
+    "options": {
+      "A": "Configure an HTTPS listener with an ACM certificate and a security policy that supports only TLS 1.3 and TLS 1.2, such as ELBSecurityPolicy-TLS13-1-2-2021-06.",
+      "B": "Request an ACM certificate with the minimum TLS version set to 1.2 and attach it to the existing HTTPS listener.",
+      "C": "Add an AWS WAF rule to the ALB that blocks requests that are negotiated with TLS 1.0 or TLS 1.1.",
+      "D": "Configure the HTTP listener on port 80 with a default action that redirects requests to HTTPS on port 443.",
+      "E": "Remove port 80 from the ALB security group so that browsers automatically retry over HTTPS."
+    },
+    "isMulti": true,
+    "requiredCount": 2,
+    "correctAnswers": [
+      "A",
+      "D"
+    ],
+    "explanation": "### ✅ Why Options A & D are Correct\n\n* **ALB security policy (A):** The listener's security policy controls which TLS protocol versions and ciphers the ALB negotiates. TLS13-1-2 policies allow only TLS 1.3 and 1.2.\n* **Redirect (D):** An HTTP listener with a redirect action returns an HTTP 301 to the HTTPS URL, so users who type the HTTP URL reach the encrypted endpoint.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** ACM certificates do not have a TLS version setting. Protocol versions are set by the load balancer's security policy.\n* **Option C is incorrect:** AWS WAF inspects HTTP requests after TLS termination. It is not used to restrict TLS protocol versions, which is the listener security policy's job.\n* **Option E is incorrect:** Blocking port 80 makes HTTP requests time out instead of redirecting users. Browsers do not automatically retry over HTTPS.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Where TLS settings live:** ACM = certificate issuance and renewal. ALB/NLB listener security policy (or the CloudFront viewer security policy) = TLS versions and ciphers.\n2. **HTTP to HTTPS:** ALB: redirect action on the port 80 listener. CloudFront: viewer protocol policy \"Redirect HTTP to HTTPS\"."
+  },
+  {
+    "domain": 1,
+    "task": "1.3",
+    "topics": [
+      "Amazon S3",
+      "S3 Object Lock",
+      "Data retention"
+    ],
+    "prompt": "A financial services company must store trade confirmation records in Amazon S3 in a write-once-read-many (WORM) format for 7 years to meet a regulation. No user, including administrators and the root user, can be allowed to delete or overwrite a record or shorten its retention period before the 7 years end. Which solution meets these requirements?",
+    "options": {
+      "A": "Enable S3 Object Lock in governance mode with a default retention period of 7 years.",
+      "B": "Enable versioning and MFA delete on the bucket, and add a bucket policy that denies s3:DeleteObject.",
+      "C": "Enable S3 Object Lock and place a legal hold on each object when it is uploaded.",
+      "D": "Enable S3 Object Lock in compliance mode with a default retention period of 7 years."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Compliance mode:** In compliance mode, no user, including the root user, can overwrite or delete a protected object version or shorten its retention period until the retention period ends.\n* **Default retention:** A bucket default retention of 7 years applies the protection automatically to every new object version.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** In governance mode, users with s3:BypassGovernanceRetention can delete objects or change retention, so administrators could still remove records.\n* **Option B is incorrect:** Administrators can change the bucket policy, and the root user can disable MFA delete. This is not WORM storage.\n* **Option C is incorrect:** A legal hold has no expiry date, and any user with s3:PutObjectLegalHold can remove it. It does not enforce a fixed 7-year retention.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Object Lock modes:** Governance = protected, but privileged users can bypass. Compliance = nobody can bypass, including root.\n2. **Related:** Use AWS Backup Vault Lock for WORM backups and S3 Object Lock for WORM objects."
+  },
+  {
+    "domain": 1,
+    "task": "1.3",
+    "topics": [
+      "Amazon RDS",
+      "Encryption in transit",
+      "TLS"
+    ],
+    "prompt": "A company runs an Amazon RDS for MySQL DB instance. An audit found that some client applications connect without TLS. The company must make sure that the DB instance rejects any connection that is not encrypted in transit. Which solution meets these requirements?",
+    "options": {
+      "A": "Enable encryption at rest on the DB instance with an AWS KMS customer managed key.",
+      "B": "Import a certificate into AWS Certificate Manager (ACM) and associate it with the DB instance endpoint.",
+      "C": "Set the require_secure_transport parameter to ON in a custom DB parameter group that is associated with the DB instance.",
+      "D": "Change the DB instance's security group to allow inbound connections only on TCP port 3306 from the security groups of the application tier, and remove all other inbound rules."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Server-side enforcement:** With require_secure_transport set to ON, RDS for MySQL rejects any client connection that does not use TLS.\n* **Client side:** Applications should connect with TLS and verify the server certificate by using the RDS certificate authority bundle.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Encryption at rest protects stored data and snapshots. It does not encrypt or enforce encryption of network connections.\n* **Option B is incorrect:** ACM certificates cannot be associated with RDS DB instances. RDS uses its own certificate authorities for server certificates.\n* **Option D is incorrect:** Security groups filter by IP address and port. They cannot tell encrypted from unencrypted connections.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Force TLS on RDS:** MySQL/MariaDB: require_secure_transport. PostgreSQL: rds.force_ssl (on by default in newer versions). SQL Server: rds.force_ssl.\n2. **At rest vs in transit:** KMS encryption covers data at rest. TLS covers data in transit. Questions often test whether you can tell them apart."
+  }
+]

@@ -1,0 +1,385 @@
+[
+  {
+    "domain": 2,
+    "task": "2.1",
+    "topics": [
+      "Amazon EventBridge",
+      "Archive and replay"
+    ],
+    "prompt": "A company uses a custom Amazon EventBridge event bus to distribute order events to several microservices through rules. A faulty deployment of the shipping service caused it to silently discard the events it received for 3 days before the bug was found. To recover from similar incidents in the future, the company wants to be able to re-send any order event from the previous 30 days to the fixed consumer. The solution must not require changes to the event producers. Which solution meets these requirements with the LEAST operational overhead?",
+    "options": {
+      "A": "Create an EventBridge archive on the custom event bus with a 30-day retention period, and start an EventBridge replay for the affected time window after the consumer is fixed.",
+      "B": "Enable AWS CloudTrail logging of PutEvents API calls, and write a script that reads the logged events from Amazon S3 and publishes them to the event bus again.",
+      "C": "Add an Amazon SQS queue with a 30-day message retention period as an extra target of every rule, and redrive the messages from the queue to the consumer when needed.",
+      "D": "Configure an Amazon SQS dead-letter queue on each rule target so that any events that the shipping service fails to process are retained and can be redriven to the service later."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Built-in archive:** An EventBridge archive stores events that match an optional event pattern from an event bus for a retention period you choose (or indefinitely), with no producer changes.\n* **Replay:** A replay re-sends archived events from a chosen start and end time back to the event bus, and can be limited to specific rules, so only the fixed consumer receives them again.\n* **Least overhead:** Both features are fully managed and configured on the bus; no custom storage or republishing code is required.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Republishing from CloudTrail logs requires custom code to parse logs and re-send events, which is far more operational effort than the native replay feature.\n* **Option C is incorrect:** The maximum SQS message retention period is 14 days, so a 30-day retention period is not possible, and duplicating every rule target adds overhead.\n* **Option D is incorrect:** A target dead-letter queue only captures events that EventBridge could not deliver. Here the events were delivered successfully and then discarded by the buggy consumer, so they would never reach the DLQ.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **\"Reprocess past events\" on EventBridge:** Archive + replay is the managed way to re-drive historical events to targets after a consumer bug.\n2. **DLQ scope:** EventBridge target DLQs capture delivery failures (for example, a deleted target or exhausted retries), not processing failures inside the consumer."
+  },
+  {
+    "domain": 2,
+    "task": "2.1",
+    "topics": [
+      "AWS Step Functions",
+      "Distributed Map",
+      "AWS Lambda",
+      "Amazon S3"
+    ],
+    "prompt": "A research company lands about 3 million small JSON files in an Amazon S3 prefix every night. After all files have arrived, each file must be validated and transformed by an AWS Lambda function that runs for about 20 seconds per file. The company wants a serverless orchestration that processes the files with thousands of parallel executions, records which items failed, and lets the overall job succeed as long as fewer than 1% of the files fail. Which solution meets these requirements with the LEAST custom code?",
+    "options": {
+      "A": "Create an AWS Step Functions Standard workflow that receives the full list of object keys as execution input and processes it with an inline Map state that invokes the Lambda function for each key, with a Catch for failed items.",
+      "B": "Create an AWS Step Functions workflow with a Distributed Map state that iterates over the S3 prefix, runs child workflows that invoke the function, and sets a tolerated failure percentage of 1%.",
+      "C": "Create a scheduled AWS Lambda function that lists the S3 prefix and synchronously invokes the processing function once for each object key, writing failures to an Amazon DynamoDB table.",
+      "D": "Create an AWS Batch array job with one child job per file on a managed Amazon EC2 compute environment, and track failed child jobs in an Amazon CloudWatch dashboard."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Built for large-scale parallel processing:** Distributed Map can iterate directly over objects in an S3 prefix (or a manifest such as an S3 Inventory report) and runs each batch as a child workflow execution, with up to 10,000 parallel child executions.\n* **Failure handling:** ToleratedFailurePercentage (or ToleratedFailureCount) lets the Map Run succeed despite a small number of failed items, and ResultWriter can export per-item results and failures to S3.\n* **Minimal code:** Iteration, concurrency control, batching, and result tracking are configured in the state machine instead of being written in application code.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** An inline Map state supports at most 40 concurrent iterations, and passing 3 million keys as input exceeds the Step Functions payload size and execution history limits.\n* **Option C is incorrect:** A single Lambda function is limited to a 15-minute timeout, so it cannot drive 3 million synchronous 20-second invocations, and the tracking logic is all custom code.\n* **Option D is incorrect:** An AWS Batch array job supports at most 10,000 child jobs, and a managed EC2 compute environment is not a serverless orchestration of the existing Lambda function.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Millions of S3 objects\" + \"massively parallel\" + \"Step Functions\" = Distributed Map mode.\n2. **Inline vs. distributed:** Inline Map is for small arrays inside the execution's own payload (max concurrency 40); Distributed Map runs child executions with their own histories and quotas."
+  },
+  {
+    "domain": 2,
+    "task": "2.1",
+    "topics": [
+      "AWS Lambda",
+      "Lambda destinations",
+      "Asynchronous invocation",
+      "Amazon EventBridge",
+      "Amazon SQS"
+    ],
+    "prompt": "Several AWS services invoke a company's image-moderation AWS Lambda function asynchronously. The company wants the result of every successful invocation to be sent to an Amazon EventBridge event bus for downstream services. Events that still fail after Lambda's automatic retries must be retained in a queue together with details about the failure, such as the error message, for later investigation. The developers must not add any routing code to the function. Which solution meets these requirements?",
+    "options": {
+      "A": "Configure an Amazon SQS dead-letter queue on the function for failed events, and update the function code to call the EventBridge PutEvents API after each successful run.",
+      "B": "Enable Amazon CloudWatch Lambda Insights for the function, and create a CloudWatch alarm on the Errors metric that publishes a notification to an Amazon SNS topic.",
+      "C": "Configure the function's asynchronous invocation settings with an on-success destination of the EventBridge event bus and an on-failure destination of an SQS queue.",
+      "D": "Change all callers to invoke the function synchronously with the RequestResponse invocation type, and have each caller forward results and errors to the appropriate service."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Destinations for async invocations:** Lambda destinations route the invocation record of asynchronous invocations to a target on success or on failure, without any code in the function.\n* **Rich invocation records:** The record sent to a destination includes the original request payload, the response (or error message and type), and metadata such as the number of retry attempts.\n* **Supported targets:** On-success and on-failure destinations can be an EventBridge event bus, an SQS queue, an SNS topic, or another Lambda function (on-failure can also be an S3 bucket).\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** A dead-letter queue covers failures only, and publishing successful results from the function requires adding routing code, which the requirements prohibit.\n* **Option B is incorrect:** Lambda Insights and alarms provide monitoring and notifications, but they do not deliver successful results to EventBridge or retain the failed events for reprocessing.\n* **Option D is incorrect:** Destinations and automatic retries apply to asynchronous invocations. Switching to synchronous calls removes Lambda's built-in retries and pushes routing logic into every caller.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Destinations vs. DLQ:** Destinations are the preferred, more flexible option: they support success and failure, more target types, and include response/error context. A DLQ supports only failures and only SQS/SNS.\n2. **Async retry behavior:** For asynchronous invocations Lambda retries failed events up to two times by default; retry attempts and maximum event age are configurable."
+  },
+  {
+    "domain": 2,
+    "task": "2.1",
+    "topics": [
+      "Amazon SNS FIFO",
+      "Amazon SQS FIFO",
+      "Fan-out"
+    ],
+    "prompt": "A trading platform publishes a price-change event every time an instrument's price changes. Three independent services (risk calculation, audit ledger, and customer notifications) must each receive every event. Each service must process the events for a given instrument in exactly the order they were published, and duplicate events that the publisher sends because of retries must be dropped. Which solution meets these requirements?",
+    "options": {
+      "A": "Publish the events to an Amazon SNS standard topic, and subscribe one Amazon SQS FIFO queue for each service with a message group ID based on the instrument.",
+      "B": "Send the events to a single Amazon SQS FIFO queue that uses the instrument ID as the message group ID, and have all three services poll the same queue.",
+      "C": "Send the events to an Amazon EventBridge custom event bus, and create three rules that each forward the events to a separate Amazon SQS FIFO queue, using the instrument ID as the message group ID.",
+      "D": "Publish the events to an Amazon SNS FIFO topic with the instrument ID as the message group ID, and subscribe an Amazon SQS FIFO queue for each service."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Ordered fan-out:** An SNS FIFO topic delivers messages to subscribed SQS FIFO queues in the order they were published within each message group, so every service gets its own ordered copy.\n* **Deduplication:** SNS FIFO topics deduplicate messages that have the same deduplication ID (or the same content when content-based deduplication is enabled) within the 5-minute deduplication interval.\n* **Parallelism:** Using the instrument ID as the message group ID keeps per-instrument order while allowing different instruments to be processed in parallel.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** SQS FIFO queues cannot subscribe to an SNS standard topic, and a standard topic provides neither strict ordering nor deduplication.\n* **Option B is incorrect:** Each SQS message is consumed by only one consumer, so three services polling one queue would split the events among them instead of each receiving every event.\n* **Option C is incorrect:** EventBridge does not guarantee the order in which events are delivered to targets, so per-instrument ordering cannot be ensured.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Pattern:** \"Fan-out\" + \"strict ordering\" + \"deduplication\" = SNS FIFO topic -> SQS FIFO queues.\n2. **Queue vs. topic:** A queue is point-to-point (one consumer per message); a topic is publish/subscribe (every subscriber gets a copy)."
+  },
+  {
+    "domain": 2,
+    "task": "2.1",
+    "topics": [
+      "Idempotency",
+      "Amazon SQS",
+      "AWS Lambda",
+      "Amazon DynamoDB"
+    ],
+    "prompt": "A payment service uses an AWS Lambda function to process messages from an Amazon SQS standard queue at about 5,000 messages per second. Each message contains a unique payment request ID. Occasionally the same message is processed twice and a customer is charged twice. Message ordering is not required, and the team does not want to change the queue type. Which solution will prevent duplicate charges?",
+    "options": {
+      "A": "Increase the queue's visibility timeout to the maximum of 12 hours so that a message cannot become visible to another Lambda invocation while it is still being processed.",
+      "B": "Make the function idempotent by recording each payment request ID in an Amazon DynamoDB table with a conditional write, and skip the charge if the ID already exists.",
+      "C": "Enable content-based deduplication on the SQS queue so that messages with identical bodies are delivered only once within the deduplication interval.",
+      "D": "Set the Lambda function's reserved concurrency to 1 so that only one invocation can process messages from the queue at any time."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **At-least-once delivery:** SQS standard queues guarantee at-least-once delivery, so an occasional duplicate delivery is expected behavior and must be handled by the consumer.\n* **Idempotency key:** A DynamoDB conditional put (attribute_not_exists on the payment request ID) atomically records that a request has been handled; a second attempt fails the condition and the charge is skipped.\n* **Keeps throughput:** The queue type and throughput are unchanged; the deduplication is enforced at the business-logic level where it matters.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** A longer visibility timeout reduces one cause of redelivery, but standard queues can still deliver a message more than once, so duplicates are not prevented. It also delays retries after real failures.\n* **Option C is incorrect:** Content-based deduplication is available only for FIFO queues and FIFO topics, not for SQS standard queues.\n* **Option D is incorrect:** Limiting concurrency to 1 does not stop at-least-once redelivery and would severely throttle a 5,000 messages-per-second workload.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Design for duplicates:** In loosely coupled systems (SQS standard, SNS, EventBridge, Lambda async retries), make consumers idempotent with an idempotency key stored in a durable table.\n2. **Exam tip:** \"Exactly-once processing without changing the queue\" points to idempotent consumers; \"exactly-once delivery\" with ordering points to FIFO."
+  },
+  {
+    "domain": 2,
+    "task": "2.1",
+    "topics": [
+      "Network Load Balancer",
+      "Application Load Balancer",
+      "Elastic IP addresses"
+    ],
+    "prompt": "A company exposes HTTPS microservices through an internet-facing Application Load Balancer (ALB) that uses path-based routing rules to forward requests to several target groups. A large enterprise customer's firewall allows outbound connections only to a short list of IP addresses, and the customer requires that these IP addresses never change. The company wants to keep the ALB's path-based routing and minimize changes to the existing setup. Which solution meets these requirements?",
+    "options": {
+      "A": "Create a Network Load Balancer with an Elastic IP address in each Availability Zone, and register the existing ALB in an ALB-type target group behind it.",
+      "B": "Allocate an Elastic IP address for each Availability Zone, associate the addresses with the ALB's network interfaces, and give the customer the Elastic IP addresses.",
+      "C": "Place an Amazon CloudFront distribution in front of the ALB, and give the customer the published IP address ranges that CloudFront edge locations use.",
+      "D": "Replace the ALB with a Network Load Balancer that uses Elastic IP addresses, and re-create the path-based routing rules as Network Load Balancer listener rules."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Static IPs:** A Network Load Balancer supports one Elastic IP address per enabled Availability Zone, giving the customer fixed addresses to allow-list.\n* **Keep Layer 7 routing:** An NLB can forward TCP traffic to an ALB-type target group, so the existing ALB and its path-based rules continue to work unchanged behind the NLB.\n* **Minimal change:** The ALB, its listeners, and its target groups are left as they are; only a new NLB is added in front.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** ALB IP addresses are dynamic and are managed by AWS; you cannot assign Elastic IP addresses to an ALB.\n* **Option C is incorrect:** CloudFront uses a large, frequently changing set of IP ranges, which does not meet the requirement for a short list of addresses that never change.\n* **Option D is incorrect:** A Network Load Balancer operates at Layer 4 and does not support path-based routing rules, so the microservice routing would be lost.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Static IP in front of an ALB:** Use an NLB with an ALB-type target group (or AWS Global Accelerator) when clients need fixed IP addresses but the application needs Layer 7 routing.\n2. **Load balancer choice:** ALB = HTTP/HTTPS, path/host routing; NLB = TCP/UDP/TLS, static IPs, extreme performance; GWLB = inline third-party appliances."
+  },
+  {
+    "domain": 2,
+    "task": "2.1",
+    "topics": [
+      "Amazon EC2 Auto Scaling",
+      "Warm pools"
+    ],
+    "prompt": "A company runs an application on Amazon EC2 instances in an Auto Scaling group. When an instance launches, a startup script installs software and downloads a large reference dataset to the instance's EBS volume, which takes about 12 minutes. Traffic spikes arrive unpredictably, and the new instances are not ready in time to absorb them. The company wants to reduce the time it takes to add ready capacity while keeping the cost of idle capacity low. Which solution meets these requirements?",
+    "options": {
+      "A": "Increase the minimum capacity of the Auto Scaling group to the number of instances that the largest observed spike requires.",
+      "B": "Create scheduled scaling actions that add instances every morning before business hours and remove the extra instances every evening.",
+      "C": "Increase the health check grace period of the Auto Scaling group to 15 minutes so that new instances are not replaced while they initialize.",
+      "D": "Add a warm pool to the Auto Scaling group that keeps pre-initialized instances in the Stopped state until a scale-out event needs them."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Pre-initialized capacity:** A warm pool keeps instances that have already completed their time-consuming initialization ready to move into service, which dramatically shortens scale-out time.\n* **Low idle cost:** Instances in a Stopped warm pool incur charges only for their EBS volumes and any Elastic IP addresses, not for instance compute time.\n* **Lifecycle hooks:** Lifecycle hooks can make sure the startup script finishes before an instance enters the warm pool.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Keeping peak capacity running all the time removes the delay but maximizes the cost of idle capacity, which conflicts with the cost requirement.\n* **Option B is incorrect:** The spikes are unpredictable, so fixed schedules would either miss them or add capacity when it is not needed.\n* **Option C is incorrect:** The grace period only delays health-check-based replacement; it does not make new instances ready any faster.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Long boot times:** \"Application takes many minutes to initialize\" + \"scale out faster\" + \"cost-effective\" = Auto Scaling warm pool (Stopped or Hibernated state).\n2. **Predictable vs. unpredictable:** Use scheduled or predictive scaling for recurring patterns; use warm pools plus dynamic scaling for sudden, unpredictable spikes with slow-starting instances."
+  },
+  {
+    "domain": 2,
+    "task": "2.1",
+    "topics": [
+      "Amazon EC2 Auto Scaling",
+      "Lifecycle hooks",
+      "Elastic Load Balancing",
+      "AWS Systems Manager"
+    ],
+    "prompt": "A company runs a web application on Amazon EC2 instances in an Auto Scaling group behind an Application Load Balancer. Some requests take up to 60 seconds to complete, and the target group's deregistration delay is currently set to 5 seconds. During scale-in events, users see failed requests, and the application log files on each instance's EBS volume are lost when the instance is terminated. The company must let in-flight requests finish and must copy the log files to Amazon S3 before each instance is terminated. Which combination of actions meets these requirements? (Select TWO.)",
+    "options": {
+      "A": "Enable instance scale-in protection on all instances in the Auto Scaling group so that instances finish their work before they are terminated.",
+      "B": "Increase the target group's deregistration delay to a value longer than the longest request, such as 120 seconds.",
+      "C": "Change the Auto Scaling group's termination policy to terminate the instances that use the oldest launch template first.",
+      "D": "Set the DeleteOnTermination attribute of each instance's root EBS volume to false so that the volume and its log files are retained.",
+      "E": "Add a termination lifecycle hook, and use an Amazon EventBridge rule to run a Systems Manager command that copies the logs to S3 and completes the lifecycle action."
+    },
+    "isMulti": true,
+    "requiredCount": 2,
+    "correctAnswers": [
+      "B",
+      "E"
+    ],
+    "explanation": "### ✅ Why Options B & E are Correct\n\n* **Connection draining (B):** When an instance is deregistered, the ALB stops sending it new requests but lets in-flight requests complete for up to the deregistration delay. A 5-second delay cuts off 60-second requests.\n* **Termination lifecycle hook (E):** The hook puts the instance into the Terminating:Wait state, giving automation time to copy logs to S3. CompleteLifecycleAction then lets termination continue.\n* **Event-driven automation:** Auto Scaling emits a lifecycle action event to EventBridge, which can target Systems Manager Run Command or Automation without any custom servers.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Scale-in protection prevents the group from terminating those instances during scale-in at all, so capacity would never shrink; it does not help logs or connections during termination.\n* **Option C is incorrect:** A termination policy only chooses which instance is terminated; it neither drains connections nor saves logs.\n* **Option D is incorrect:** Retaining volumes leaves orphaned EBS volumes that keep accruing cost and does not copy the logs to Amazon S3 as required.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Graceful scale-in:** Deregistration delay drains load balancer connections; termination lifecycle hooks run cleanup tasks (upload logs, deregister from external systems) before the instance stops.\n2. **Lifecycle hook timeout:** If the action is not completed, the hook's heartbeat timeout expires and the default result (CONTINUE or ABANDON) is applied."
+  },
+  {
+    "domain": 2,
+    "task": "2.1",
+    "topics": [
+      "AWS Step Functions",
+      "Error handling",
+      "AWS Lambda"
+    ],
+    "prompt": "An order-processing workflow runs as an AWS Step Functions Standard workflow. One Task state invokes an AWS Lambda function that calls a partner's shipping API. The API occasionally throttles requests, and the function then raises a custom ThrottledError that usually succeeds if retried a few seconds later. If the shipping step fails for any other reason, or still fails after the retries, the workflow must run a compensation function that refunds the customer and then end in a failed state. Which combination of steps meets these requirements with the LEAST custom code? (Select TWO.)",
+    "options": {
+      "A": "Add a Retry field to the shipping Task state that matches ThrottledError and specifies IntervalSeconds, MaxAttempts, and a BackoffRate greater than 1.",
+      "B": "Add a loop inside the Lambda function that sleeps and calls the shipping API again until it stops returning throttling errors.",
+      "C": "Configure an Amazon SQS dead-letter queue on the Lambda function so that failed shipping requests are captured for compensation.",
+      "D": "Add a Catch field to the shipping Task state that matches States.ALL and transitions to a Task state that invokes the refund function, followed by a Fail state.",
+      "E": "Change the state machine from a Standard workflow to an Express workflow so that failed executions are retried automatically."
+    },
+    "isMulti": true,
+    "requiredCount": 2,
+    "correctAnswers": [
+      "A",
+      "D"
+    ],
+    "explanation": "### ✅ Why Options A & D are Correct\n\n* **Declarative retries (A):** A Retry field retries only the matching errors, with exponential backoff (BackoffRate), an optional MaxDelaySeconds, and jitter, without any code in the function.\n* **Declarative fallback (D):** When retries are exhausted or a non-retried error occurs, a Catch field routes the execution to a recovery path. States.ALL matches any error, so the refund (compensation) step always runs before the Fail state.\n* **Saga pattern:** Retry plus Catch to compensating steps is the standard way to implement the saga pattern for distributed transactions in Step Functions.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Retry loops inside the function add custom code, consume billed Lambda time while sleeping, and risk hitting the function timeout.\n* **Option C is incorrect:** Lambda dead-letter queues apply only to asynchronous invocations. Step Functions invokes the function synchronously, so failures are returned to the state machine, not sent to the DLQ.\n* **Option E is incorrect:** Express workflows do not automatically retry failed executions and are intended for short, high-volume workloads; changing the type adds no error handling.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Retry vs. Catch:** Retry = try the same state again for transient errors; Catch = move to a fallback state after retries are exhausted or for non-retryable errors.\n2. **Keyword mapping:** \"Compensating transaction\" / \"rollback across microservices\" = Step Functions saga with Catch."
+  },
+  {
+    "domain": 2,
+    "task": "2.2",
+    "topics": [
+      "Amazon Route 53",
+      "Calculated health checks",
+      "Failover routing"
+    ],
+    "prompt": "A company runs an active-passive application in two AWS Regions and uses Amazon Route 53 failover routing. The primary Region depends on three components: a public web endpoint, an internal API, and a database status page. Each component already has its own Route 53 health check. The company wants Route 53 to fail over to the secondary Region only when at least two of the three components are unhealthy, so that a single minor component failure does not trigger a Regional failover. Which solution meets these requirements?",
+    "options": {
+      "A": "Associate all three existing health checks with the primary failover record so that Route 53 fails over when any two of them report unhealthy.",
+      "B": "Replace the failover records with multivalue answer records for both Regions, each associated with one of the three health checks.",
+      "C": "Create a calculated health check that is healthy when at least two of the three existing health checks are healthy, and associate it with the primary record.",
+      "D": "Create an Amazon CloudWatch alarm on the HealthyHostCount metric of the primary Region's load balancer, and associate a health check that monitors the alarm with the primary record."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Calculated health checks:** A calculated health check monitors the status of up to 256 child health checks and is healthy only when at least a specified number of the children are healthy.\n* **Threshold logic:** With a threshold of 2 out of 3, one failed component leaves 2 healthy children (no failover), while two failed components leave only 1 healthy child, the parent becomes unhealthy, and Route 53 fails over.\n* **One health check per record:** Because each record can reference only one health check, combining several signals is done with a calculated (parent) health check.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** A Route 53 record can be associated with only one health check, so three health checks cannot be attached to the same record.\n* **Option B is incorrect:** Multivalue answer routing returns multiple healthy records for client-side load distribution; it does not implement active-passive Regional failover with a combined threshold.\n* **Option D is incorrect:** A single load balancer metric reflects only one component and ignores the internal API and database status, so it cannot implement the two-of-three rule.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Route 53 health check types:** Endpoint health checks (HTTP/HTTPS/TCP), calculated health checks (combine other checks), and CloudWatch alarm-based health checks (for metrics or private resources).\n2. **Avoid flapping failovers:** Combine multiple signals in a calculated health check to reduce false Regional failovers."
+  },
+  {
+    "domain": 2,
+    "task": "2.2",
+    "topics": [
+      "Amazon Route 53",
+      "Health checks",
+      "Amazon CloudWatch",
+      "Private hosted zones"
+    ],
+    "prompt": "A company runs an internal application on an Amazon EC2 instance that has only a private IP address in a private subnet. A Route 53 private hosted zone uses failover routing, with the primary record pointing to this instance's private IP address and a secondary record pointing to a standby instance in another Region. The company created a Route 53 HTTP health check for the primary instance's private IP address, but the health check always reports unhealthy even though the application is working. Which solution will provide reliable health checking for the primary record?",
+    "options": {
+      "A": "Add the IP address ranges used by Route 53 health checkers to the instance's security group inbound rules on the application port.",
+      "B": "Create a CloudWatch alarm on a metric that reflects the application's health, and associate a Route 53 health check that monitors the alarm with the primary record.",
+      "C": "Change the failover records to latency-based records so that Route 53 automatically sends traffic to whichever instance responds faster.",
+      "D": "Change the health check so that it targets the instance's private DNS name instead of its private IP address, and switch the protocol from HTTP to TCP."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Health checkers are outside the VPC:** Route 53 health checkers run on the internet and cannot reach resources that have only private IP addresses.\n* **Alarm-based health checks:** A health check can monitor the state of a CloudWatch alarm (for example, on a custom application metric or the EC2 StatusCheckFailed metric). The alarm is evaluated inside AWS, so it works for private resources.\n* **Failover still works:** When the alarm enters the ALARM state, the health check becomes unhealthy and Route 53 answers with the secondary record.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Opening the security group does not help because the health checkers have no network path to a private IP address in the VPC.\n* **Option C is incorrect:** Latency-based routing chooses records by network latency from AWS Regions; it is not failover routing, and without a working health check it would still return the unhealthy primary.\n* **Option D is incorrect:** The private DNS name resolves to the same private IP address, which the internet-based health checkers still cannot reach.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Private endpoints:** To health-check a resource in a private subnet, use a CloudWatch alarm-based Route 53 health check.\n2. **Exam tip:** Route 53 endpoint health checks need a publicly reachable endpoint."
+  },
+  {
+    "domain": 2,
+    "task": "2.2",
+    "topics": [
+      "Network Load Balancer",
+      "Cross-zone load balancing",
+      "Availability Zones"
+    ],
+    "prompt": "A company runs a TCP service behind a Network Load Balancer (NLB) that is enabled in two Availability Zones. Because of an instance type capacity constraint, the target group has 2 instances in the first Availability Zone and 6 instances in the second. Monitoring shows that the 2 instances in the first Availability Zone are overloaded, while the instances in the second Availability Zone are mostly idle. Which change will distribute traffic evenly across all registered instances with the LEAST effort?",
+    "options": {
+      "A": "Change the target group's target type from instance to IP and re-register the same instances by their private IP addresses.",
+      "B": "Enable source IP stickiness on the target group so that each client is consistently sent to the same target for the duration of its sessions.",
+      "C": "Increase the deregistration delay of the target group so that connections are drained more slowly.",
+      "D": "Turn on cross-zone load balancing so that each NLB node distributes traffic across the registered targets in all enabled Availability Zones."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Default NLB behavior:** Cross-zone load balancing is turned off by default for Network Load Balancers. Each NLB node receives roughly half of the traffic and sends it only to targets in its own Availability Zone, so the 2 instances get as much traffic as the 6.\n* **The fix:** With cross-zone load balancing turned on (at the load balancer or target group level), each node distributes traffic across all 8 registered targets.\n* **Trade-off:** For NLBs, cross-zone traffic can incur inter-AZ data transfer charges; ALBs have cross-zone load balancing on by default at no extra charge.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** The target type does not change how NLB nodes distribute traffic between Availability Zones.\n* **Option B is incorrect:** Stickiness pins clients to targets and would make the imbalance worse, not better.\n* **Option C is incorrect:** The deregistration delay applies only to targets being deregistered and does not affect traffic distribution.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Cross-zone defaults:** ALB: on by default. NLB and GWLB: off by default.\n2. **Best practice:** Keep similar capacity in each Availability Zone, and use cross-zone load balancing when capacity is uneven."
+  },
+  {
+    "domain": 2,
+    "task": "2.2",
+    "topics": [
+      "Amazon DynamoDB",
+      "Point-in-time recovery"
+    ],
+    "prompt": "An application stores customer orders in an Amazon DynamoDB table. Last week, a faulty deployment overwrote attributes in thousands of items over a 40-minute period. The company only had nightly on-demand backups, so several hours of valid changes were lost when the table was restored. The company needs to be able to restore the table to its state at any second within the past 14 days, with the LEAST operational overhead. Which solution meets these requirements?",
+    "options": {
+      "A": "Enable point-in-time recovery (PITR) on the table, and when needed restore the table to a new table at the second just before the incident.",
+      "B": "Use AWS Backup to create on-demand backups of the table every hour and retain them for 14 days.",
+      "C": "Convert the table to a DynamoDB global table with a replica in a second AWS Region, and recover from the replica if the primary table is corrupted.",
+      "D": "Enable DynamoDB Streams and use an AWS Lambda function to write every item change to Amazon S3, then write a script to replay the changes to rebuild the table."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Continuous backups:** PITR continuously backs up the table and lets you restore to any second within the recovery period (configurable, up to 35 days), which covers the 14-day requirement.\n* **Restore behavior:** A PITR restore always creates a new table, so the team can validate the restored data before switching the application or copying items back.\n* **Managed:** PITR is a table setting; there is no backup schedule or custom code to maintain.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Hourly backups provide an RPO of up to 1 hour, not second-level granularity, and add scheduling and retention overhead.\n* **Option C is incorrect:** Global tables replicate every write, including the faulty overwrites, to all replicas within seconds, so they do not protect against logical corruption.\n* **Option D is incorrect:** A custom change-capture and replay pipeline can work, but it requires significant code and operational effort compared with the native PITR feature.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Replication is not backup:** Multi-AZ, global tables, and read replicas protect against infrastructure failure, not against bad writes; use PITR or backups for logical corruption.\n2. **Keyword mapping:** \"Restore DynamoDB to any second\" = point-in-time recovery."
+  },
+  {
+    "domain": 2,
+    "task": "2.2",
+    "topics": [
+      "Amazon Aurora",
+      "Failover priority tiers",
+      "Aurora custom endpoints"
+    ],
+    "prompt": "A company runs an Amazon Aurora PostgreSQL DB cluster with a db.r7g.4xlarge writer, a db.r7g.4xlarge Aurora Replica (R1) that serves application read traffic, and a db.r7g.large Aurora Replica (R2) that analysts use for ad hoc reporting. During a failover test, Aurora promoted R2, which could not handle the production write load. Also, because the analysts connect through the cluster reader endpoint, their heavy queries sometimes run on R1 and slow down the application. Which combination of actions will resolve these issues? (Select TWO.)",
+    "options": {
+      "A": "Convert R2 to an Aurora Serverless v2 reader so that it can scale automatically if it is promoted.",
+      "B": "Assign R1 to promotion tier 0 and R2 to promotion tier 15 so that Aurora prefers R1 as the failover target.",
+      "C": "Create an Aurora custom endpoint that contains only R2 for the analysts' tools, and a custom endpoint that contains only R1 for the application's read traffic.",
+      "D": "Enable a Multi-AZ standby DB instance for the Aurora cluster so that failover always promotes the standby instead of a replica.",
+      "E": "Place Amazon RDS Proxy in front of the cluster and have the analysts connect to the proxy's read-only endpoint."
+    },
+    "isMulti": true,
+    "requiredCount": 2,
+    "correctAnswers": [
+      "B",
+      "C"
+    ],
+    "explanation": "### ✅ Why Options B & C are Correct\n\n* **Promotion tiers (B):** Each Aurora Replica has a promotion tier from 0 (highest priority) to 15. On failover, Aurora promotes a replica from the highest-priority tier, so R1 (tier 0) is chosen over R2 (tier 15).\n* **Workload isolation (C):** Custom endpoints group specific DB instances. Pointing analysts to an R2-only endpoint and the application to an R1-only endpoint keeps reporting queries off the replica the application relies on.\n* **Size matters for failover:** The failover target should be sized to handle the writer's workload; tiers let you control that choice.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Making R2 serverless does not stop Aurora from choosing it for failover and does not separate the analysts' queries from the application's reads.\n* **Option D is incorrect:** Aurora does not use a separate Multi-AZ standby instance; high availability comes from Aurora Replicas in other Availability Zones.\n* **Option E is incorrect:** An RDS Proxy read-only endpoint distributes connections across the cluster's readers, so analysts could still land on R1, and it does not affect which replica is promoted.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Aurora endpoints:** Cluster (writer) endpoint, reader endpoint (all replicas), custom endpoints (chosen subsets), and instance endpoints.\n2. **Failover order:** Lowest tier number first; within the same tier, Aurora prefers the largest replica."
+  },
+  {
+    "domain": 2,
+    "task": "2.2",
+    "topics": [
+      "AWS Elastic Disaster Recovery",
+      "Disaster recovery",
+      "Legacy applications"
+    ],
+    "prompt": "A manufacturing company runs 40 on-premises Windows and Linux servers that host commercial applications that cannot be modified. The company needs disaster recovery to AWS with an RPO measured in seconds and an RTO measured in minutes. Compute costs in AWS must remain minimal until a failover occurs, and the company must be able to run regular recovery drills without affecting the source servers. Which solution meets these requirements?",
+    "options": {
+      "A": "Use AWS Elastic Disaster Recovery to continuously replicate each server to a low-cost staging area in AWS, and launch recovery instances for drills and failover.",
+      "B": "Use AWS Backup with a Backup gateway to back up the server virtual machines every hour, and restore the most recent backups to Amazon EC2 instances during a disaster.",
+      "C": "Use VM Import/Export every night to create AMIs of each server, and launch EC2 instances from the latest AMIs during a disaster.",
+      "D": "Run a full-capacity copy of every server on Amazon EC2 at all times, and use AWS DataSync every 5 minutes to copy application files from the on-premises servers."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Continuous block-level replication:** Elastic Disaster Recovery replicates source server disks continuously, which provides an RPO of seconds without changing the applications.\n* **Low standby cost:** Replicated data lands in a lightweight staging area that uses low-cost instances and EBS storage; full-size recovery instances are launched only for drills or failover, with an RTO of minutes.\n* **Non-disruptive drills:** Recovery drills launch instances from the replicated data without interrupting replication or the source servers.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Hourly backups give an RPO of up to an hour, and restoring 40 servers from backups typically takes hours, not minutes.\n* **Option C is incorrect:** Nightly image exports give an RPO of up to 24 hours and require long, manual recovery steps.\n* **Option D is incorrect:** Keeping full capacity running continuously is expensive, and file-level copies every 5 minutes neither reach an RPO of seconds nor capture full server state.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **DR strategy mapping:** Backup and restore (hours) -> pilot light (tens of minutes) -> warm standby (minutes) -> multi-site active-active (near zero).\n2. **Keyword mapping:** \"Servers that cannot be modified\" + \"RPO seconds, RTO minutes\" + \"low cost\" = AWS Elastic Disaster Recovery."
+  },
+  {
+    "domain": 2,
+    "task": "2.2",
+    "topics": [
+      "Amazon S3",
+      "S3 Replication Time Control",
+      "S3 Cross-Region Replication"
+    ],
+    "prompt": "A company replicates objects from an Amazon S3 bucket in us-east-1 to a bucket in eu-west-1 by using S3 Cross-Region Replication for disaster recovery. A new contract requires that new objects be replicated within 15 minutes, backed by a service level agreement, and the operations team must be notified when an object fails to replicate or takes longer than the threshold. Which solution meets these requirements?",
+    "options": {
+      "A": "Add an S3 Same-Region Replication rule to a second bucket in us-east-1 and copy objects from that bucket to eu-west-1 with an AWS Lambda function.",
+      "B": "Enable S3 Transfer Acceleration on the destination bucket so that replicated objects are transferred over the AWS edge network.",
+      "C": "Enable S3 Replication Time Control on the replication rule, and configure event notifications for missed-threshold and failed replication events.",
+      "D": "Create an S3 Batch Replication job that runs every 15 minutes to replicate any objects that have not yet been copied to the destination bucket."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Predictable replication:** S3 Replication Time Control (S3 RTC) is designed to replicate 99.99% of new objects within 15 minutes and is backed by an SLA.\n* **Monitoring:** S3 RTC turns on replication metrics in CloudWatch and supports event notifications such as s3:Replication:OperationMissedThreshold and s3:Replication:OperationFailedReplication.\n* **No custom code:** It is a setting on the existing replication rule.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Chaining Same-Region Replication with a custom Lambda copy adds complexity and provides no replication-time SLA.\n* **Option B is incorrect:** Transfer Acceleration speeds up client uploads and downloads over long distances; it does not affect or guarantee S3 replication time.\n* **Option D is incorrect:** S3 Batch Replication is for replicating existing objects or retrying failed replications on demand; scheduling it does not provide an SLA for new objects.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Replicate within 15 minutes\" / \"replication SLA\" = S3 Replication Time Control.\n2. **Replication types:** CRR (another Region), SRR (same Region), Batch Replication (existing objects), RTC (time-bound replication)."
+  },
+  {
+    "domain": 2,
+    "task": "2.2",
+    "topics": [
+      "Amazon ElastiCache",
+      "Multi-AZ",
+      "Session management"
+    ],
+    "prompt": "A web application stores user session data in an Amazon ElastiCache (Redis OSS) cluster that has a single node in one Availability Zone, with cluster mode disabled. When the node failed last month, all users were logged out and the application was unavailable until a new node was created. The company wants the session store to recover automatically from a node or Availability Zone failure with minimal application changes. Which solution meets these requirements?",
+    "options": {
+      "A": "Enable automatic daily backups for the ElastiCache cluster and restore the most recent backup to a new cluster when the node fails.",
+      "B": "Add a replica in another Availability Zone and enable Multi-AZ with automatic failover, keeping the application on the primary endpoint.",
+      "C": "Replace the cluster with an ElastiCache (Memcached) cluster that has several nodes spread across multiple Availability Zones.",
+      "D": "Remove the session store and enable sticky sessions on the Application Load Balancer so that each user always returns to the same instance."
+    },
+    "isMulti": false,
+    "requiredCount": 1,
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Automatic failover:** With Multi-AZ enabled, ElastiCache detects a primary node failure and promotes a replica in another Availability Zone automatically.\n* **No connection changes:** The primary endpoint DNS name is updated to point to the new primary, so the application keeps using the same endpoint.\n* **Data preserved:** Replicas hold a copy of the session data, so users stay logged in after failover (apart from any writes not yet replicated).\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Restoring from a daily backup is a manual, slow recovery and loses all sessions created since the backup.\n* **Option C is incorrect:** Memcached does not replicate data between nodes; sessions stored on a failed node are lost, and the client must handle node changes.\n* **Option D is incorrect:** Sticky sessions keep session state on individual instances, so an instance failure still logs users out; it moves the single point of failure instead of removing it.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **HA cache:** ElastiCache (Redis OSS/Valkey) with replicas + Multi-AZ automatic failover = resilient session store. ElastiCache Serverless also replicates across Availability Zones automatically.\n2. **Memcached vs. Redis OSS/Valkey:** Memcached is simple, multithreaded, and non-replicated; Redis OSS/Valkey support replication, failover, persistence, and backups."
+  }
+]
