@@ -5,6 +5,9 @@ Usage: python3 scripts/build_claude_sets.py <dir containing d1.json..d4.json>
 Each dN.json is {"set1": [...], "set2": [...], ...} of questions for one exam domain.
 Questions are validated, mixed across domains (deterministic seed, like the real exam
 which does not group by domain), numbered 1..N and written to client/public/claude/.
+
+Only builds Sets 1-2. Set 3 comes from build_set_3.py and Sets 4-8 from
+assemble_sets_4_to_8.py; their sets.json entries are left untouched here.
 """
 import json
 import random
@@ -54,31 +57,6 @@ SETS = {
         "title": "Claude Mock Exam — Set 2",
         "description": "A second, non-overlapping 65-question mock exam with different scenarios across all four domains.",
         "seed": 2062,
-    },
-    "3": {
-        "title": "Claude Mock Exam — Set 3",
-        "description": "Identity-heavy security (permissions boundaries, ABAC, Cognito, WAF), messaging resilience and storage/compute performance tuning.",
-        "seed": 3093,
-    },
-    "4": {
-        "title": "Claude Mock Exam — Set 4",
-        "description": "Fresh scenarios on KMS and network controls, event-driven fault tolerance, database performance and compute pricing models.",
-        "seed": 4124,
-    },
-    "5": {
-        "title": "Claude Mock Exam — Set 5",
-        "description": "Multi-account governance (Organizations, Control Tower, Identity Center), disaster recovery strategies and storage cost tiers.",
-        "seed": 5155,
-    },
-    "6": {
-        "title": "Claude Mock Exam — Set 6",
-        "description": "Detective controls and compliance, cross-Region recovery, networking and analytics performance, database and network cost.",
-        "seed": 6186,
-    },
-    "7": {
-        "title": "Claude Mock Exam — Set 7",
-        "description": "A final mixed mock: data-level access controls, static stability and recovery automation, streaming analytics and cost governance.",
-        "seed": 7217,
     },
 }
 
@@ -151,8 +129,12 @@ def main(src_dir):
         dist = {l: singles.count(l) for l in "ABCD"}
         print(f"set {set_id}: {len(questions)} questions, domains {domain_counts}, multi {multi_count}, single-answer letters {dist}")
 
-    (OUT_DIR / "sets.json").write_text(json.dumps(
-        {"examFormat": EXAM_FORMAT, "sources": SOURCES, "sets": index}, indent=2, ensure_ascii=False) + "\n")
+    index_file = OUT_DIR / "sets.json"
+    existing = json.loads(index_file.read_text())["sets"] if index_file.exists() else []
+    merged = [s for s in existing if s["id"] not in SETS] + index
+    merged.sort(key=lambda s: int(s["id"]))
+    index_file.write_text(json.dumps(
+        {"examFormat": EXAM_FORMAT, "sources": SOURCES, "sets": merged}, indent=2, ensure_ascii=False) + "\n")
 
     if errors:
         print("\nVALIDATION ERRORS:\n" + "\n".join(errors))
