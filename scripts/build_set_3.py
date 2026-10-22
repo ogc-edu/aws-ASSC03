@@ -194,7 +194,7 @@ def main():
     meta = {
         "id": "3",
         "title": "Claude & Gemini Mock Exam — Set 3",
-        "description": "Identity-heavy security (permissions boundaries, ABAC, Cognito, WAF), messaging resilience and storage/compute performance tuning.",
+        "description": "KMS, RCPs and IAM Roles Anywhere; chaos testing and service discovery; SnapStart, S3 Express One Zone and VPC Lattice; serverless and data-transfer cost tuning.",
         "examCode": "SAA-C03",
         "generatedBy": "Claude & Gemini (AI Collaboration)",
         "generatedAt": date.today().isoformat(),

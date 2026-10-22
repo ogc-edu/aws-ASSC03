@@ -3,24 +3,23 @@
     "domain": 4,
     "task": "4.1",
     "topics": [
-      "Amazon S3",
-      "S3 Storage Lens",
-      "S3 Lifecycle",
-      "Multipart upload"
+      "Amazon FSx for NetApp ONTAP",
+      "Capacity pool storage",
+      "Tiering policy"
     ],
-    "prompt": "A video platform lets users upload large files directly to an Amazon S3 bucket by using multipart uploads. Amazon S3 Storage Lens shows that the bucket holds 90 TB of incomplete multipart upload bytes, many of them older than 6 months, from uploads that users abandoned. These parts do not appear when the application lists objects in the bucket. Which solution will reduce the storage cost with the LEAST operational overhead?",
+    "prompt": "A company is migrating 120 TB of engineering file shares from on-premises NetApp storage to Amazon FSx for NetApp ONTAP. Linux and Windows clients access the same volumes over NFS and SMB. Analysis shows that only about 15% of the data is accessed in any given month, and that data must have SSD-level latency. The remaining data must stay in the same volumes and directory paths so that users can still open it without any changes. Which configuration is the MOST cost-effective?",
     "options": {
-      "A": "Enable S3 Intelligent-Tiering on the bucket so that the incomplete parts move to lower-cost access tiers automatically.",
-      "B": "Add an S3 Lifecycle rule to the bucket with the AbortIncompleteMultipartUpload action set to 7 days after initiation.",
-      "C": "Write an AWS Lambda function that lists all objects in the bucket each day and deletes objects that are smaller than the expected upload size.",
-      "D": "Enable S3 Versioning and add a lifecycle rule that permanently deletes noncurrent object versions after 7 days."
+      "A": "Provision about 130 TB of SSD storage and set the tiering policy of every volume to None so that all data stays on SSD.",
+      "B": "Provision SSD storage for the active data plus headroom (about 25 TB) and set the tiering policy of the volumes to Auto so that cold data moves to capacity pool storage.",
+      "C": "Provision about 25 TB of SSD storage and set the tiering policy of every volume to All so that all data is stored in the capacity pool.",
+      "D": "Migrate the active data to FSx for ONTAP, and move the inactive data to an S3 bucket that users access through the Amazon S3 console."
     },
     "isMulti": false,
     "requiredCount": 1,
     "correctAnswers": [
       "B"
     ],
-    "explanation": "### ✅ Why Option B is Correct\n\n* **Parts are billed until aborted:** Parts of a multipart upload that is never completed or aborted remain stored and billed at the storage class rate, even though they are not visible as objects.\n* **Native cleanup:** An S3 Lifecycle rule with the AbortIncompleteMultipartUpload action automatically aborts uploads that are not completed within the specified number of days and deletes their parts. It is configured once and applies to existing and future uploads.\n* **Visibility:** S3 Storage Lens reports incomplete multipart upload bytes, which is how the problem was found and how the fix can be confirmed.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Incomplete parts are not objects; Intelligent-Tiering does not manage them, and tiering them would still keep paying for useless data.\n* **Option C is incorrect:** Listing objects does not return incomplete multipart upload parts, so the function would not find them, and it adds code to maintain.\n* **Option D is incorrect:** Incomplete multipart uploads are not object versions; noncurrent-version expiration does not remove them, and enabling Versioning can add storage cost.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'Abandoned/failed large uploads' or 'incomplete multipart upload bytes' = lifecycle rule with AbortIncompleteMultipartUpload.\n2. **Best practice:** Add an abort-incomplete-multipart-upload rule to every bucket that receives multipart uploads.\n3. **Find hidden costs:** S3 Storage Lens shows incomplete multipart upload bytes, noncurrent version bytes, and delete markers across accounts and buckets."
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Two storage tiers in one volume:** FSx for ONTAP has a primary SSD tier and a fully elastic capacity pool tier that costs a fraction of SSD per GB. Data in the capacity pool stays in the same volume and path and is read back transparently.\n* **Auto tiering policy:** With the Auto policy, ONTAP moves blocks that have not been accessed for the cooling period (31 days by default) to the capacity pool and brings them back to SSD when they are read randomly, so hot data stays on SSD.\n* **Right-size the SSD tier:** Provisioning SSD for the roughly 15% active data plus headroom avoids paying SSD rates for about 100 TB of cold data, while the capacity pool grows and is billed only for what it stores.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Keeping all 120 TB on SSD pays the highest per-GB rate for data that is rarely used.\n* **Option C is incorrect:** The All policy places all user data in the capacity pool, so the active 15% would lose the SSD-level latency it requires.\n* **Option D is incorrect:** Moving inactive data to S3 changes where users find it and how they access it, which violates the requirement to keep the same volumes and paths over NFS and SMB.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'FSx for ONTAP' + 'mostly cold data' + 'transparent access' = small SSD tier + Auto tiering policy to capacity pool storage.\n2. **Tiering policies:** Snapshot-only (default): only snapshot data tiers; Auto: cold user data and snapshots tier; All: all data tiers (good for archives/DR copies); None: everything stays on SSD.\n3. **Storage-size skill:** Determining the correct storage size for a workload often means sizing the fast tier for the working set, not for the total dataset."
   },
   {
     "domain": 4,
@@ -180,24 +179,24 @@
     "domain": 4,
     "task": "4.3",
     "topics": [
-      "Amazon Athena",
-      "Amazon S3",
-      "Apache Parquet",
-      "AWS Glue"
+      "Amazon Aurora",
+      "Aurora I/O-Optimized",
+      "Aurora Standard",
+      "AWS Cost Explorer"
     ],
-    "prompt": "A company loads about 60 GB of clickstream data each day into an Amazon RDS for PostgreSQL DB instance so that analysts can run ad hoc SQL queries a few times each week. Most queries aggregate a few columns over a date range. The DB instance has been scaled to a large size and storage keeps growing, which makes this the company's most expensive database. Which solution will meet the analysts' needs MOST cost-effectively?",
+    "prompt": "A company moved all 12 of its Amazon Aurora PostgreSQL clusters to the Aurora I/O-Optimized storage configuration last year. A cost review shows that 10 of the clusters are mainly large, rarely updated reference datasets with very low read and write I/O, and their estimated I/O charges under Aurora Standard would be less than 5% of their total Aurora cost. The other 2 clusters are write-heavy OLTP databases whose I/O charges would be about 40% of their cost under Aurora Standard. Which action will reduce Aurora costs the MOST without reducing performance?",
     "options": {
-      "A": "Migrate the data to an Amazon DynamoDB table with on-demand capacity and use PartiQL for the analysts' queries.",
-      "B": "Migrate the data to a 24/7 Amazon Redshift provisioned cluster with dense compute nodes.",
-      "C": "Store the data in Amazon S3 in Apache Parquet format partitioned by date, catalog it in the AWS Glue Data Catalog, and query it with Amazon Athena.",
-      "D": "Move the data to an Amazon Aurora PostgreSQL cluster with Aurora I/O-Optimized storage."
+      "A": "Purchase Reserved DB instances for all 12 clusters while keeping the I/O-Optimized configuration.",
+      "B": "Switch all 12 clusters back to the Aurora Standard configuration.",
+      "C": "Switch the 10 low-I/O clusters to the Aurora Standard configuration and keep the 2 write-heavy clusters on Aurora I/O-Optimized.",
+      "D": "Convert all 12 clusters to Aurora Serverless v2 with the I/O-Optimized configuration."
     },
     "isMulti": false,
     "requiredCount": 1,
     "correctAnswers": [
       "C"
     ],
-    "explanation": "### ✅ Why Option C is Correct\n\n* **Pay per query:** Athena is serverless and charges by the amount of data scanned, so a few queries a week cost very little and nothing is paid while idle. S3 storage is much cheaper than database storage.\n* **Columnar + partitions:** Parquet is a compressed columnar format, so queries that read a few columns scan only those columns, and date partitions let Athena skip data outside the queried range. This sharply reduces cost and improves speed.\n* **Standard SQL:** Analysts keep using ad hoc SQL through Athena, using table definitions in the Glue Data Catalog.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** DynamoDB is designed for key-value access patterns; ad hoc aggregations over date ranges would require full table scans that are slow and expensive.\n* **Option B is incorrect:** A provisioned Redshift cluster running 24/7 is costly for queries that run only a few times a week.\n* **Option D is incorrect:** Aurora is still a row-oriented OLTP database billed for running instances 24/7; I/O-Optimized helps I/O-heavy OLTP workloads, not occasional analytics.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'Occasional ad hoc SQL on large log/clickstream data' = S3 data lake + Athena. 'Few columns over many rows' = columnar format (Parquet/ORC).\n2. **Cost levers in Athena:** Compress, partition, and use columnar formats to reduce bytes scanned.\n3. **Pick the database type by access pattern:** OLTP = RDS/Aurora/DynamoDB; analytics = Redshift (frequent) or Athena (ad hoc)."
+    "explanation": "### ✅ Why Option C is Correct\n\n* **How the two configurations are priced:** Aurora I/O-Optimized has no per-request I/O charges but higher instance and storage prices. Aurora Standard has lower instance and storage prices plus pay-per-request I/O charges.\n* **Low-I/O clusters pay a premium on I/O-Optimized:** For the 10 large, low-I/O clusters, the higher storage and instance prices of I/O-Optimized far exceed the small I/O charges they would pay under Standard, so switching them saves money with no performance change.\n* **High-I/O clusters benefit from I/O-Optimized:** AWS guidance is that I/O-Optimized is cost-effective when I/O charges exceed about 25% of total Aurora spend; at about 40%, the 2 OLTP clusters should stay on I/O-Optimized.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Reserved DB instances discount instance hours but do not change the higher storage price of I/O-Optimized for the large low-I/O clusters, so the main saving is missed. Reservations can be added after choosing the right configuration.\n* **Option B is incorrect:** Moving the 2 write-heavy clusters to Standard would increase their cost because their I/O charges would be about 40% of their spend.\n* **Option D is incorrect:** Serverless v2 does not lower storage cost, and these are steady or storage-heavy workloads where provisioned instances are not the problem.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'I/O charges above about 25% of Aurora spend' = Aurora I/O-Optimized; 'large storage, low I/O' = Aurora Standard.\n2. **Choose per cluster:** The storage configuration is set per cluster, so evaluate each cluster's I/O share (for example, in Cost Explorer or the CUR) instead of applying one choice to the whole fleet.\n3. **Switching:** The configuration can be changed on an existing cluster; switching to I/O-Optimized is allowed once every 30 days, and switching back to Standard is allowed at any time."
   },
   {
     "domain": 4,
@@ -249,43 +248,46 @@
     "domain": 4,
     "task": "4.4",
     "topics": [
-      "AWS Direct Connect",
-      "Hosted connections"
+      "AWS PrivateLink",
+      "VPC endpoints",
+      "Amazon S3",
+      "AWS Direct Connect"
     ],
-    "prompt": "A company connects its data center to AWS with a 10 Gbps AWS Direct Connect dedicated connection. After moving its backups to a different provider, CloudWatch metrics show that the connection's peak utilization over the last 6 months is 1.3 Gbps, and growth is expected to stay below 1.8 Gbps for the next 2 years. The company still requires a private connection with consistent network performance. Which solution is the MOST cost-effective?",
+    "prompt": "A company created an interface VPC endpoint for Amazon S3 with private DNS enabled so that on-premises servers can reach Amazon S3 privately over AWS Direct Connect. Since then, Amazon EC2 instances in the same VPC have also resolved S3 names to the interface endpoint, and they transfer about 300 TB each month through it. The bill shows large AWS PrivateLink data processing charges. On-premises access must continue to work through the interface endpoint. Which solution will reduce cost the MOST?",
     "options": {
-      "A": "Keep the existing 10 Gbps dedicated connection and add a second 10 Gbps dedicated connection at a different Direct Connect location so that the company has resilient connectivity.",
-      "B": "Replace the Direct Connect connection with an AWS Site-to-Site VPN connection over the internet with two tunnels.",
-      "C": "Replace the dedicated connection with a 10 Gbps hosted connection from an AWS Direct Connect Partner.",
-      "D": "Order a 2 Gbps hosted connection from a Direct Connect Partner, move the virtual interfaces to it, and delete the 10 Gbps connection."
+      "A": "Delete the interface endpoint and route on-premises S3 traffic through a NAT gateway in the VPC.",
+      "B": "Create additional interface endpoints for Amazon S3 in more subnets so that traffic is spread across more endpoint network interfaces.",
+      "C": "Configure the EC2 instances to use the S3 public endpoints through the VPC's internet gateway by giving the instances public IP addresses.",
+      "D": "Create an S3 gateway endpoint for the VPC's route tables, and enable the option on the interface endpoint to use private DNS only for inbound Resolver endpoints so that in-VPC traffic uses the gateway endpoint."
     },
     "isMulti": false,
     "requiredCount": 1,
     "correctAnswers": [
       "D"
     ],
-    "explanation": "### ✅ Why Option D is Correct\n\n* **Right-size the port:** Direct Connect port-hour charges increase with capacity. A 2 Gbps hosted connection covers the 1.3 Gbps peak and the expected 1.8 Gbps growth at a much lower port-hour rate than 10 Gbps.\n* **Same characteristics:** A hosted connection is still a private Direct Connect circuit with consistent performance, and Direct Connect data transfer out rates continue to apply.\n* **Flexible capacities:** Partners offer hosted connections from 50 Mbps up to 25 Gbps (including 1, 2, and 5 Gbps), which allows sizing between the dedicated port sizes.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Adding another 10 Gbps port doubles cost; resiliency was not the stated problem, and both ports would be heavily underused.\n* **Option B is incorrect:** VPN runs over the public internet and cannot guarantee consistent performance; each tunnel is also limited to about 1.25 Gbps.\n* **Option C is incorrect:** A 10 Gbps hosted connection keeps the same oversized capacity, so it does not address the underutilization.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'Direct Connect underutilized' = right-size the connection; 'need a speed between dedicated port sizes' = hosted connection from a Partner.\n2. **Bandwidth allocation:** Select the Direct Connect speed from measured utilization (CloudWatch ConnectionBpsEgress/Ingress) plus expected growth.\n3. **Dedicated port sizes:** Dedicated connections come in 1, 10, 100, and 400 Gbps."
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Gateway endpoints are free:** An S3 gateway endpoint has no hourly or per-GB charge. Interface endpoints are billed per hour per AZ and per GB processed, so 300 TB a month of in-VPC traffic is expensive through PrivateLink.\n* **Keep both paths:** Gateway endpoints cannot be reached from on premises, so the interface endpoint is still needed for Direct Connect traffic. With 'private DNS only for inbound Resolver endpoint' enabled, on-premises queries through a Route 53 Resolver inbound endpoint still resolve to the interface endpoint, while EC2 instances in the VPC use the gateway endpoint.\n* **No application change:** Instances keep using the standard S3 DNS names; only DNS resolution and routing change.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** NAT gateways do not serve traffic that comes from on premises, and they add per-GB processing charges higher than PrivateLink's.\n* **Option B is incorrect:** More interface endpoints add hourly charges and still bill per GB processed.\n* **Option C is incorrect:** Public IP addresses add hourly IPv4 charges, expose the instances, and are unnecessary when a free gateway endpoint is available.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'S3 access from on premises over Direct Connect/VPN' = S3 interface endpoint; 'S3 access from inside the VPC at the lowest cost' = S3 gateway endpoint.\n2. **Use both:** When both exist, use the private-DNS-only-for-inbound-Resolver-endpoint option so in-VPC clients use the free gateway endpoint.\n3. **Endpoint pricing:** Gateway endpoints (S3, DynamoDB) are free; interface endpoints have hourly and per-GB charges."
   },
   {
     "domain": 4,
     "task": "4.4",
     "topics": [
-      "AWS WAF",
-      "Amazon CloudFront",
-      "Rate-based rules"
+      "AWS PrivateLink",
+      "VPC endpoints",
+      "AWS Transit Gateway",
+      "Amazon Route 53"
     ],
-    "prompt": "An ecommerce company serves its product catalog through an Amazon CloudFront distribution in front of an Application Load Balancer and an Auto Scaling group of Amazon EC2 instances. Scraper bots now send thousands of uncached search requests per minute from changing IP addresses, which causes the Auto Scaling group to scale out and increases EC2 and data transfer costs. Legitimate users never send more than 300 requests in 5 minutes. Which solution will reduce cost with the LEAST operational overhead?",
+    "prompt": "A company has 40 VPCs in one AWS Region that are all attached to an AWS Transit Gateway. Each VPC has its own interface VPC endpoints for the same 10 AWS services (for example, AWS KMS, AWS Secrets Manager, and AWS Systems Manager) in 3 Availability Zones. Traffic through these endpoints is low, and the hourly charges for 1,200 endpoint network interfaces have become a significant cost. Which solution will reduce cost the MOST while keeping the AWS API traffic private?",
     "options": {
-      "A": "Add network ACL rules to the ALB subnets that deny the scrapers' IP addresses, and update the rules daily.",
-      "B": "Associate an AWS WAF web ACL with the CloudFront distribution, with a rate-based rule that blocks IPs exceeding 300 requests in 5 minutes.",
-      "C": "Increase the maximum size of the Auto Scaling group and purchase a Compute Savings Plan for the additional instances.",
-      "D": "Subscribe to AWS Shield Advanced, add the ALB and the CloudFront distribution as protected resources, and enable automatic application layer DDoS mitigation for both."
+      "A": "Delete the interface endpoints and send AWS API traffic from all VPCs to the internet through NAT gateways in each VPC.",
+      "B": "Create the 10 interface endpoints once in a shared services VPC with private DNS disabled, create Route 53 private hosted zones for the service names that point to those endpoints, associate the zones with all 40 VPCs, and route the traffic over the transit gateway.",
+      "C": "Replace the interface endpoints in each VPC with gateway endpoints for the same 10 services.",
+      "D": "Reduce each VPC's interface endpoints to a single Availability Zone, and keep a separate set of endpoints in every VPC."
     },
     "isMulti": false,
     "requiredCount": 1,
     "correctAnswers": [
       "B"
     ],
-    "explanation": "### ✅ Why Option B is Correct\n\n* **Throttle at the edge:** A rate-based rule counts requests per IP address (or other aggregation key) over a time window and automatically blocks sources that exceed the limit, without manual IP lists.\n* **Stops cost before the origin:** Applying the web ACL to CloudFront blocks abusive requests at edge locations, so they never reach the ALB and EC2 instances, which prevents unnecessary scale-out and origin data transfer.\n* **Adapts to changing IPs:** Because the rule evaluates request rates continuously, new scraper IP addresses are blocked automatically when they exceed the threshold.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Network ACLs have a small rule limit, require manual daily updates for changing IPs, and the ALB sees CloudFront edge IP addresses rather than the scrapers' addresses.\n* **Option C is incorrect:** Adding capacity and committing to more spend increases cost instead of stopping the unwanted traffic.\n* **Option D is incorrect:** Shield Advanced has a significant monthly subscription fee and is aimed at DDoS events; a WAF rate-based rule is the simpler and cheaper throttling control for scraping.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'Too many requests from individual clients/IPs' at the web layer = AWS WAF rate-based rule (on CloudFront, ALB, or API Gateway).\n2. **Throttling strategy:** Block or throttle unwanted traffic as close to the edge as possible so it does not drive scaling and transfer costs.\n3. **Other throttling options:** API Gateway stage/method throttling and usage plans for APIs; SQS buffering to protect downstream databases."
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Centralized endpoints:** Interface endpoints are billed per endpoint per AZ per hour. Hosting one set of 10 endpoints in a shared services VPC replaces 1,200 endpoint network interfaces with 30, which removes most of the hourly cost.\n* **Private DNS across VPCs:** Private hosted zones for the service DNS names, associated with every spoke VPC, resolve the standard service names to the central endpoints, so applications need no changes.\n* **Traffic stays private:** Spoke VPC traffic reaches the endpoints over the existing transit gateway. Because traffic is low, the added transit gateway data processing charges are small compared with the hourly savings.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Sending AWS API traffic to the internet through NAT gateways does not keep it private and adds NAT gateway hourly and per-GB charges in every VPC.\n* **Option C is incorrect:** Gateway endpoints exist only for Amazon S3 and Amazon DynamoDB; services such as KMS, Secrets Manager, and Systems Manager require interface endpoints.\n* **Option D is incorrect:** Using one AZ reduces cost only by two-thirds, still keeps 400 endpoint network interfaces, and adds cross-AZ charges and a single point of failure for every VPC.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'Many VPCs each paying for the same interface endpoints' + 'Transit Gateway already in place' = centralized interface endpoints in a shared services VPC with Route 53 private hosted zones.\n2. **Trade-off:** Centralization swaps per-VPC endpoint hours for Transit Gateway data processing; it pays off when endpoint traffic is low and VPC count is high.\n3. **Which endpoint type:** Gateway endpoints: S3 and DynamoDB only, free. Interface endpoints (PrivateLink): most other AWS services, billed hourly and per GB."
   }
 ]

@@ -1,10 +1,10 @@
 {
   "id": "8",
   "title": "Claude Mock Exam — Set 8",
-  "description": "Comprehensive scenarios on IAM trust policies, cross-Region Aurora and DynamoDB replication, event-driven microservices, and compute optimization.",
+  "description": "Identity-heavy security (permissions boundaries, ABAC, Cognito, WAF), messaging resilience and storage/compute performance tuning.",
   "examCode": "SAA-C03",
   "generatedBy": "Claude (Anthropic)",
-  "generatedAt": "2026-10-21",
+  "generatedAt": "2026-10-22",
   "format": {
     "examCode": "SAA-C03",
     "verifiedOn": "2026-10-20",
@@ -356,45 +356,46 @@
       "domain": 3,
       "task": "3.3",
       "topics": [
-        "Amazon Aurora",
-        "Aurora custom endpoints",
-        "Aurora Replicas"
+        "Amazon RDS for MySQL",
+        "RDS Optimized Reads",
+        "Instance store"
       ],
-      "prompt": "A company runs an Amazon Aurora PostgreSQL-Compatible cluster that has one writer and five Aurora Replicas. Three replicas are db.r7g.large instances that serve short queries from the web application. Two replicas are db.r7g.4xlarge instances that were added for long-running analytical queries from the reporting team. Currently, all read traffic uses the cluster's reader endpoint, and reporting queries sometimes land on the small instances and degrade the web application. Which solution routes each workload to the appropriate instances with the LEAST operational overhead?",
+      "prompt": "A company runs a reporting workload on Amazon RDS for MySQL. Complex queries with large sorts, GROUP BY clauses, and derived tables create internal temporary tables that spill to disk. Performance Insights shows that most query time is spent waiting on temporary-table I/O. The storage volume is not reaching its provisioned IOPS or throughput limits, and the latency of the network-attached storage itself is the bottleneck. The company wants to speed up these queries with minimal changes and stay on RDS for MySQL. What should a solutions architect do?",
       "options": {
-        "A": "Configure the reporting tool to connect to the cluster endpoint so that analytical queries run on the writer instance.",
-        "B": "Create one Aurora custom endpoint that contains the two large replicas for the reporting team, and another custom endpoint that contains the three small replicas for the web application.",
-        "C": "Hardcode the instance endpoints of the two large replicas in the reporting tool's configuration and rotate them manually.",
-        "D": "Create Amazon Route 53 weighted records that point to the instance endpoints of each replica and assign higher weights to the large replicas."
+        "A": "Increase the provisioned IOPS and throughput of the DB instance's gp3 storage volume.",
+        "B": "Move the DB instance to a supported DB instance class that has local NVMe SSD storage so that RDS Optimized Reads places temporary tables on the local storage.",
+        "C": "Create a read replica and run the reporting queries on the replica instead of on the primary DB instance.",
+        "D": "Convert the DB instance to a Multi-AZ deployment so that the standby instance shares the temporary table workload."
       },
       "isMulti": false,
       "requiredCount": 1,
       "correctAnswers": [
         "B"
       ],
-      "explanation": "### ✅ Why Option B is Correct\n\n* **Custom endpoints:** An Aurora custom endpoint load-balances connections across a chosen subset of DB instances in the cluster. This is the native way to send different workloads to differently sized replicas.\n* **Workload isolation:** The reporting team uses the endpoint with the two large replicas, and the web application uses the endpoint with the three small replicas. Each workload stays on capacity sized for it, and Aurora manages the DNS and membership.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Running heavy analytical queries on the writer would hurt the write path for the whole application. It is the opposite of the goal.\n* **Option C is incorrect:** Instance endpoints work, but connections do not load-balance across instances, and configurations must be updated manually whenever instances are replaced, fail over, or are renamed. That is more operational overhead.\n* **Option D is incorrect:** Route 53 records that point to instance endpoints duplicate what custom endpoints do natively. They must be maintained manually and do not prevent web traffic from reaching the large replicas or reporting traffic from reaching the small ones.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Aurora endpoint types:** Cluster (writer) endpoint for writes. Reader endpoint to balance reads across all replicas. Custom endpoint for a chosen subset of instances (for example, analytics replicas). Instance endpoint for diagnostics or fine-grained control.\n2. **Mixed instance sizes:** When replicas have different sizes or purposes, think custom endpoints."
+      "explanation": "### ✅ Why Option B is Correct\n\n* **Optimized Reads:** RDS Optimized Reads is available on DB instance classes with local NVMe-based SSD storage (instance classes with a \"d\" in the name, such as db.r6gd). RDS for MySQL places internal temporary tables on that local storage instead of on network-attached EBS storage.\n* **Faster spills:** Local NVMe storage has much lower latency than network-attached storage, so queries that use temporary tables for sorts, joins, and grouping run significantly faster. Changing the instance class requires no application changes.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** The volume is not reaching its provisioned limits, and the bottleneck is network storage latency. Adding IOPS or throughput would add cost without fixing the latency.\n* **Option C is incorrect:** A read replica offloads work from the primary, but the replica writes temporary tables to the same kind of network-attached storage. The queries would be just as slow.\n* **Option D is incorrect:** A Multi-AZ DB instance standby does not serve queries, so it cannot share the temporary-table workload. Multi-AZ provides availability, not query performance.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Local NVMe for databases:** RDS Optimized Reads (RDS for MySQL and MariaDB) and Aurora Optimized Reads (Aurora PostgreSQL) use local NVMe storage on \"d\" instance classes to speed up temporary objects or caching.\n2. **Diagnose before scaling:** If storage limits are not being hit but I/O wait is high, look at latency-reducing options rather than buying more IOPS."
     },
     {
       "id": 15,
       "domain": 3,
       "task": "3.1",
       "topics": [
-        "Amazon EC2 instance store",
-        "Storage optimized instances"
+        "Mountpoint for Amazon S3",
+        "Amazon S3",
+        "Amazon EC2"
       ],
-      "prompt": "A company is deploying a self-managed distributed NoSQL database cluster on Amazon EC2. The database software replicates every write to three nodes in different Availability Zones and automatically rebuilds a node's data from its peers if the node is lost. The workload requires the highest possible random I/O performance and the lowest possible storage latency at a reasonable cost. Which storage option should the solutions architect choose for each node?",
+      "prompt": "A company runs a genomics pipeline on a fleet of Amazon EC2 Linux instances. The pipeline uses a third-party tool that can read input only from a local file system path. The input files are 5-50 GB objects that are already stored in an Amazon S3 bucket. The tool reads each file sequentially and writes each output file once, and it never modifies existing files. The company wants high aggregate read throughput across the fleet, does not want to copy the data into another storage service, and wants the LEAST operational overhead. Which solution meets these requirements?",
       "options": {
-        "A": "Storage optimized (I family) instances that use their local NVMe SSD instance store volumes for the database files.",
-        "B": "General purpose instances with Amazon EBS io2 Block Express volumes provisioned at the maximum supported IOPS for each volume.",
-        "C": "Memory optimized instances that mount a shared Amazon EFS file system that uses Max I/O performance mode.",
-        "D": "Compute optimized instances with Amazon EBS gp3 volumes striped in a RAID 0 array."
+        "A": "Install Mountpoint for Amazon S3 on each instance and mount the bucket as a local directory for the tool.",
+        "B": "Deploy an Amazon S3 File Gateway on an EC2 instance and mount its NFS file share on every instance in the fleet.",
+        "C": "Use AWS DataSync to copy the bucket to an Amazon EFS file system, and mount the file system on every instance in the fleet.",
+        "D": "Run a script before each job that downloads the input objects to an attached EBS gp3 volume and uploads the results afterward."
       },
       "isMulti": false,
       "requiredCount": 1,
       "correctAnswers": [
         "A"
       ],
-      "explanation": "### ✅ Why Option A is Correct\n\n* **Physically attached NVMe:** Instance store volumes are on disks that are physically attached to the host. Storage optimized I-family instances provide very high random IOPS at the lowest latency because no network hop to network-attached block storage is involved.\n* **Ephemeral data is acceptable here:** Instance store data is lost when an instance stops, hibernates, or terminates, or when the underlying disk fails. The database already replicates every write to three nodes across AZs and can rebuild a lost node, so the application layer provides durability.\n* **Cost:** Instance store capacity is included in the instance price, so there is no additional per-IOPS charge.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** io2 Block Express gives durable sub-millisecond block storage, but it is network-attached and billed per provisioned IOPS. That makes it more expensive, and it does not match local NVMe latency. Its durability is redundant when the application already replicates data.\n* **Option C is incorrect:** Amazon EFS is a network file system with higher per-operation latency than block storage. It is not suited to database data files that need maximum random I/O performance. Max I/O mode also increases latency.\n* **Option D is incorrect:** Striping gp3 volumes increases aggregate IOPS, but the volumes are still network-attached and limited by the instance's EBS bandwidth. Latency remains higher than local NVMe.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Instance store use cases:** Use instance store for temporary data, caches, scratch space, and data that the application replicates across a fleet (for example, Cassandra, MongoDB replica sets, or Hadoop HDFS).\n2. **Durability clue:** If the scenario says the data must persist when the instance stops, choose Amazon EBS. If the application replicates data itself and needs maximum I/O, choose instance store."
+      "explanation": "### ✅ Why Option A is Correct\n\n* **File interface over S3:** Mountpoint for Amazon S3 is an open source file client that presents an S3 bucket as a local directory. It translates file operations into S3 API calls, so tools that need a file path can read objects in place without copying them.\n* **High throughput:** Mountpoint is optimized for high-throughput sequential reads of large objects and makes many parallel requests to S3. Because every instance reads S3 directly, aggregate throughput scales with the fleet.\n* **Fits its semantics:** Mountpoint supports sequential reads and writing new files, but it does not support modifying existing files in place. This workload reads sequentially and only creates new output files, so it fits.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** A single S3 File Gateway is designed for hybrid access with a local cache. Funneling the whole fleet through one gateway creates a throughput bottleneck and adds an appliance to manage.\n* **Option C is incorrect:** Copying the data to EFS duplicates storage, adds a synchronization step, and increases cost. The company does not want to copy the data into another service.\n* **Option D is incorrect:** Staging scripts add custom code to maintain and delay every job while files download. Each instance also needs enough local volume capacity for its inputs.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Mountpoint for Amazon S3:** Use it when applications need file-path access to read large S3 data sets at high throughput and only write new files. If the workload needs full POSIX semantics (in-place edits, locking, renames), use EFS or FSx.\n2. **Shared high-performance file systems:** For HPC that needs a full parallel POSIX file system linked to S3, use FSx for Lustre."
     },
     {
       "id": 16,
@@ -916,22 +917,22 @@
       "domain": 3,
       "task": "3.1",
       "topics": [
-        "Amazon EFS",
-        "EFS throughput modes"
+        "AWS Lambda",
+        "Lambda ephemeral storage"
       ],
-      "prompt": "A company uses an Amazon EFS file system in Bursting throughput mode to share about 60 GiB of reference data with a fleet of Linux build servers. Builds run sporadically and create short, intense bursts of read traffic. During these bursts the file system exhausts its burst credits, and builds slow down significantly. Between builds, the file system is almost idle. The company wants consistent performance during bursts, wants to pay only for the throughput it actually uses, and wants the LEAST operational overhead. Which solution meets these requirements?",
+      "prompt": "An AWS Lambda function that is not connected to a VPC runs when video files of up to 8 GB are uploaded to an Amazon S3 bucket. The function downloads each file, uses a native library that requires the complete file on local disk to extract frames, and then deletes the file. Invocations for large files fail with \"No space left on device\" errors. The company wants fast local scratch space with the LEAST operational overhead and does not want to connect the function to a VPC. What should a solutions architect do?",
       "options": {
-        "A": "Create a new file system in Max I/O performance mode, migrate the data with AWS DataSync, and remount the servers.",
-        "B": "Add several hundred gigabytes of placeholder files to the file system so that baseline throughput and burst credit accrual increase.",
-        "C": "Switch the file system to Provisioned throughput mode and set throughput to the peak level that builds require.",
-        "D": "Switch the file system to Elastic throughput mode."
+        "A": "Create an Amazon EFS file system and access point, and mount the file system on the function for scratch storage.",
+        "B": "Increase the function's memory to 10,240 MB so that the downloaded file can be held in memory.",
+        "C": "Repackage the function as a container image so that the image's larger size limit provides more local disk space.",
+        "D": "Increase the function's ephemeral storage (/tmp) setting to a size larger than the largest video file."
       },
       "isMulti": false,
       "requiredCount": 1,
       "correctAnswers": [
         "D"
       ],
-      "explanation": "### ✅ Why Option D is Correct\n\n* **Built for spiky workloads:** Elastic throughput automatically scales throughput up and down with workload activity. It is the recommended mode for spiky or unpredictable workloads that are difficult to forecast.\n* **Pay per use:** With Elastic throughput, you pay for the amount of data read and written rather than for provisioned capacity. This fits a file system that is idle most of the time.\n* **Minimal effort:** The throughput mode of an existing file system can be changed in place, so no data migration or remount is needed.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Performance mode governs operations per second and latency, not the throughput ceiling caused by burst credit exhaustion. Max I/O also adds per-operation latency and cannot be used with Elastic throughput. Migrating data adds overhead.\n* **Option B is incorrect:** Padding the file system with placeholder data is a legacy workaround that raises storage cost and adds management burden. It is unnecessary now that Elastic throughput exists.\n* **Option C is incorrect:** Provisioned throughput delivers consistent performance, but the company pays for peak throughput all the time even though the file system is idle most of the day. This conflicts with paying only for what is used.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **EFS throughput modes:** Elastic = spiky or unknown patterns, pay per use. Provisioned = known, steady high throughput that is independent of storage size. Bursting = throughput scales with stored data size.\n2. **Performance mode vs. throughput mode:** Performance mode (General Purpose or Max I/O) is chosen at creation and cannot be changed. Throughput mode can be changed later. AWS recommends General Purpose for nearly all workloads."
+      "explanation": "### ✅ Why Option D is Correct\n\n* **Configurable /tmp:** Each Lambda function has ephemeral storage in /tmp that can be configured from 512 MB up to 10,240 MB. Raising it above 8 GB gives the native library a local file path for the whole video.\n* **Least overhead:** This is a single configuration change. No additional resources, networking, or code changes are needed, and /tmp is local to the execution environment, so it is fast scratch space.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Mounting EFS on a Lambda function requires connecting the function to a VPC that has EFS mount targets, which the company does not want. It also adds a file system to manage for temporary data.\n* **Option B is incorrect:** Memory is not disk space. The library needs the file on local disk, so the out-of-space errors would continue in the default 512 MB /tmp.\n* **Option C is incorrect:** The container image size limit applies to the read-only image that holds code and dependencies. It does not increase the writable /tmp space at run time.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Lambda storage options:** /tmp ephemeral storage (up to 10 GB) = per-invocation scratch space. EFS = shared, persistent files across invocations (requires VPC). S3 = durable objects. Layers and container images = code and dependencies.\n2. **Lambda resource sizing:** Memory (which also scales CPU) and ephemeral storage are configured independently."
     },
     {
       "id": 39,
@@ -1524,23 +1525,23 @@
       "domain": 3,
       "task": "3.4",
       "topics": [
-        "Amazon VPC",
-        "IP addressing",
-        "Secondary CIDR blocks"
+        "AWS Local Zones",
+        "Amazon EC2",
+        "Edge placement"
       ],
-      "prompt": "A company's production VPC uses the 10.0.0.0/22 CIDR block, and its private subnets have almost no free IPv4 addresses. An expanding Amazon ECS workload that uses the awsvpc network mode needs thousands of additional IP addresses within the next month. The VPC must remain in place because many existing resources, peering connections, and VPC endpoints depend on it. The new range does not overlap with any connected network. What should a solutions architect do?",
+      "prompt": "A visual effects studio in Los Angeles wants its artists to use remote workstations and render nodes that run on Amazon EC2 with single-digit millisecond latency from the studio. The studio's AWS workloads run in the us-west-2 (Oregon) Region, and latency from Los Angeles to that Region is too high for interactive work. The studio wants to keep using its existing VPC and the standard AWS APIs and tools, and it does not want to install or maintain any AWS hardware in its own facility. Which solution meets these requirements?",
       "options": {
-        "A": "Associate a secondary IPv4 CIDR block with the VPC, create new private subnets from that range in each Availability Zone, and launch the new tasks in those subnets.",
-        "B": "Edit the existing private subnets and expand their CIDR ranges into the unused address space of the VPC.",
-        "C": "Change the VPC's primary CIDR block from 10.0.0.0/22 to 10.0.0.0/16.",
-        "D": "Create a new VPC with a larger CIDR block and connect it to the existing VPC with VPC peering, then move the existing resources to it over time."
+        "A": "Enable the Los Angeles AWS Local Zone, extend the VPC by creating a subnet in the Local Zone, and launch the instances in that subnet.",
+        "B": "Order AWS Outposts racks for the studio's office and launch the instances on the Outposts in a subnet of the existing VPC.",
+        "C": "Launch the instances in us-west-2 and give the artists access through an AWS Global Accelerator accelerator with static anycast IP addresses.",
+        "D": "Launch the instances in an AWS Wavelength Zone so that traffic from the studio stays inside a telecommunications provider's network."
       },
       "isMulti": false,
       "requiredCount": 1,
       "correctAnswers": [
         "A"
       ],
-      "explanation": "### ✅ Why Option A is Correct\n\n* **Secondary CIDR blocks:** You can associate additional IPv4 CIDR blocks with an existing VPC. New subnets can be created from those ranges without affecting existing subnets, resources, peering connections, or endpoints.\n* **Scales the ECS workload:** With awsvpc mode, each task gets its own elastic network interface and IP address. New subnets in each AZ give the service room to grow, and the service can be configured to use them.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** A subnet's CIDR block cannot be modified after the subnet is created. You would have to delete and re-create the subnet.\n* **Option C is incorrect:** A VPC's primary CIDR block cannot be changed after the VPC is created. You can only add or remove secondary CIDR blocks.\n* **Option D is incorrect:** A new VPC and a migration add significant effort and risk. The requirement is to keep the existing VPC, and a secondary CIDR solves the problem directly.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Immutable network attributes:** VPC primary CIDRs and subnet CIDRs cannot be resized. Add secondary CIDRs (or IPv6) to grow address space.\n2. **Plan for growth:** Size VPCs and subnets generously at design time, avoid overlap with on-premises and peered networks, and remember that AWS reserves five IP addresses in every subnet."
+      "explanation": "### ✅ Why Option A is Correct\n\n* **Compute close to a metro area:** AWS Local Zones place compute, storage, and selected services in large metropolitan areas such as Los Angeles. Users there get single-digit millisecond latency without traffic having to reach the parent Region.\n* **Extension of the VPC:** A Local Zone is an extension of its parent Region (us-west-2). You create a subnet in the Local Zone within the existing VPC and use the same APIs, console, and tools. AWS operates the infrastructure.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Outposts would deliver low latency, but it requires installing and maintaining AWS hardware in the studio's facility, which the studio does not want.\n* **Option C is incorrect:** Global Accelerator improves the network path to the Region, but the instances would still be in Oregon. It cannot remove the physical distance that causes the latency.\n* **Option D is incorrect:** Wavelength Zones are embedded in 5G carrier networks for mobile devices. The studio connects over its own wired network, so Wavelength does not fit.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Edge placement options:** Metro-area users that need single-digit ms latency = Local Zones. 5G mobile devices = Wavelength. On-premises facility or data residency = Outposts. Global users of a Regional app = CloudFront or Global Accelerator.\n2. **Typical Local Zone workloads:** Media and entertainment content creation, real-time gaming, live video, and hybrid migrations that need low latency to a specific city."
     },
     {
       "id": 65,

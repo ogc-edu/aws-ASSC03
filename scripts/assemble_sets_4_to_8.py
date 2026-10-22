@@ -22,7 +22,7 @@ MAPPING = {
     "5": ("5", 5155, "Claude Mock Exam — Set 5", "Multi-account governance (Organizations, Control Tower, Identity Center), disaster recovery strategies and storage cost tiers."),
     "6": ("6", 6186, "Claude Mock Exam — Set 6", "Detective controls and compliance, cross-Region recovery, networking and analytics performance, database and network cost."),
     "7": ("7", 7217, "Claude Mock Exam — Set 7", "A final mixed mock: data-level access controls, static stability and recovery automation, streaming analytics and cost governance."),
-    "8": ("3", 8248, "Claude Mock Exam — Set 8", "Comprehensive scenarios on IAM trust policies, cross-Region Aurora and DynamoDB replication, event-driven microservices, and compute optimization."),
+    "8": ("3", 8248, "Claude Mock Exam — Set 8", "Identity-heavy security (permissions boundaries, ABAC, Cognito, WAF), messaging resilience and storage/compute performance tuning."),
 }
 
 def main():

@@ -3,44 +3,46 @@
     "domain": 4,
     "task": "4.1",
     "topics": [
+      "Amazon S3 Express One Zone",
       "Amazon S3",
-      "S3 Glacier Deep Archive",
-      "S3 Lifecycle"
+      "Request costs"
     ],
-    "prompt": "A company's IoT platform writes about 300 million sensor readings each month to an Amazon S3 bucket. Each reading is stored as an individual 6 KB JSON object. After 30 days the data is accessed only for rare audits, and audits always retrieve a full day of readings for one device fleet at a time. The company wants to move the data to Amazon S3 Glacier Deep Archive to reduce cost, but a cost estimate shows that the archived data would cost more than expected. Which solution will MOST cost-effectively archive the data?",
+    "prompt": "A company runs a data processing pipeline on a fleet of Amazon EC2 instances in a single Availability Zone. The pipeline writes and reads about 6 billion small intermediate files (average size 50 KB) each month in an Amazon S3 Standard bucket. Only about 3 TB of intermediate data exists at any time, every file is deleted within 24 hours, and the data can be regenerated if it is lost. S3 request charges are more than 85% of the bucket's cost. Which storage choice will reduce cost the MOST?",
     "options": {
-      "A": "Create an S3 Lifecycle rule that transitions every object to S3 Glacier Deep Archive after 30 days, and add an object size filter that includes objects smaller than 128 KB.",
-      "B": "Create an S3 Lifecycle rule that transitions the objects to S3 Glacier Instant Retrieval after 30 days and to S3 Glacier Deep Archive after 90 days.",
-      "C": "Run a daily job that combines each fleet's readings for the day into a single compressed archive file, upload the archive directly to the S3 Glacier Deep Archive storage class, and expire the individual objects with an S3 Lifecycle rule.",
-      "D": "Enable S3 Intelligent-Tiering on the bucket and activate the Deep Archive Access tier so that objects move automatically after 180 days without access."
+      "A": "Keep the S3 Standard bucket and enable S3 Transfer Acceleration to reduce the time each request takes.",
+      "B": "Configure an S3 Lifecycle rule that moves the intermediate files to S3 Intelligent-Tiering on the day they are created.",
+      "C": "Store the intermediate files in an S3 Express One Zone directory bucket in the same Availability Zone as the EC2 instances.",
+      "D": "Store the intermediate files in S3 One Zone-Infrequent Access (S3 One Zone-IA) by setting the storage class when each file is uploaded."
     },
     "isMulti": false,
     "requiredCount": 1,
     "correctAnswers": [
       "C"
     ],
-    "explanation": "### ✅ Why Option C is Correct\n\n* **Per-object overhead dominates for tiny objects:** Every object archived to S3 Glacier Flexible Retrieval or Glacier Deep Archive carries about 40 KB of extra billable metadata (32 KB at the archive rate plus 8 KB at S3 Standard rates), and lifecycle transitions are billed per 1,000 objects. For 6 KB objects the overhead is several times the size of the data itself.\n* **Aggregation fixes both costs:** Combining one day of readings per fleet into a single compressed object turns millions of objects into a handful, which removes most transition request charges and the per-object metadata overhead, and compression shrinks the stored bytes.\n* **Matches the access pattern:** Audits always retrieve a full day for one fleet, so one archive per fleet per day is exactly the unit that is restored.\n* **Direct upload to the archive class:** Writing the archive with the DEEP_ARCHIVE storage class avoids a separate lifecycle transition request, and a lifecycle expiration rule removes the original small objects.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Lifecycle rules skip objects smaller than 128 KB by default, and overriding that filter only makes the problem worse: each 6 KB object would still incur transition request charges and about 40 KB of archive metadata overhead.\n* **Option B is incorrect:** Adding an intermediate Glacier Instant Retrieval step adds a second round of per-object transition charges, and Glacier Instant Retrieval bills each object as at least 128 KB. The tiny-object overhead is not solved.\n* **Option D is incorrect:** S3 Intelligent-Tiering does not auto-tier objects smaller than 128 KB (they always stay in the Frequent Access tier), so 6 KB objects would never reach the Deep Archive Access tier.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Small objects + Glacier = aggregate first:** When a scenario has millions of tiny objects and an archive tier, the cost-effective answer is to batch them into larger objects (tar/zip/Parquet) before archiving.\n2. **128 KB thresholds:** Since September 2024, S3 Lifecycle by default does not transition objects smaller than 128 KB, Intelligent-Tiering does not tier them, and Glacier Instant Retrieval and Standard-IA bill a 128 KB minimum.\n3. **Batch vs individual uploads:** The exam guide explicitly lists 'batch uploads to Amazon S3 compared with individual uploads' as a cost skill; request charges scale with object count, not bytes."
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Requests are the cost driver:** S3 Express One Zone has much lower per-request charges for PUT and GET than S3 Standard. When request charges dominate the bill and the stored volume is small, its higher per-GB storage price is outweighed by the request savings.\n* **Fits the data profile:** Only about 3 TB is stored at any time and files live less than a day, so the storage premium is small. The data is reproducible, so single-AZ storage is acceptable.\n* **Co-location:** A directory bucket in the same Availability Zone as the compute also gives single-digit millisecond access, which speeds up the pipeline.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Transfer Acceleration adds a per-GB charge and is meant for long-distance transfers over the internet; it does not lower request charges for same-Region EC2 access.\n* **Option B is incorrect:** Intelligent-Tiering does not reduce request charges, adds per-object monitoring and transition charges, and does not tier objects smaller than 128 KB.\n* **Option D is incorrect:** One Zone-IA has higher request charges than S3 Standard, adds per-GB retrieval fees, and bills a 30-day minimum storage duration and a 128 KB minimum object size, so short-lived 50 KB files would cost more.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'Request-heavy', 'small objects', 'compute in one AZ', 'short-lived or reproducible data' = S3 Express One Zone directory bucket.\n2. **IA classes are for storage-heavy data:** Standard-IA and One Zone-IA lower storage cost but raise request and retrieval cost, and have minimum duration and size charges; they suit large, long-lived, rarely read objects.\n3. **Trade-off to remember:** S3 Express One Zone = higher storage price, lower request price, lowest latency, single AZ."
   },
   {
     "domain": 4,
     "task": "4.1",
     "topics": [
-      "Amazon EBS",
-      "EBS Snapshots Archive"
+      "Amazon OpenSearch Service",
+      "UltraWarm",
+      "Cold storage",
+      "Index State Management"
     ],
-    "prompt": "A company takes a full Amazon EBS snapshot of each of its database server volumes at the end of every quarter and must keep each quarter-end snapshot for 7 years for compliance. The quarter-end snapshots are restored only if an auditor requests historical data, and a restore time of up to 3 days is acceptable. The company also keeps daily snapshots for 14 days for operational recovery. Which solution will reduce the storage cost of the quarter-end snapshots the MOST?",
+    "prompt": "A company stores application logs in an Amazon OpenSearch Service domain and must keep them for 1 year. All indexes are on hot data nodes with Amazon EBS storage, and the domain keeps growing. Logs from the last 14 days are queried heavily. Logs that are 15-90 days old are queried a few times each week and must remain searchable from OpenSearch Dashboards. Logs older than 90 days are needed only for rare investigations, when waiting several minutes to make them searchable is acceptable. Which solution will reduce storage cost the MOST with the LEAST operational overhead?",
     "options": {
-      "A": "Move the quarter-end snapshots to the EBS Snapshots Archive tier and keep the daily snapshots in the standard tier.",
-      "B": "Enable EBS fast snapshot restore on the quarter-end snapshots and delete the daily snapshots after 7 days.",
-      "C": "Copy the quarter-end snapshots to a second AWS Region and delete them from the primary Region.",
-      "D": "Create Amazon Machine Images (AMIs) from the quarter-end snapshots and deregister the original snapshots."
+      "A": "Enable UltraWarm and cold storage on the domain, and create an Index State Management (ISM) policy that moves indexes to UltraWarm after 14 days, to cold storage after 90 days, and deletes them after 1 year.",
+      "B": "Change the EBS volumes on the hot data nodes from gp3 to Throughput Optimized HDD (st1) volumes, and add more data nodes as the domain grows.",
+      "C": "Take a manual snapshot of each index to Amazon S3 when it is 14 days old, delete the index, and restore the snapshot to a new domain whenever older logs are needed.",
+      "D": "Create an ISM policy that deletes indexes after 14 days and configure the application to also write all logs to Amazon S3 Glacier Deep Archive."
     },
     "isMulti": false,
     "requiredCount": 1,
     "correctAnswers": [
       "A"
     ],
-    "explanation": "### ✅ Why Option A is Correct\n\n* **Built for long-term, rarely restored snapshots:** EBS Snapshots Archive stores snapshots at up to 75% lower storage cost than the standard tier and is intended for snapshots that must be retained for 90 days or longer and are rarely accessed.\n* **Restore time fits:** Restoring an archived snapshot to the standard tier takes up to 24-72 hours, which is within the 3-day tolerance stated in the scenario.\n* **Daily snapshots stay incremental:** Short-lived operational snapshots remain in the standard tier where they are incremental and can be restored immediately; archived snapshots are converted to full snapshots, which suits a once-per-quarter compliance copy.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Fast snapshot restore adds an hourly charge per snapshot per Availability Zone to remove initialization latency; it increases cost and does nothing for long-term retention.\n* **Option C is incorrect:** Copying snapshots to another Region adds cross-Region data transfer charges and stores them at the same standard-tier rate, so there is no storage saving.\n* **Option D is incorrect:** An AMI is backed by the same EBS snapshots; the snapshots cannot be deleted while the AMI references them, and the storage cost is unchanged.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'Retain EBS snapshots for years, rarely restored, restore in hours or days acceptable' = EBS Snapshots Archive (minimum 90-day retention in the archive tier).\n2. **Automation:** Amazon Data Lifecycle Manager and AWS Backup can both create snapshots on a schedule and move them to the archive tier automatically.\n3. **Don't confuse FSR:** Fast snapshot restore is a performance feature (no lazy loading on restore) and always adds cost."
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Tiered storage built into OpenSearch Service:** UltraWarm stores read-only indexes in Amazon S3 with caching on UltraWarm nodes, which costs much less per GB than hot nodes with EBS storage while staying interactively searchable from OpenSearch Dashboards.\n* **Cold storage for rarely used data:** Cold storage detaches indexes and keeps them in Amazon S3 at an even lower cost; when needed, an index is attached to UltraWarm in minutes and becomes searchable again.\n* **Automated:** An ISM policy moves indexes between tiers and deletes them at 1 year automatically, so there is no manual work.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** HDD volumes are not an option offered for OpenSearch Service data nodes, and keeping a year of data on hot nodes remains the most expensive option.\n* **Option C is incorrect:** Manual snapshots and restoring to a new domain add significant operational work, and logs 15-90 days old would not be searchable in Dashboards as required.\n* **Option D is incorrect:** Deleting indexes after 14 days means logs 15-90 days old are not searchable in OpenSearch Dashboards, and data in Glacier Deep Archive cannot be queried by OpenSearch.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'OpenSearch' + 'older data queried less often' + 'reduce storage cost' = UltraWarm (warm, searchable) and cold storage (detached, attach on demand), automated with ISM.\n2. **Tier summary:** Hot = EBS/instance storage, read-write, fastest; UltraWarm = S3-backed, read-only, interactive; cold = S3, must be attached before querying.\n3. **Prerequisites:** UltraWarm requires dedicated master nodes, and cold storage requires UltraWarm to be enabled."
   },
   {
     "domain": 4,
@@ -114,22 +116,23 @@
     "domain": 4,
     "task": "4.3",
     "topics": [
-      "Amazon DynamoDB",
-      "DynamoDB Standard-IA table class"
+      "Amazon Aurora",
+      "AWS Graviton",
+      "Reserved DB instances"
     ],
-    "prompt": "A retail company stores order history in an Amazon DynamoDB table that uses provisioned capacity with auto scaling. The table holds 40 TB of data and grows by 1 TB each month. Customers occasionally view old orders, and AWS Cost Explorer shows that storage accounts for more than 80% of the table's monthly cost, while read and write capacity costs are small. The application must continue to read any order with single-digit millisecond latency. Which change will reduce the table's cost the MOST?",
+    "prompt": "A company runs a steady production workload on an Amazon Aurora MySQL cluster with one db.r5.4xlarge writer and two db.r5.4xlarge Aurora Replicas. The company plans to buy 3-year Reserved DB instances for the cluster next week. The application uses only standard MySQL features, and testing shows that it runs correctly on Arm-based database instances. Which approach will result in the LOWEST cost over the next 3 years with minimal operational change?",
     "options": {
-      "A": "Change the table class of the table to DynamoDB Standard-Infrequent Access (DynamoDB Standard-IA).",
-      "B": "Switch the table to on-demand capacity mode.",
-      "C": "Purchase DynamoDB reserved capacity for the table's provisioned read and write capacity.",
-      "D": "Export the table to Amazon S3 each month and add an Amazon ElastiCache cluster in front of the table."
+      "A": "Modify the cluster's DB instances to the equivalent Graviton-based db.r7g instance class (replicas first, then fail over and modify the former writer), and then buy 3-year Reserved DB instances for the db.r7g class.",
+      "B": "Buy 3-year Reserved DB instances for the db.r5 class now, and move to Graviton-based instances later so that the reservation applies to them through size flexibility.",
+      "C": "Migrate the database to self-managed MySQL on Graviton-based Amazon EC2 instances and buy an EC2 Instance Savings Plan.",
+      "D": "Convert the cluster to Aurora Serverless v2 with a maximum capacity equal to the current instance size."
     },
     "isMulti": false,
     "requiredCount": 1,
     "correctAnswers": [
       "A"
     ],
-    "explanation": "### ✅ Why Option A is Correct\n\n* **Storage-dominated tables:** The DynamoDB Standard-IA table class lowers storage cost by about 60% compared with the Standard table class, in exchange for higher read and write request costs. It is designed for tables where storage is the dominant cost.\n* **Same performance:** Standard-IA tables keep the same single-digit millisecond performance, durability, and availability as Standard tables, and the table class can be changed without downtime or application changes.\n* **Fits this cost profile:** With storage above 80% of spend and small throughput costs, the storage saving far outweighs the higher per-request price.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** On-demand mode changes how throughput is billed; it does not reduce storage cost, which is the main cost driver here.\n* **Option C is incorrect:** Reserved capacity discounts provisioned throughput only, which is a small part of the bill. Reserved capacity is also not available for Standard-IA tables, but storage cost is the problem to solve.\n* **Option D is incorrect:** Exporting to S3 does not remove the data from the table, and adding ElastiCache adds cost; neither reduces DynamoDB storage charges.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'DynamoDB storage is the main cost' + 'infrequently accessed data' + 'keep same latency' = DynamoDB Standard-IA table class.\n2. **Throughput vs storage levers:** Capacity mode, auto scaling, and reserved capacity optimize throughput cost; table class and TTL optimize storage cost.\n3. **Switching rules:** You can switch a table's class (Standard <-> Standard-IA) up to twice in a trailing 30-day period."
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Better price-performance:** Graviton-based Aurora instance classes (such as db.r7g) cost less per hour than comparable x86 classes and deliver better price-performance, and Aurora MySQL supports them without application changes.\n* **Change first, then commit:** Reserved DB instances apply to a specific instance family. Moving to Graviton before purchasing ensures the 3-year discount stacks on top of the lower Graviton rate.\n* **Minimal disruption:** Modifying replicas first and then failing over keeps the instance class change to a brief failover for the writer.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Size flexibility works only within the same instance family (for example, different db.r5 sizes); a db.r5 reservation would not apply to db.r7g instances, so the company would pay for unused reservations after moving.\n* **Option C is incorrect:** Self-managed MySQL on EC2 adds patching, backups, replication, and failover work, which is not minimal operational change; Aurora features would also be lost.\n* **Option D is incorrect:** Serverless v2 is cost-effective for variable workloads; for a steady 24/7 workload, provisioned instances with Reserved DB instances cost less.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'Lower database compute cost with no code change' = move RDS/Aurora to Graviton instance classes.\n2. **Order of operations:** Right-size and modernize instance types first, then buy Reserved Instances or Savings Plans for the result.\n3. **RI size flexibility:** RDS and Aurora reservations are size-flexible within one instance family and engine, not across families or generations."
   },
   {
     "domain": 4,
@@ -203,22 +206,21 @@
     "task": "4.4",
     "topics": [
       "Amazon CloudFront",
-      "Amazon S3",
-      "Data transfer"
+      "Price classes"
     ],
-    "prompt": "A software company distributes installer files and patches to customers worldwide directly from a public Amazon S3 bucket in us-east-1. The bucket serves about 400 TB each month, and the same few hundred files make up most downloads after each release. AWS Cost Explorer shows that data transfer out to the internet from Amazon S3 is the company's largest cost. Which solution will reduce this cost the MOST while improving download performance?",
+    "prompt": "A company serves a video-on-demand catalog through an Amazon CloudFront distribution that uses the default price class. Analytics show that 97% of viewers are in the United States, Canada, and Europe. The remaining viewers are spread across South America, Asia, and Australia, and the company accepts somewhat higher latency for them but must continue to serve them. The company wants to reduce CloudFront costs with the LEAST effort. What should a solutions architect do?",
     "options": {
-      "A": "Put an Amazon CloudFront distribution with origin access control (OAC) in front of the bucket, make the bucket private, and serve downloads from the distribution.",
-      "B": "Enable S3 Transfer Acceleration on the bucket and update the download URLs to use the accelerate endpoint.",
-      "C": "Use S3 Cross-Region Replication to copy the bucket to four other AWS Regions, and use Amazon Route 53 latency-based routing records to direct each customer to the nearest bucket for downloads.",
-      "D": "Create an AWS Global Accelerator standard accelerator with the S3 bucket as an endpoint."
+      "A": "Change the distribution's price class to Price Class 100.",
+      "B": "Enable CloudFront geographic restrictions to block viewers outside North America and Europe.",
+      "C": "Enable CloudFront Origin Shield in the Region closest to the origin.",
+      "D": "Create a second distribution for viewers outside North America and Europe and use Amazon Route 53 geolocation routing to send them to it."
     },
     "isMulti": false,
     "requiredCount": 1,
     "correctAnswers": [
       "A"
     ],
-    "explanation": "### ✅ Why Option A is Correct\n\n* **Free origin fetches:** Data transfer from Amazon S3 (and other AWS origins) to CloudFront edge locations is free. Customers are billed at CloudFront's data transfer out rates, which are lower than S3 internet data transfer out rates.\n* **Caching:** Because the same files are downloaded repeatedly, most requests are served from edge caches, which reduces origin requests and speeds up downloads for global customers.\n* **Secure origin:** Origin access control lets the bucket stay private with Block Public Access enabled while CloudFront signs requests to S3.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Transfer Acceleration adds a per-GB charge on top of data transfer and is mainly intended to speed up long-distance uploads into S3; it does not cache content.\n* **Option C is incorrect:** Replication adds inter-Region transfer and duplicate storage costs in four more Regions, and customers still pay S3 internet data transfer out rates.\n* **Option D is incorrect:** Global Accelerator does not support S3 buckets as endpoints and does not cache content; it adds fixed hourly and premium data transfer fees.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'High data transfer out from S3/ALB/EC2' + 'repeated downloads' + 'global users' = Amazon CloudFront in front of the origin.\n2. **OAC, not OAI:** Use origin access control for S3 origins; origin access identity is legacy.\n3. **Global Accelerator vs CloudFront:** Global Accelerator = static anycast IPs and fast failover for TCP/UDP apps (no caching); CloudFront = caching CDN for HTTP(S)."
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Price classes control edge locations used:** CloudFront charges different data transfer rates by geographic region. Price Class 100 uses edge locations only in the lowest-cost regions (North America, Europe, and Israel), which cover 97% of this company's viewers.\n* **Others are still served:** Viewers in excluded regions are still served, from edge locations in the included regions, with possibly higher latency, which the company accepts.\n* **Least effort:** Price class is a single distribution setting; no DNS, origin, or application changes are needed.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Geographic restrictions block viewers in the excluded countries, but the company must continue to serve them.\n* **Option C is incorrect:** Origin Shield adds a caching layer that reduces origin load, but it has its own charges and does not lower the edge data transfer rates paid for viewers.\n* **Option D is incorrect:** A second distribution with geolocation routing adds complexity, and if it uses all edge locations its rates for those viewers stay the same.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'Most users in North America/Europe' + 'reduce CloudFront cost' + 'others can tolerate latency' = lower price class (Price Class 100 or 200).\n2. **Price classes:** Price Class All = every edge location (best performance, highest cost); Price Class 200 adds most of Asia, the Middle East, and Africa; Price Class 100 = North America, Europe, and Israel.\n3. **Block vs reduce:** Geo restriction is for content licensing or compliance blocking, not cost optimization."
   },
   {
     "domain": 4,
@@ -268,19 +270,18 @@
     "domain": 4,
     "task": "4.4",
     "topics": [
-      "NAT gateway",
-      "VPC endpoints",
-      "Amazon ECR",
-      "Amazon ECS",
-      "AWS Fargate"
+      "AWS Transit Gateway",
+      "VPC peering",
+      "Data transfer",
+      "Availability Zone IDs"
     ],
-    "prompt": "A company runs a production Amazon ECS on AWS Fargate service in private subnets across three Availability Zones. A single NAT gateway in the first Availability Zone provides outbound internet access for all private subnets. Tasks scale in and out frequently and pull about 30 TB of container images from Amazon ECR each month, and they also call third-party APIs on the internet. The bill shows high NAT gateway data processing charges and high cross-AZ data transfer charges. The tasks must remain in private subnets. Which combination of steps will reduce these costs? (Select TWO.)",
+    "prompt": "A company connects 25 VPCs in one AWS Region through AWS Transit Gateway. Two of the VPCs, in different AWS accounts, contain an application tier and a data tier that exchange about 400 TB each month, which is more than 90% of the transit gateway's data processing charges. The application tier and the data tier each run in a single Availability Zone, and the company's cost review found that they are in different physical Availability Zones even though both use subnets named us-east-1a. The other VPCs exchange little traffic. Which combination of steps will reduce network costs the MOST? (Select TWO.)",
     "options": {
-      "A": "Create an Amazon S3 gateway endpoint and associate it with the private subnets' route tables.",
-      "B": "Move the tasks to public subnets and assign public IP addresses so they can reach Amazon ECR without the NAT gateway.",
-      "C": "Replace the NAT gateway with an AWS Transit Gateway and a centralized egress VPC.",
-      "D": "Create a NAT gateway in each Availability Zone and update each private subnet's route table to use the NAT gateway in the same Availability Zone.",
-      "E": "Enable AWS Global Accelerator for the ECR registry endpoint."
+      "A": "Create a VPC peering connection between the two high-traffic VPCs and add routes for each other's CIDR blocks to their route tables, keeping the transit gateway for all other traffic.",
+      "B": "Create a second transit gateway that is dedicated to the two high-traffic VPCs.",
+      "C": "Replace the transit gateway connectivity between the two VPCs with an AWS Site-to-Site VPN connection between them.",
+      "D": "Move the application tier to a subnet whose Availability Zone ID matches the Availability Zone ID of the data tier's subnet.",
+      "E": "Enable appliance mode on the transit gateway attachments for the two high-traffic VPCs."
     },
     "isMulti": true,
     "requiredCount": 2,
@@ -288,6 +289,6 @@
       "A",
       "D"
     ],
-    "explanation": "### ✅ Why Options A & D are Correct\n\n* **Option A - S3 gateway endpoint for image layers:** Amazon ECR stores image layers in Amazon S3, so most of the bytes in an image pull are S3 downloads. A gateway endpoint for S3 has no hourly or per-GB charge and routes that traffic privately, removing it from NAT gateway data processing.\n* **Option D - AZ-local NAT gateways:** With one NAT gateway, traffic from tasks in the other two AZs crosses AZ boundaries and incurs cross-AZ data transfer charges. A NAT gateway per AZ with AZ-local routes removes those charges and also removes the single point of failure for a production workload.\n* **Together:** The gateway endpoint removes the largest traffic flow from NAT entirely, and the per-AZ NAT gateways keep the remaining internet-bound API traffic within each AZ.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** The requirement is that tasks remain in private subnets; public IPs also add hourly public IPv4 charges for every task.\n* **Option C is incorrect:** Centralized egress through Transit Gateway adds per-attachment hourly and per-GB data processing charges on top of NAT gateway charges; it helps with many VPCs, not with these costs.\n* **Option E is incorrect:** Global Accelerator does not front AWS service endpoints such as ECR and would add fees without affecting NAT or cross-AZ charges.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'High NAT gateway processing charges' + 'traffic to S3 or DynamoDB (including ECR layers)' = gateway VPC endpoints (free).\n2. **Shared vs per-AZ NAT:** One shared NAT gateway saves hourly cost for low-traffic dev VPCs; for production or high-traffic VPCs, a NAT gateway per AZ avoids cross-AZ charges and AZ dependency.\n3. **ECR private access:** For fully private pulls without NAT, add interface endpoints for ecr.api and ecr.dkr plus the S3 gateway endpoint."
+    "explanation": "### ✅ Why Options A & D are Correct\n\n* **Option A - peer the heavy pair:** Transit Gateway charges per GB of data processed. VPC peering has no data processing or hourly charge, so moving the 400 TB flow to a peering connection removes most of the transit gateway bill while the hub-and-spoke design stays in place for everything else. The two VPCs' route tables are updated so that traffic between their CIDR blocks uses the peering connection.\n* **Option D - align physical AZs:** Availability Zone names such as us-east-1a map to different physical zones in different accounts. Data transfer over a VPC peering connection is free when it stays within the same Availability Zone (by AZ ID) and is charged in each direction when it crosses AZs, so placing both tiers in the same AZ ID removes the cross-AZ charges as well.\n* **Together:** Peering removes the processing charge, and AZ alignment removes the remaining transfer charge for this flow.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** A second transit gateway still charges per GB processed and adds attachment hours; it does not reduce cost.\n* **Option C is incorrect:** Site-to-Site VPN connections between VPCs add hourly charges, limit throughput to about 1.25 Gbps per tunnel, and route traffic through the internet, which is not cheaper.\n* **Option E is incorrect:** Appliance mode keeps flows symmetric through a stateful network appliance; it does not change data processing or transfer charges.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'One or two VPC pairs dominate Transit Gateway data processing charges' = add direct VPC peering for those pairs and keep Transit Gateway for the rest.\n2. **AZ names vs AZ IDs:** Use AZ IDs (for example, use1-az1) to place resources in the same physical zone across accounts; AZ names are mapped randomly per account.\n3. **Peering pricing:** VPC peering has no hourly or processing fee; same-AZ traffic over peering is free, and cross-AZ traffic is charged per GB in each direction."
   }
 ]

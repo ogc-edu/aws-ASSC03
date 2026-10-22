@@ -4,7 +4,7 @@
   "description": "Detective controls and compliance, cross-Region recovery, networking and analytics performance, database and network cost.",
   "examCode": "SAA-C03",
   "generatedBy": "Claude (Anthropic)",
-  "generatedAt": "2026-10-21",
+  "generatedAt": "2026-10-22",
   "format": {
     "examCode": "SAA-C03",
     "verifiedOn": "2026-10-20",
@@ -118,23 +118,23 @@
       "domain": 3,
       "task": "3.2",
       "topics": [
-        "Amazon EMR",
-        "EMR managed scaling",
-        "Amazon S3"
+        "Amazon EMR Serverless",
+        "Apache Spark",
+        "Apache Hive"
       ],
-      "prompt": "A company runs an on-premises Hadoop cluster that hosts Apache Spark batch jobs, Apache Hive queries, and an Apache HBase database used by internal applications. The jobs rely on custom Hadoop configuration and third-party JAR libraries. The company wants to move to AWS with minimal code changes, store data durably in Amazon S3, and have cluster capacity grow and shrink with the workload. Which solution meets these requirements?",
+      "prompt": "A data team runs Apache Spark and Apache Hive jobs that it wrote for open-source frameworks. The jobs run at irregular times, a few times each day, and their size varies from a few GB to several TB of input. Between runs, nothing needs to be running. The team does not want to choose instance types, size clusters, or manage cluster lifecycles, and it wants to pay only for the resources each job uses. Which solution meets these requirements?",
       "options": {
-        "A": "Rewrite all jobs as AWS Glue ETL jobs and store the HBase tables in Amazon DynamoDB.",
-        "B": "Run the Spark jobs as AWS Lambda functions that are triggered by Amazon S3 event notifications.",
-        "C": "Load all data into Amazon Redshift and convert the Spark and Hive jobs to SQL stored procedures.",
-        "D": "Run Spark, Hive, and HBase on Amazon EMR with Amazon S3 storage and EMR managed scaling."
+        "A": "Run a long-lived Amazon EMR on EC2 cluster sized for the largest job, and submit all jobs to it as steps.",
+        "B": "Package the jobs into containers and run them on AWS Batch with AWS Fargate, using Spark in local mode in each container.",
+        "C": "Rewrite each job as a set of AWS Lambda functions coordinated by AWS Step Functions.",
+        "D": "Create Amazon EMR Serverless applications for Spark and Hive and submit the jobs to them."
       },
       "isMulti": false,
       "requiredCount": 1,
       "correctAnswers": [
         "D"
       ],
-      "explanation": "### ✅ Why Option D is Correct\n\n* **Same open-source frameworks:** Amazon EMR runs Spark, Hive, HBase, and other Hadoop ecosystem applications, and supports custom configuration classifications, bootstrap actions, and custom JARs, so the jobs move with minimal changes.\n* **Durable storage in S3:** EMR reads and writes Amazon S3 directly, and HBase on EMR can store its data in S3, decoupling storage from compute.\n* **Elastic capacity:** EMR managed scaling automatically adds and removes cluster instances based on workload metrics.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** AWS Glue runs serverless Spark ETL, but it does not run HBase or Hive server workloads, and rewriting jobs and moving HBase data to DynamoDB is a significant re-architecture, not a minimal-change migration.\n* **Option B is incorrect:** Lambda functions have limited run time and memory and cannot host Spark or Hadoop jobs. This would require a complete rewrite.\n* **Option C is incorrect:** Redshift is a data warehouse. Converting Spark, Hive, and HBase workloads to Redshift SQL is a major redesign and does not provide an HBase-compatible store.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Existing Hadoop / Spark / Hive / HBase / Presto, custom libraries, minimal changes\" -> Amazon EMR; \"serverless Spark ETL with no cluster to manage\" -> AWS Glue.\n2. **Cost/perf tip:** Use S3 for persistent data, EMR managed scaling, and Spot Instances for task nodes to run elastic, transient clusters."
+      "explanation": "### ✅ Why Option D is Correct\n\n* **No clusters to manage:** EMR Serverless runs Spark and Hive applications without the team provisioning, sizing, or operating clusters or choosing instance types.\n* **Automatic scaling per job:** EMR Serverless automatically adds and removes workers as each job needs them, so a small job and a multi-TB job both get appropriate capacity.\n* **Pay for usage:** You pay for the vCPU, memory, and storage the workers use while jobs run; nothing runs between jobs (the application can stop automatically when idle).\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** A permanently running cluster sized for the largest job wastes capacity between and during smaller runs and keeps the cluster-management work the team wants to avoid.\n* **Option B is incorrect:** Spark in local mode runs on a single container, so it cannot distribute multi-TB jobs across workers, and it does not run Hive jobs.\n* **Option C is incorrect:** Rewriting distributed Spark and Hive jobs as Lambda functions is a major redesign, and Lambda's run-time and memory limits are not suited to multi-TB processing.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Spark/Hive, no cluster management, intermittent jobs, pay per use\" -> Amazon EMR Serverless; \"full control of the cluster, HBase, custom AMIs, long-running\" -> EMR on EC2; \"serverless ETL with a Data Catalog and crawlers\" -> AWS Glue.\n2. **Startup latency:** Pre-initialized capacity in EMR Serverless keeps workers warm so jobs can start within seconds when needed."
     },
     {
       "id": 5,
@@ -303,23 +303,23 @@
       "domain": 3,
       "task": "3.4",
       "topics": [
-        "Amazon CloudFront",
-        "CloudFront Functions",
-        "Lambda@Edge"
+        "AWS Global Accelerator",
+        "Custom routing accelerators",
+        "Amazon EC2"
       ],
-      "prompt": "A news website serves several million requests per second at peak through Amazon CloudFront. The company must rewrite incoming URLs to normalize them (for example, convert mixed-case paths to lowercase and add index.html to directory paths) and add security response headers to every response. The logic is a few lines of JavaScript, needs no network calls or request body access, and must add the least possible latency at the lowest cost. Which solution meets these requirements?",
+      "prompt": "A multiplayer game company runs thousands of game sessions on Amazon EC2 instances in private subnets in two AWS Regions. Each session listens on its own UDP port on a specific instance. The company's matchmaking service assigns each player to a specific session and must direct the player's traffic to that exact instance and port. The company wants players' traffic to enter the AWS global network close to them and use a small set of static IP addresses. Which solution meets these requirements?",
       "options": {
-        "A": "Lambda@Edge functions on the origin request and origin response events.",
-        "B": "An AWS Lambda function URL placed in front of the CloudFront distribution.",
-        "C": "Amazon API Gateway with request and response mapping templates configured as the CloudFront origin.",
-        "D": "CloudFront Functions associated with the viewer request and viewer response events."
+        "A": "Create a Global Accelerator standard accelerator with Network Load Balancers as endpoints in each Region.",
+        "B": "Create an Amazon CloudFront distribution with the EC2 instances as custom origins.",
+        "C": "Assign an Elastic IP address to each instance and use Amazon Route 53 latency-based routing records for each session.",
+        "D": "Create a Global Accelerator custom routing accelerator with the game server subnets as endpoints."
       },
       "isMulti": false,
       "requiredCount": 1,
       "correctAnswers": [
         "D"
       ],
-      "explanation": "### ✅ Why Option D is Correct\n\n* **Built for this use case:** CloudFront Functions run lightweight JavaScript at CloudFront edge locations for viewer request and viewer response events, such as URL rewrites, redirects, and header manipulation.\n* **Scale and latency:** CloudFront Functions are designed to scale to millions of requests per second with sub-millisecond startup, adding minimal latency.\n* **Lowest cost:** CloudFront Functions are priced lower than Lambda@Edge, and this logic needs none of the extra capabilities (network access, body access, longer run time) that Lambda@Edge provides.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Lambda@Edge supports these tasks but costs more and has higher startup latency. Origin request/response events also run only on cache misses, after the cache lookup, so differently cased URLs would still create separate cache entries before being normalized.\n* **Option B is incorrect:** A Lambda function URL is a regional HTTPS endpoint for a single function. It cannot sit in front of CloudFront and would add a regional round trip to every request.\n* **Option C is incorrect:** API Gateway as the origin would process only cache misses, add regional latency and cost, and is not designed to rewrite viewer URLs for static content.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Simple header/URL manipulation, viewer events, millions of RPS, cheapest\" -> CloudFront Functions; \"network calls, body access, origin events, longer processing\" -> Lambda@Edge.\n2. **CloudFront KeyValueStore:** CloudFront Functions can read from CloudFront KeyValueStore for data such as redirect maps without changing function code."
+      "explanation": "### ✅ Why Option D is Correct\n\n* **Deterministic routing:** A custom routing accelerator maps each listener port to a specific EC2 instance private IP address and port in the endpoint subnets, so application logic decides exactly which instance receives a user's traffic.\n* **Global network and static IPs:** Like a standard accelerator, it provides static anycast IP addresses and carries traffic over the AWS global network from the edge location closest to the player.\n* **Built for matchmaking:** This is the use case AWS describes for custom routing: gaming or VoIP sessions where the application assigns users to specific servers.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** A standard accelerator with NLBs distributes traffic to healthy endpoints; it cannot send a given player to a specific instance and port chosen by the matchmaking service.\n* **Option B is incorrect:** CloudFront is a content delivery network for HTTP(S) traffic; it does not proxy custom UDP game traffic to specific instances.\n* **Option C is incorrect:** Per-instance Elastic IPs would put instances on public IP addresses, require many addresses, and send traffic over the public internet instead of entering the AWS network at the edge. DNS records per session are also impractical.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Route users to a specific EC2 instance/port chosen by the app\" -> Global Accelerator custom routing; \"health-based routing to the best endpoint\" -> standard accelerator.\n2. **Global Accelerator vs CloudFront:** Global Accelerator handles TCP/UDP with static anycast IPs and no caching; CloudFront caches HTTP(S) content."
     },
     {
       "id": 13,
@@ -444,46 +444,46 @@
       "domain": 3,
       "task": "3.3",
       "topics": [
-        "Amazon API Gateway",
-        "API caching",
-        "Amazon DynamoDB",
-        "AWS Lambda"
+        "Amazon Redshift",
+        "Distribution styles",
+        "Sort keys"
       ],
-      "prompt": "A company exposes a product-pricing API through an Amazon API Gateway REST API. The API invokes an AWS Lambda function that reads from an Amazon DynamoDB table. Prices change only a few times each hour, but the API receives thousands of identical GET requests per second for the same products. Latency and Lambda and DynamoDB costs have increased with traffic. The company wants to improve response time with the fewest changes to the application code. Which solution meets these requirements?",
+      "prompt": "A company has an Amazon Redshift cluster with a sales table of several billion rows and a customers table of several hundred million rows. Both tables were created with EVEN distribution and no sort key. Most queries join the two tables on customer_id and filter sales to the last 30 days by sale_date. Query plans show large amounts of data being redistributed between nodes for the joins, and full scans of the sales table. Which change will MOST improve query performance?",
       "options": {
-        "A": "Configure provisioned concurrency for the Lambda function.",
-        "B": "Add a DynamoDB Accelerator (DAX) cluster and change the Lambda function to use the DAX client.",
-        "C": "Enable API caching on the stage with the product ID in the cache key and a TTL of a few minutes.",
-        "D": "Migrate the REST API to an HTTP API to reduce per-request overhead."
+        "A": "Change the customers table to DISTSTYLE ALL and leave the sales table unchanged.",
+        "B": "Double the number of nodes in the cluster by using elastic resize.",
+        "C": "Distribute both tables on customer_id and sort the sales table by sale_date.",
+        "D": "Use KEY distribution on sale_date for the sales table, and define customer_id as its sort key."
       },
       "isMulti": false,
       "requiredCount": 1,
       "correctAnswers": [
         "C"
       ],
-      "explanation": "### ✅ Why Option C is Correct\n\n* **Responses served from cache:** With stage-level API caching, API Gateway returns cached responses for repeated requests until the TTL expires, without invoking the Lambda function or reading DynamoDB.\n* **Correct cache key:** Adding the product ID as a cache key parameter keeps responses for different products separate, and a TTL of a few minutes is acceptable because prices change only a few times per hour.\n* **No code change:** Caching is a configuration setting on the REST API stage and requires no changes to the function.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Provisioned concurrency removes cold starts but every request still invokes Lambda and reads DynamoDB, so cost and latency from repeated identical reads remain.\n* **Option B is incorrect:** DAX speeds up DynamoDB reads, but requests still invoke Lambda, and the function code must be changed to use the DAX client.\n* **Option D is incorrect:** HTTP APIs do not support API Gateway response caching, so migrating would remove the option that best solves this problem.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Many identical GET requests, data changes infrequently, API Gateway REST API\" -> enable stage caching with a TTL.\n2. **Caching layers:** Cache as close to the client as possible: CloudFront at the edge, API Gateway caching at the API, DAX or ElastiCache in front of the database."
+      "explanation": "### ✅ Why Option C is Correct\n\n* **Collocated joins:** When both tables are distributed on the join column, matching rows are stored on the same node slices, so Redshift can join them without redistributing data across the network.\n* **Zone map pruning:** Sorting the sales table by sale_date lets Redshift use zone maps to skip blocks outside the 30-day range instead of scanning the entire table.\n* **Addresses both symptoms:** Distribution fixes the redistribution step; the sort key fixes the full scans.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** DISTSTYLE ALL copies the entire table to every node. It suits small, slowly changing dimension tables, not a table with hundreds of millions of rows, and it does not fix the full scans of sales.\n* **Option B is incorrect:** More nodes add cost and parallelism but the joins still require redistribution and the scans still read the entire table.\n* **Option D is incorrect:** Distributing on a date column concentrates recent data on few slices (skew) and does not collocate the join. Sorting by customer_id does not help a date-range filter.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Redistribution in joins (DS_DIST/DS_BCAST)\" -> distribution key on the join column; \"range filters scan too much\" -> sort key on the filter column; \"small dimension table\" -> DISTSTYLE ALL.\n2. **Automatic table optimization:** AUTO distribution and sort keys let Redshift choose keys from the workload, but understanding the manual choices is still tested."
     },
     {
       "id": 19,
       "domain": 3,
       "task": "3.2",
       "topics": [
-        "Amazon EC2 Auto Scaling",
-        "Warm pools"
+        "Lambda@Edge",
+        "Amazon CloudFront",
+        "Amazon DynamoDB global tables"
       ],
-      "prompt": "A company runs a web application on Amazon EC2 instances in an Auto Scaling group. Each new instance runs a startup script that loads a large dataset into memory and warms local caches, which takes about 12 minutes before the instance can serve traffic. During sudden traffic spikes, users experience errors because new capacity arrives too late. The company wants to reduce scale-out time without keeping many extra instances running all the time. Which solution meets these requirements?",
+      "prompt": "A global SaaS application runs identical API stacks behind Application Load Balancers in three AWS Regions. Each customer account is assigned a home Region where its data resides, and the assignment for tens of millions of users is stored in an Amazon DynamoDB global table and changes when customers move. All traffic enters through a single Amazon CloudFront distribution. Each request must be routed to the user's home Region based on the user ID in a signed cookie, regardless of where the user is currently located. Which solution meets these requirements?",
       "options": {
-        "A": "Add a warm pool of pre-initialized instances in the Stopped state to the Auto Scaling group.",
-        "B": "Increase the health check grace period of the Auto Scaling group to 15 minutes.",
-        "C": "Replace the launch template's instance type with a burstable T-family instance type.",
-        "D": "Enable instance scale-in protection for all instances in the Auto Scaling group."
+        "A": "Use a Lambda@Edge origin request function that looks up the home Region in DynamoDB and sets the origin.",
+        "B": "Use a CloudFront Function on the viewer request event that queries the DynamoDB table and rewrites the origin.",
+        "C": "Configure Amazon Route 53 geolocation routing for the origin domain name so that each Region's ALB serves users on its continent.",
+        "D": "Create a cache behavior with a path pattern for each Region and route each behavior to that Region's ALB."
       },
       "isMulti": false,
       "requiredCount": 1,
       "correctAnswers": [
         "A"
       ],
-      "explanation": "### ✅ Why Option A is Correct\n\n* **Pre-initialized capacity:** A warm pool keeps instances that have already completed the lengthy initialization. On scale-out, the group moves them into service far faster than launching and initializing new instances.\n* **Low standing cost:** Warm pool instances can be kept in the Stopped (or Hibernated) state, so the company pays for their EBS storage rather than for running compute.\n* **Lifecycle hooks:** Lifecycle hooks let the startup script finish before an instance enters the warm pool, so it is ready when needed.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** A longer grace period only prevents premature health check failures; it does not make capacity become ready any faster.\n* **Option C is incorrect:** Burstable instances do not shorten the data-loading time and can be throttled when CPU credits run out.\n* **Option D is incorrect:** Scale-in protection prevents instances from being terminated but does nothing to speed up scale-out during spikes.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Long boot / initialization time delays scale-out\" -> EC2 Auto Scaling warm pools.\n2. **Related options:** For predictable daily peaks, combine with predictive or scheduled scaling to launch capacity ahead of demand."
+      "explanation": "### ✅ Why Option A is Correct\n\n* **Dynamic origin selection:** A Lambda@Edge function on the origin request event can change the origin that CloudFront forwards the request to, based on any request attribute such as a cookie.\n* **Network access:** Lambda@Edge functions can make network calls, so the function can read the user-to-Region mapping from the nearest replica of the DynamoDB global table.\n* **Edge execution:** The routing decision runs in the CloudFront network, so a single distribution serves all users while each request lands in the correct Region.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** CloudFront Functions cannot make network calls, so they cannot query DynamoDB for a mapping of tens of millions of frequently changing entries.\n* **Option C is incorrect:** Geolocation routing uses where the DNS resolver/user is located, not the user's assigned home Region, so traveling users would reach the wrong Region. CloudFront also resolves the origin domain, not the end user.\n* **Option D is incorrect:** Path patterns route by URL path, which does not contain the user's home Region. It would require clients to know and embed their Region in every URL.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Choose origin per request using an external lookup (database/API)\" -> Lambda@Edge origin request; \"simple header/URL logic with no network calls\" -> CloudFront Functions.\n2. **Edge compute placement:** Viewer events run on every request; origin events run only on cache misses, which is where origin selection belongs."
     },
     {
       "id": 20,
@@ -652,23 +652,23 @@
       "domain": 3,
       "task": "3.2",
       "topics": [
-        "Amazon EC2 Auto Scaling",
-        "Amazon SQS",
-        "Amazon CloudWatch"
+        "Amazon Managed Service for Apache Flink",
+        "Amazon Kinesis Data Streams",
+        "Stream processing"
       ],
-      "prompt": "A company's video-transcoding workers run on Amazon EC2 instances in an Auto Scaling group and poll an Amazon SQS standard queue. Each message takes about 2 minutes to process, and the business requires that messages wait no longer than about 10 minutes before processing starts. The current scaling policy uses average CPU utilization, and the queue frequently backs up even when CPU utilization is moderate. Which scaling approach will meet the requirement MOST effectively?",
+      "prompt": "A manufacturing company sends sensor readings from 50,000 machines to an Amazon Kinesis Data Streams data stream. The company must calculate a rolling 10-minute average for each machine that is updated every 30 seconds (sliding windows), compare it with the latest reading, and emit alerts within seconds. The processing must keep per-machine state reliably across failures. The company wants the LEAST operational overhead. Which solution meets these requirements?",
       "options": {
-        "A": "Use a scheduled scaling action that doubles the group's capacity every day during business hours.",
-        "B": "Publish a custom CloudWatch metric for queue backlog per instance and use a target tracking policy that keeps it at the acceptable backlog per instance.",
-        "C": "Create a step scaling policy based on the ApproximateAgeOfOldestMessage metric that adds one instance at a time.",
-        "D": "Change the scaling policy to track average network throughput of the instances."
+        "A": "Deliver the stream to Amazon S3 with Amazon Data Firehose and run Amazon Athena queries every 5 minutes to compute the averages.",
+        "B": "Build an Amazon Managed Service for Apache Flink application that reads the stream and uses sliding windows with managed state.",
+        "C": "Use an AWS Lambda event source mapping with tumbling windows to compute the averages in the function.",
+        "D": "Install and operate Apache Flink on an Amazon EMR on EC2 cluster that reads from the stream."
       },
       "isMulti": false,
       "requiredCount": 1,
       "correctAnswers": [
         "B"
       ],
-      "explanation": "### ✅ Why Option B is Correct\n\n* **Scale on the work waiting:** Backlog per instance (ApproximateNumberOfMessagesVisible divided by the number of InService instances) directly measures how much queued work each worker has, unlike CPU.\n* **Derived target:** The acceptable backlog per instance is the acceptable latency divided by the processing time per message (here about 10 / 2 = 5 messages per instance), which gives target tracking a precise target.\n* **AWS-recommended pattern:** This is the approach AWS documents for scaling an Auto Scaling group based on Amazon SQS.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Scheduled scaling cannot react to unpredictable queue growth and wastes capacity when the queue is empty.\n* **Option C is incorrect:** The age of the oldest message lags behind demand and adding one instance at a time reacts slowly. It also does not account for how many instances are already working on the queue.\n* **Option D is incorrect:** Network throughput, like CPU, is an indirect signal that does not reflect how many messages are waiting.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Workers consume from SQS, scale on queue depth\" -> custom backlog-per-instance metric + target tracking.\n2. **Metric selection:** Pick the scaling metric that is proportional to the work and that changes inversely with capacity; queue length alone does not change when instances are added, backlog per instance does."
+      "explanation": "### ✅ Why Option B is Correct\n\n* **Stateful stream processing:** Apache Flink supports event-time sliding windows and keyed per-entity state, which is what rolling per-machine averages need.\n* **Fault-tolerant state:** Managed Service for Apache Flink takes automatic checkpoints and snapshots of application state, so processing resumes correctly after failures.\n* **Fully managed:** The service provisions and scales the Flink infrastructure, so there are no clusters to operate.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Batch queries on S3 every few minutes cannot emit alerts within seconds and do not maintain streaming state.\n* **Option C is incorrect:** Lambda's Kinesis event source mapping supports only tumbling (non-overlapping) windows, not sliding windows, and state is limited to what is passed between invocations per shard.\n* **Option D is incorrect:** Self-managed Flink on EMR can meet the functional requirement but adds cluster provisioning, patching, scaling, and checkpoint management, so it is not the least operational overhead.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Real-time stateful analytics, windowed aggregations, anomaly detection on streams\" -> Amazon Managed Service for Apache Flink; \"load streams into S3/Redshift/OpenSearch\" -> Amazon Data Firehose.\n2. **Windows:** Tumbling windows do not overlap; sliding windows overlap and update at a fixed interval. Read the window requirement carefully."
     },
     {
       "id": 28,
@@ -847,23 +847,23 @@
       "domain": 4,
       "task": "4.1",
       "topics": [
+        "Amazon S3 Express One Zone",
         "Amazon S3",
-        "S3 Glacier Deep Archive",
-        "S3 Lifecycle"
+        "Request costs"
       ],
-      "prompt": "A company's IoT platform writes about 300 million sensor readings each month to an Amazon S3 bucket. Each reading is stored as an individual 6 KB JSON object. After 30 days the data is accessed only for rare audits, and audits always retrieve a full day of readings for one device fleet at a time. The company wants to move the data to Amazon S3 Glacier Deep Archive to reduce cost, but a cost estimate shows that the archived data would cost more than expected. Which solution will MOST cost-effectively archive the data?",
+      "prompt": "A company runs a data processing pipeline on a fleet of Amazon EC2 instances in a single Availability Zone. The pipeline writes and reads about 6 billion small intermediate files (average size 50 KB) each month in an Amazon S3 Standard bucket. Only about 3 TB of intermediate data exists at any time, every file is deleted within 24 hours, and the data can be regenerated if it is lost. S3 request charges are more than 85% of the bucket's cost. Which storage choice will reduce cost the MOST?",
       "options": {
-        "A": "Create an S3 Lifecycle rule that transitions every object to S3 Glacier Deep Archive after 30 days, and add an object size filter that includes objects smaller than 128 KB.",
-        "B": "Create an S3 Lifecycle rule that transitions the objects to S3 Glacier Instant Retrieval after 30 days and to S3 Glacier Deep Archive after 90 days.",
-        "C": "Run a daily job that combines each fleet's readings for the day into a single compressed archive file, upload the archive directly to the S3 Glacier Deep Archive storage class, and expire the individual objects with an S3 Lifecycle rule.",
-        "D": "Enable S3 Intelligent-Tiering on the bucket and activate the Deep Archive Access tier so that objects move automatically after 180 days without access."
+        "A": "Keep the S3 Standard bucket and enable S3 Transfer Acceleration to reduce the time each request takes.",
+        "B": "Configure an S3 Lifecycle rule that moves the intermediate files to S3 Intelligent-Tiering on the day they are created.",
+        "C": "Store the intermediate files in an S3 Express One Zone directory bucket in the same Availability Zone as the EC2 instances.",
+        "D": "Store the intermediate files in S3 One Zone-Infrequent Access (S3 One Zone-IA) by setting the storage class when each file is uploaded."
       },
       "isMulti": false,
       "requiredCount": 1,
       "correctAnswers": [
         "C"
       ],
-      "explanation": "### ✅ Why Option C is Correct\n\n* **Per-object overhead dominates for tiny objects:** Every object archived to S3 Glacier Flexible Retrieval or Glacier Deep Archive carries about 40 KB of extra billable metadata (32 KB at the archive rate plus 8 KB at S3 Standard rates), and lifecycle transitions are billed per 1,000 objects. For 6 KB objects the overhead is several times the size of the data itself.\n* **Aggregation fixes both costs:** Combining one day of readings per fleet into a single compressed object turns millions of objects into a handful, which removes most transition request charges and the per-object metadata overhead, and compression shrinks the stored bytes.\n* **Matches the access pattern:** Audits always retrieve a full day for one fleet, so one archive per fleet per day is exactly the unit that is restored.\n* **Direct upload to the archive class:** Writing the archive with the DEEP_ARCHIVE storage class avoids a separate lifecycle transition request, and a lifecycle expiration rule removes the original small objects.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Lifecycle rules skip objects smaller than 128 KB by default, and overriding that filter only makes the problem worse: each 6 KB object would still incur transition request charges and about 40 KB of archive metadata overhead.\n* **Option B is incorrect:** Adding an intermediate Glacier Instant Retrieval step adds a second round of per-object transition charges, and Glacier Instant Retrieval bills each object as at least 128 KB. The tiny-object overhead is not solved.\n* **Option D is incorrect:** S3 Intelligent-Tiering does not auto-tier objects smaller than 128 KB (they always stay in the Frequent Access tier), so 6 KB objects would never reach the Deep Archive Access tier.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Small objects + Glacier = aggregate first:** When a scenario has millions of tiny objects and an archive tier, the cost-effective answer is to batch them into larger objects (tar/zip/Parquet) before archiving.\n2. **128 KB thresholds:** Since September 2024, S3 Lifecycle by default does not transition objects smaller than 128 KB, Intelligent-Tiering does not tier them, and Glacier Instant Retrieval and Standard-IA bill a 128 KB minimum.\n3. **Batch vs individual uploads:** The exam guide explicitly lists 'batch uploads to Amazon S3 compared with individual uploads' as a cost skill; request charges scale with object count, not bytes."
+      "explanation": "### ✅ Why Option C is Correct\n\n* **Requests are the cost driver:** S3 Express One Zone has much lower per-request charges for PUT and GET than S3 Standard. When request charges dominate the bill and the stored volume is small, its higher per-GB storage price is outweighed by the request savings.\n* **Fits the data profile:** Only about 3 TB is stored at any time and files live less than a day, so the storage premium is small. The data is reproducible, so single-AZ storage is acceptable.\n* **Co-location:** A directory bucket in the same Availability Zone as the compute also gives single-digit millisecond access, which speeds up the pipeline.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Transfer Acceleration adds a per-GB charge and is meant for long-distance transfers over the internet; it does not lower request charges for same-Region EC2 access.\n* **Option B is incorrect:** Intelligent-Tiering does not reduce request charges, adds per-object monitoring and transition charges, and does not tier objects smaller than 128 KB.\n* **Option D is incorrect:** One Zone-IA has higher request charges than S3 Standard, adds per-GB retrieval fees, and bills a 30-day minimum storage duration and a 128 KB minimum object size, so short-lived 50 KB files would cost more.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'Request-heavy', 'small objects', 'compute in one AZ', 'short-lived or reproducible data' = S3 Express One Zone directory bucket.\n2. **IA classes are for storage-heavy data:** Standard-IA and One Zone-IA lower storage cost but raise request and retrieval cost, and have minimum duration and size charges; they suit large, long-lived, rarely read objects.\n3. **Trade-off to remember:** S3 Express One Zone = higher storage price, lower request price, lowest latency, single AZ."
     },
     {
       "id": 36,
@@ -940,19 +940,18 @@
       "domain": 4,
       "task": "4.4",
       "topics": [
-        "NAT gateway",
-        "VPC endpoints",
-        "Amazon ECR",
-        "Amazon ECS",
-        "AWS Fargate"
+        "AWS Transit Gateway",
+        "VPC peering",
+        "Data transfer",
+        "Availability Zone IDs"
       ],
-      "prompt": "A company runs a production Amazon ECS on AWS Fargate service in private subnets across three Availability Zones. A single NAT gateway in the first Availability Zone provides outbound internet access for all private subnets. Tasks scale in and out frequently and pull about 30 TB of container images from Amazon ECR each month, and they also call third-party APIs on the internet. The bill shows high NAT gateway data processing charges and high cross-AZ data transfer charges. The tasks must remain in private subnets. Which combination of steps will reduce these costs? (Select TWO.)",
+      "prompt": "A company connects 25 VPCs in one AWS Region through AWS Transit Gateway. Two of the VPCs, in different AWS accounts, contain an application tier and a data tier that exchange about 400 TB each month, which is more than 90% of the transit gateway's data processing charges. The application tier and the data tier each run in a single Availability Zone, and the company's cost review found that they are in different physical Availability Zones even though both use subnets named us-east-1a. The other VPCs exchange little traffic. Which combination of steps will reduce network costs the MOST? (Select TWO.)",
       "options": {
-        "A": "Create an Amazon S3 gateway endpoint and associate it with the private subnets' route tables.",
-        "B": "Move the tasks to public subnets and assign public IP addresses so they can reach Amazon ECR without the NAT gateway.",
-        "C": "Replace the NAT gateway with an AWS Transit Gateway and a centralized egress VPC.",
-        "D": "Create a NAT gateway in each Availability Zone and update each private subnet's route table to use the NAT gateway in the same Availability Zone.",
-        "E": "Enable AWS Global Accelerator for the ECR registry endpoint."
+        "A": "Create a VPC peering connection between the two high-traffic VPCs and add routes for each other's CIDR blocks to their route tables, keeping the transit gateway for all other traffic.",
+        "B": "Create a second transit gateway that is dedicated to the two high-traffic VPCs.",
+        "C": "Replace the transit gateway connectivity between the two VPCs with an AWS Site-to-Site VPN connection between them.",
+        "D": "Move the application tier to a subnet whose Availability Zone ID matches the Availability Zone ID of the data tier's subnet.",
+        "E": "Enable appliance mode on the transit gateway attachments for the two high-traffic VPCs."
       },
       "isMulti": true,
       "requiredCount": 2,
@@ -960,7 +959,7 @@
         "A",
         "D"
       ],
-      "explanation": "### ✅ Why Options A & D are Correct\n\n* **Option A - S3 gateway endpoint for image layers:** Amazon ECR stores image layers in Amazon S3, so most of the bytes in an image pull are S3 downloads. A gateway endpoint for S3 has no hourly or per-GB charge and routes that traffic privately, removing it from NAT gateway data processing.\n* **Option D - AZ-local NAT gateways:** With one NAT gateway, traffic from tasks in the other two AZs crosses AZ boundaries and incurs cross-AZ data transfer charges. A NAT gateway per AZ with AZ-local routes removes those charges and also removes the single point of failure for a production workload.\n* **Together:** The gateway endpoint removes the largest traffic flow from NAT entirely, and the per-AZ NAT gateways keep the remaining internet-bound API traffic within each AZ.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** The requirement is that tasks remain in private subnets; public IPs also add hourly public IPv4 charges for every task.\n* **Option C is incorrect:** Centralized egress through Transit Gateway adds per-attachment hourly and per-GB data processing charges on top of NAT gateway charges; it helps with many VPCs, not with these costs.\n* **Option E is incorrect:** Global Accelerator does not front AWS service endpoints such as ECR and would add fees without affecting NAT or cross-AZ charges.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'High NAT gateway processing charges' + 'traffic to S3 or DynamoDB (including ECR layers)' = gateway VPC endpoints (free).\n2. **Shared vs per-AZ NAT:** One shared NAT gateway saves hourly cost for low-traffic dev VPCs; for production or high-traffic VPCs, a NAT gateway per AZ avoids cross-AZ charges and AZ dependency.\n3. **ECR private access:** For fully private pulls without NAT, add interface endpoints for ecr.api and ecr.dkr plus the S3 gateway endpoint."
+      "explanation": "### ✅ Why Options A & D are Correct\n\n* **Option A - peer the heavy pair:** Transit Gateway charges per GB of data processed. VPC peering has no data processing or hourly charge, so moving the 400 TB flow to a peering connection removes most of the transit gateway bill while the hub-and-spoke design stays in place for everything else. The two VPCs' route tables are updated so that traffic between their CIDR blocks uses the peering connection.\n* **Option D - align physical AZs:** Availability Zone names such as us-east-1a map to different physical zones in different accounts. Data transfer over a VPC peering connection is free when it stays within the same Availability Zone (by AZ ID) and is charged in each direction when it crosses AZs, so placing both tiers in the same AZ ID removes the cross-AZ charges as well.\n* **Together:** Peering removes the processing charge, and AZ alignment removes the remaining transfer charge for this flow.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** A second transit gateway still charges per GB processed and adds attachment hours; it does not reduce cost.\n* **Option C is incorrect:** Site-to-Site VPN connections between VPCs add hourly charges, limit throughput to about 1.25 Gbps per tunnel, and route traffic through the internet, which is not cheaper.\n* **Option E is incorrect:** Appliance mode keeps flows symmetric through a stateful network appliance; it does not change data processing or transfer charges.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'One or two VPC pairs dominate Transit Gateway data processing charges' = add direct VPC peering for those pairs and keep Transit Gateway for the rest.\n2. **AZ names vs AZ IDs:** Use AZ IDs (for example, use1-az1) to place resources in the same physical zone across accounts; AZ names are mapped randomly per account.\n3. **Peering pricing:** VPC peering has no hourly or processing fee; same-AZ traffic over peering is free, and cross-AZ traffic is charged per GB in each direction."
     },
     {
       "id": 40,
@@ -1107,22 +1106,23 @@
       "domain": 4,
       "task": "4.3",
       "topics": [
-        "Amazon DynamoDB",
-        "DynamoDB Standard-IA table class"
+        "Amazon Aurora",
+        "AWS Graviton",
+        "Reserved DB instances"
       ],
-      "prompt": "A retail company stores order history in an Amazon DynamoDB table that uses provisioned capacity with auto scaling. The table holds 40 TB of data and grows by 1 TB each month. Customers occasionally view old orders, and AWS Cost Explorer shows that storage accounts for more than 80% of the table's monthly cost, while read and write capacity costs are small. The application must continue to read any order with single-digit millisecond latency. Which change will reduce the table's cost the MOST?",
+      "prompt": "A company runs a steady production workload on an Amazon Aurora MySQL cluster with one db.r5.4xlarge writer and two db.r5.4xlarge Aurora Replicas. The company plans to buy 3-year Reserved DB instances for the cluster next week. The application uses only standard MySQL features, and testing shows that it runs correctly on Arm-based database instances. Which approach will result in the LOWEST cost over the next 3 years with minimal operational change?",
       "options": {
-        "A": "Change the table class of the table to DynamoDB Standard-Infrequent Access (DynamoDB Standard-IA).",
-        "B": "Switch the table to on-demand capacity mode.",
-        "C": "Purchase DynamoDB reserved capacity for the table's provisioned read and write capacity.",
-        "D": "Export the table to Amazon S3 each month and add an Amazon ElastiCache cluster in front of the table."
+        "A": "Modify the cluster's DB instances to the equivalent Graviton-based db.r7g instance class (replicas first, then fail over and modify the former writer), and then buy 3-year Reserved DB instances for the db.r7g class.",
+        "B": "Buy 3-year Reserved DB instances for the db.r5 class now, and move to Graviton-based instances later so that the reservation applies to them through size flexibility.",
+        "C": "Migrate the database to self-managed MySQL on Graviton-based Amazon EC2 instances and buy an EC2 Instance Savings Plan.",
+        "D": "Convert the cluster to Aurora Serverless v2 with a maximum capacity equal to the current instance size."
       },
       "isMulti": false,
       "requiredCount": 1,
       "correctAnswers": [
         "A"
       ],
-      "explanation": "### ✅ Why Option A is Correct\n\n* **Storage-dominated tables:** The DynamoDB Standard-IA table class lowers storage cost by about 60% compared with the Standard table class, in exchange for higher read and write request costs. It is designed for tables where storage is the dominant cost.\n* **Same performance:** Standard-IA tables keep the same single-digit millisecond performance, durability, and availability as Standard tables, and the table class can be changed without downtime or application changes.\n* **Fits this cost profile:** With storage above 80% of spend and small throughput costs, the storage saving far outweighs the higher per-request price.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** On-demand mode changes how throughput is billed; it does not reduce storage cost, which is the main cost driver here.\n* **Option C is incorrect:** Reserved capacity discounts provisioned throughput only, which is a small part of the bill. Reserved capacity is also not available for Standard-IA tables, but storage cost is the problem to solve.\n* **Option D is incorrect:** Exporting to S3 does not remove the data from the table, and adding ElastiCache adds cost; neither reduces DynamoDB storage charges.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'DynamoDB storage is the main cost' + 'infrequently accessed data' + 'keep same latency' = DynamoDB Standard-IA table class.\n2. **Throughput vs storage levers:** Capacity mode, auto scaling, and reserved capacity optimize throughput cost; table class and TTL optimize storage cost.\n3. **Switching rules:** You can switch a table's class (Standard <-> Standard-IA) up to twice in a trailing 30-day period."
+      "explanation": "### ✅ Why Option A is Correct\n\n* **Better price-performance:** Graviton-based Aurora instance classes (such as db.r7g) cost less per hour than comparable x86 classes and deliver better price-performance, and Aurora MySQL supports them without application changes.\n* **Change first, then commit:** Reserved DB instances apply to a specific instance family. Moving to Graviton before purchasing ensures the 3-year discount stacks on top of the lower Graviton rate.\n* **Minimal disruption:** Modifying replicas first and then failing over keeps the instance class change to a brief failover for the writer.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Size flexibility works only within the same instance family (for example, different db.r5 sizes); a db.r5 reservation would not apply to db.r7g instances, so the company would pay for unused reservations after moving.\n* **Option C is incorrect:** Self-managed MySQL on EC2 adds patching, backups, replication, and failover work, which is not minimal operational change; Aurora features would also be lost.\n* **Option D is incorrect:** Serverless v2 is cost-effective for variable workloads; for a steady 24/7 workload, provisioned instances with Reserved DB instances cost less.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'Lower database compute cost with no code change' = move RDS/Aurora to Graviton instance classes.\n2. **Order of operations:** Right-size and modernize instance types first, then buy Reserved Instances or Savings Plans for the result.\n3. **RI size flexibility:** RDS and Aurora reservations are size-flexible within one instance family and engine, not across families or generations."
     },
     {
       "id": 47,
@@ -1198,22 +1198,24 @@
       "domain": 4,
       "task": "4.1",
       "topics": [
-        "Amazon EBS",
-        "EBS Snapshots Archive"
+        "Amazon OpenSearch Service",
+        "UltraWarm",
+        "Cold storage",
+        "Index State Management"
       ],
-      "prompt": "A company takes a full Amazon EBS snapshot of each of its database server volumes at the end of every quarter and must keep each quarter-end snapshot for 7 years for compliance. The quarter-end snapshots are restored only if an auditor requests historical data, and a restore time of up to 3 days is acceptable. The company also keeps daily snapshots for 14 days for operational recovery. Which solution will reduce the storage cost of the quarter-end snapshots the MOST?",
+      "prompt": "A company stores application logs in an Amazon OpenSearch Service domain and must keep them for 1 year. All indexes are on hot data nodes with Amazon EBS storage, and the domain keeps growing. Logs from the last 14 days are queried heavily. Logs that are 15-90 days old are queried a few times each week and must remain searchable from OpenSearch Dashboards. Logs older than 90 days are needed only for rare investigations, when waiting several minutes to make them searchable is acceptable. Which solution will reduce storage cost the MOST with the LEAST operational overhead?",
       "options": {
-        "A": "Move the quarter-end snapshots to the EBS Snapshots Archive tier and keep the daily snapshots in the standard tier.",
-        "B": "Enable EBS fast snapshot restore on the quarter-end snapshots and delete the daily snapshots after 7 days.",
-        "C": "Copy the quarter-end snapshots to a second AWS Region and delete them from the primary Region.",
-        "D": "Create Amazon Machine Images (AMIs) from the quarter-end snapshots and deregister the original snapshots."
+        "A": "Enable UltraWarm and cold storage on the domain, and create an Index State Management (ISM) policy that moves indexes to UltraWarm after 14 days, to cold storage after 90 days, and deletes them after 1 year.",
+        "B": "Change the EBS volumes on the hot data nodes from gp3 to Throughput Optimized HDD (st1) volumes, and add more data nodes as the domain grows.",
+        "C": "Take a manual snapshot of each index to Amazon S3 when it is 14 days old, delete the index, and restore the snapshot to a new domain whenever older logs are needed.",
+        "D": "Create an ISM policy that deletes indexes after 14 days and configure the application to also write all logs to Amazon S3 Glacier Deep Archive."
       },
       "isMulti": false,
       "requiredCount": 1,
       "correctAnswers": [
         "A"
       ],
-      "explanation": "### ✅ Why Option A is Correct\n\n* **Built for long-term, rarely restored snapshots:** EBS Snapshots Archive stores snapshots at up to 75% lower storage cost than the standard tier and is intended for snapshots that must be retained for 90 days or longer and are rarely accessed.\n* **Restore time fits:** Restoring an archived snapshot to the standard tier takes up to 24-72 hours, which is within the 3-day tolerance stated in the scenario.\n* **Daily snapshots stay incremental:** Short-lived operational snapshots remain in the standard tier where they are incremental and can be restored immediately; archived snapshots are converted to full snapshots, which suits a once-per-quarter compliance copy.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Fast snapshot restore adds an hourly charge per snapshot per Availability Zone to remove initialization latency; it increases cost and does nothing for long-term retention.\n* **Option C is incorrect:** Copying snapshots to another Region adds cross-Region data transfer charges and stores them at the same standard-tier rate, so there is no storage saving.\n* **Option D is incorrect:** An AMI is backed by the same EBS snapshots; the snapshots cannot be deleted while the AMI references them, and the storage cost is unchanged.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'Retain EBS snapshots for years, rarely restored, restore in hours or days acceptable' = EBS Snapshots Archive (minimum 90-day retention in the archive tier).\n2. **Automation:** Amazon Data Lifecycle Manager and AWS Backup can both create snapshots on a schedule and move them to the archive tier automatically.\n3. **Don't confuse FSR:** Fast snapshot restore is a performance feature (no lazy loading on restore) and always adds cost."
+      "explanation": "### ✅ Why Option A is Correct\n\n* **Tiered storage built into OpenSearch Service:** UltraWarm stores read-only indexes in Amazon S3 with caching on UltraWarm nodes, which costs much less per GB than hot nodes with EBS storage while staying interactively searchable from OpenSearch Dashboards.\n* **Cold storage for rarely used data:** Cold storage detaches indexes and keeps them in Amazon S3 at an even lower cost; when needed, an index is attached to UltraWarm in minutes and becomes searchable again.\n* **Automated:** An ISM policy moves indexes between tiers and deletes them at 1 year automatically, so there is no manual work.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** HDD volumes are not an option offered for OpenSearch Service data nodes, and keeping a year of data on hot nodes remains the most expensive option.\n* **Option C is incorrect:** Manual snapshots and restoring to a new domain add significant operational work, and logs 15-90 days old would not be searchable in Dashboards as required.\n* **Option D is incorrect:** Deleting indexes after 14 days means logs 15-90 days old are not searchable in OpenSearch Dashboards, and data in Glacier Deep Archive cannot be queried by OpenSearch.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'OpenSearch' + 'older data queried less often' + 'reduce storage cost' = UltraWarm (warm, searchable) and cold storage (detached, attach on demand), automated with ISM.\n2. **Tier summary:** Hot = EBS/instance storage, read-write, fastest; UltraWarm = S3-backed, read-only, interactive; cold = S3, must be attached before querying.\n3. **Prerequisites:** UltraWarm requires dedicated master nodes, and cold storage requires UltraWarm to be enabled."
     },
     {
       "id": 51,
@@ -1266,22 +1268,21 @@
       "task": "4.4",
       "topics": [
         "Amazon CloudFront",
-        "Amazon S3",
-        "Data transfer"
+        "Price classes"
       ],
-      "prompt": "A software company distributes installer files and patches to customers worldwide directly from a public Amazon S3 bucket in us-east-1. The bucket serves about 400 TB each month, and the same few hundred files make up most downloads after each release. AWS Cost Explorer shows that data transfer out to the internet from Amazon S3 is the company's largest cost. Which solution will reduce this cost the MOST while improving download performance?",
+      "prompt": "A company serves a video-on-demand catalog through an Amazon CloudFront distribution that uses the default price class. Analytics show that 97% of viewers are in the United States, Canada, and Europe. The remaining viewers are spread across South America, Asia, and Australia, and the company accepts somewhat higher latency for them but must continue to serve them. The company wants to reduce CloudFront costs with the LEAST effort. What should a solutions architect do?",
       "options": {
-        "A": "Put an Amazon CloudFront distribution with origin access control (OAC) in front of the bucket, make the bucket private, and serve downloads from the distribution.",
-        "B": "Enable S3 Transfer Acceleration on the bucket and update the download URLs to use the accelerate endpoint.",
-        "C": "Use S3 Cross-Region Replication to copy the bucket to four other AWS Regions, and use Amazon Route 53 latency-based routing records to direct each customer to the nearest bucket for downloads.",
-        "D": "Create an AWS Global Accelerator standard accelerator with the S3 bucket as an endpoint."
+        "A": "Change the distribution's price class to Price Class 100.",
+        "B": "Enable CloudFront geographic restrictions to block viewers outside North America and Europe.",
+        "C": "Enable CloudFront Origin Shield in the Region closest to the origin.",
+        "D": "Create a second distribution for viewers outside North America and Europe and use Amazon Route 53 geolocation routing to send them to it."
       },
       "isMulti": false,
       "requiredCount": 1,
       "correctAnswers": [
         "A"
       ],
-      "explanation": "### ✅ Why Option A is Correct\n\n* **Free origin fetches:** Data transfer from Amazon S3 (and other AWS origins) to CloudFront edge locations is free. Customers are billed at CloudFront's data transfer out rates, which are lower than S3 internet data transfer out rates.\n* **Caching:** Because the same files are downloaded repeatedly, most requests are served from edge caches, which reduces origin requests and speeds up downloads for global customers.\n* **Secure origin:** Origin access control lets the bucket stay private with Block Public Access enabled while CloudFront signs requests to S3.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Transfer Acceleration adds a per-GB charge on top of data transfer and is mainly intended to speed up long-distance uploads into S3; it does not cache content.\n* **Option C is incorrect:** Replication adds inter-Region transfer and duplicate storage costs in four more Regions, and customers still pay S3 internet data transfer out rates.\n* **Option D is incorrect:** Global Accelerator does not support S3 buckets as endpoints and does not cache content; it adds fixed hourly and premium data transfer fees.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'High data transfer out from S3/ALB/EC2' + 'repeated downloads' + 'global users' = Amazon CloudFront in front of the origin.\n2. **OAC, not OAI:** Use origin access control for S3 origins; origin access identity is legacy.\n3. **Global Accelerator vs CloudFront:** Global Accelerator = static anycast IPs and fast failover for TCP/UDP apps (no caching); CloudFront = caching CDN for HTTP(S)."
+      "explanation": "### ✅ Why Option A is Correct\n\n* **Price classes control edge locations used:** CloudFront charges different data transfer rates by geographic region. Price Class 100 uses edge locations only in the lowest-cost regions (North America, Europe, and Israel), which cover 97% of this company's viewers.\n* **Others are still served:** Viewers in excluded regions are still served, from edge locations in the included regions, with possibly higher latency, which the company accepts.\n* **Least effort:** Price class is a single distribution setting; no DNS, origin, or application changes are needed.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Geographic restrictions block viewers in the excluded countries, but the company must continue to serve them.\n* **Option C is incorrect:** Origin Shield adds a caching layer that reduces origin load, but it has its own charges and does not lower the edge data transfer rates paid for viewers.\n* **Option D is incorrect:** A second distribution with geolocation routing adds complexity, and if it uses all edge locations its rates for those viewers stay the same.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** 'Most users in North America/Europe' + 'reduce CloudFront cost' + 'others can tolerate latency' = lower price class (Price Class 100 or 200).\n2. **Price classes:** Price Class All = every edge location (best performance, highest cost); Price Class 200 adds most of Asia, the Middle East, and Africa; Price Class 100 = North America, Europe, and Israel.\n3. **Block vs reduce:** Geo restriction is for content licensing or compliance blocking, not cost optimization."
     },
     {
       "id": 54,
@@ -1500,24 +1501,23 @@
       "domain": 3,
       "task": "3.5",
       "topics": [
-        "Amazon Data Firehose",
-        "Dynamic partitioning",
-        "Amazon S3",
-        "Amazon Athena"
+        "Amazon Kinesis Data Streams",
+        "Kinesis Producer Library (KPL)",
+        "Record aggregation"
       ],
-      "prompt": "A SaaS company ingests JSON usage events for thousands of tenants through Amazon Data Firehose into a single Amazon S3 prefix. Each event contains a tenant_id field. Tenant-specific Amazon Athena queries now scan the entire dataset, and the company must also be able to apply per-tenant S3 lifecycle and access rules. The company wants the data written to S3 under prefixes such as tenant_id=123/year=2026/month=10/ with the LEAST operational overhead. Which solution meets these requirements?",
+      "prompt": "An application sends about 20,000 small telemetry records per second, each about 100 bytes, to an Amazon Kinesis Data Streams data stream that has 4 shards in provisioned mode. The total data rate is well below the stream's byte-throughput capacity, but producers receive ProvisionedThroughputExceededException errors. Consumers use the Kinesis Client Library (KCL). Which solution resolves the errors MOST cost-effectively?",
       "options": {
-        "A": "Run an hourly AWS Glue job that reads new objects and rewrites them into tenant-specific prefixes.",
-        "B": "Configure an S3 event notification that invokes an AWS Lambda function to copy each new object into the correct tenant prefix.",
-        "C": "Create a separate Firehose stream for each tenant and route events to the correct stream in the producer code.",
-        "D": "Enable Firehose dynamic partitioning with inline JQ parsing of tenant_id and the event timestamp."
+        "A": "Split the shards to increase the stream to 20 shards.",
+        "B": "Register the consumers for enhanced fan-out.",
+        "C": "Change the producers to send records with PutRecords calls of up to 500 records each.",
+        "D": "Enable record aggregation by using the Kinesis Producer Library (KPL)."
       },
       "isMulti": false,
       "requiredCount": 1,
       "correctAnswers": [
         "D"
       ],
-      "explanation": "### ✅ Why Option D is Correct\n\n* **Partition in flight:** Firehose dynamic partitioning extracts keys from the records (with inline JQ parsing for JSON, or a Lambda function) and writes each record to an S3 prefix built from those keys.\n* **Better queries and controls:** Data lands already partitioned by tenant and date, so Athena can prune partitions, and per-tenant prefixes allow prefix-based lifecycle rules and access policies.\n* **Fully managed:** No extra jobs, functions, or per-tenant streams are needed.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** A scheduled Glue job duplicates data, adds latency, and is an additional pipeline to build and operate.\n* **Option B is incorrect:** Copying every object with Lambda doubles writes and storage until cleanup, and an object can contain events from many tenants, so it would need to be split, adding custom code.\n* **Option C is incorrect:** Thousands of Firehose streams and routing logic in every producer create significant operational overhead and do not scale with tenant growth.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Firehose + partition S3 data by a field in the record\" -> dynamic partitioning; \"convert JSON to Parquet in flight\" -> record format conversion.\n2. **Athena performance:** Partition on the columns most used in WHERE clauses, and avoid very high-cardinality partition keys that create many small files."
+      "explanation": "### ✅ Why Option D is Correct\n\n* **Records-per-second limit:** Each shard accepts up to 1,000 records per second or 1 MB per second of writes. At 20,000 records per second, 4 shards hit the record-count limit long before the byte limit.\n* **Aggregation:** KPL aggregation packs many small user records into a single Kinesis Data Streams record, so far fewer records count against the per-shard limit while using the existing shards.\n* **Transparent to consumers:** The KCL automatically de-aggregates KPL-aggregated records, so consumers need no logic changes.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Twenty shards would remove the throttling but cost five times as much for capacity whose byte throughput is not needed.\n* **Option B is incorrect:** Enhanced fan-out increases read throughput for consumers; the errors occur on the write side.\n* **Option C is incorrect:** PutRecords batching reduces the number of API calls, but each record in the batch still counts separately toward the 1,000 records per second per shard limit.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Many tiny records, throttled below byte limits\" -> KPL aggregation (and collection); \"write throttling with high byte volume\" -> more shards / on-demand mode; \"read contention\" -> enhanced fan-out.\n2. **Know the shard limits:** Writes: 1 MB/s or 1,000 records/s per shard. Shared reads: 2 MB/s per shard."
     },
     {
       "id": 64,

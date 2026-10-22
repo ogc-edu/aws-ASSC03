@@ -24,67 +24,67 @@
     "domain": 3,
     "task": "3.1",
     "topics": [
-      "Amazon EBS",
-      "gp3",
-      "Elastic Volumes"
+      "Amazon MSK",
+      "MSK tiered storage",
+      "Apache Kafka"
     ],
-    "prompt": "A company runs a PostgreSQL database on an Amazon EC2 instance with a 500 GiB General Purpose SSD (gp2) EBS volume. The database needs a sustained 10,000 IOPS and 400 MiB/s of throughput, but the volume is limited by its size-based baseline performance. The database will not need more than 500 GiB of storage for several years. The company wants to meet the performance requirement at the LOWEST cost without downtime. Which solution meets these requirements?",
+    "prompt": "A company runs an Amazon MSK provisioned cluster for order events. A new requirement says that consumers must be able to replay any event from the last 12 months by using the standard Kafka APIs. Consumers mostly read the last few hours of data, which must stay fast. Keeping 12 months of data on broker EBS volumes would require continually adding storage and brokers, which the company considers too expensive and hard to scale. Which solution meets these requirements?",
     "options": {
-      "A": "Increase the gp2 volume size to 3,400 GiB so that its baseline IOPS exceeds 10,000.",
-      "B": "Create a RAID 0 array of four 500 GiB gp2 volumes and migrate the data to it.",
-      "C": "Modify the volume to a Provisioned IOPS SSD (io2) volume with 10,000 provisioned IOPS.",
-      "D": "Use Elastic Volumes to change the volume to gp3 with 10,000 IOPS and 400 MiB/s."
+      "A": "Enable broker storage auto scaling and keep increasing the EBS volume size of each broker as the data grows.",
+      "B": "Use MSK Connect with an Amazon S3 sink connector to archive the topics to S3, and reduce topic retention to a few hours.",
+      "C": "Add brokers to the cluster every quarter and reassign partitions so that storage is spread across more brokers.",
+      "D": "Enable MSK tiered storage with short local retention and 12-month total retention."
     },
     "isMulti": false,
     "requiredCount": 1,
     "correctAnswers": [
       "D"
     ],
-    "explanation": "### ✅ Why Option D is Correct\n\n* **Performance independent of size:** gp3 lets you provision IOPS and throughput separately from capacity, so a 500 GiB volume can be configured with 10,000 IOPS and 400 MiB/s.\n* **No downtime:** Elastic Volumes can change the volume type, IOPS, and throughput while the volume is attached and in use.\n* **Lower cost:** gp3 has a lower per-GiB price than gp2, and the company pays only for the extra IOPS and throughput it provisions above the gp3 baseline.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** gp2 baseline IOPS scale at 3 IOPS per GiB, so this would reach the IOPS target only by paying for nearly 3 TiB of unneeded storage. A gp2 volume also cannot deliver 400 MiB/s, because its maximum throughput is 250 MiB/s.\n* **Option B is incorrect:** RAID 0 across gp2 volumes adds management complexity, requires a data migration, and still pays for storage that is not needed.\n* **Option C is incorrect:** io2 can meet the IOPS requirement, but it costs more than gp3 for this level of performance. io2 is justified for higher durability or very high IOPS needs, which are not stated.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Need more IOPS/throughput without more storage, cost-effective\" -> gp3 with provisioned IOPS and throughput; \"mission-critical, highest durability or sub-millisecond latency at very high IOPS\" -> io2 Block Express.\n2. **gp3 baseline:** Every gp3 volume includes a baseline of 3,000 IOPS and 125 MiB/s regardless of size."
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Two storage tiers:** MSK tiered storage keeps recent data on the brokers' primary storage and automatically moves older log segments to a low-cost, virtually unlimited tier.\n* **Same Kafka APIs:** Consumers read from both tiers with the standard Kafka APIs, so any event in the 12-month window can be replayed without new tools.\n* **Scales without brokers:** Retention grows without adding brokers or EBS capacity, while recent data stays on fast local storage.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Larger EBS volumes keep all data on expensive primary storage, and per-broker storage has an upper limit, so this does not scale well or cost-effectively.\n* **Option B is incorrect:** Data archived to S3 by a sink connector can no longer be replayed through the Kafka APIs, so consumers could not replay events as required.\n* **Option C is incorrect:** Adding brokers to gain storage pays for compute that is not needed and requires repeated partition reassignments.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Long Kafka retention / replay without adding brokers\" -> MSK tiered storage; \"no capacity management at all for Kafka\" -> MSK Serverless.\n2. **Storage choices:** Separate hot and cold data so that storage capacity scales independently of compute."
   },
   {
     "domain": 3,
-    "task": "3.2",
+    "task": "3.4",
     "topics": [
-      "Amazon API Gateway",
-      "WebSocket APIs",
-      "AWS Lambda",
-      "Amazon DynamoDB"
+      "Amazon Route 53",
+      "Geoproximity routing",
+      "Bias"
     ],
-    "prompt": "A company is building a customer-support chat feature for its web application. Messages must be delivered to connected browsers within milliseconds, and the server must be able to push messages to specific clients without the clients polling. Traffic varies widely during the day, and the company wants a serverless design with no servers to manage. Which solution meets these requirements?",
+    "prompt": "A company serves a web application from Application Load Balancers in us-east-1 and eu-west-1. Amazon Route 53 currently routes users to the Region that is geographically closest to them. The company has added much more capacity in us-east-1 and wants to send a larger share of users who are located between the two Regions (for example, in Iceland and the Azores) to us-east-1. It wants to control the size of each Region's geographic area with a single adjustable value rather than by listing countries. Which Route 53 configuration meets these requirements?",
     "options": {
-      "A": "Use an Amazon API Gateway WebSocket API with Lambda integrations and store connection IDs in DynamoDB.",
-      "B": "Create an Amazon API Gateway REST API and have browsers poll a GET endpoint every second for new messages.",
-      "C": "Publish chat messages to an Amazon SNS topic and subscribe each browser to the topic by using an HTTPS endpoint.",
-      "D": "Run a self-managed WebSocket server application on Amazon EC2 instances in an Auto Scaling group behind a Network Load Balancer, and store session state on the instances."
+      "A": "Geoproximity routing with a positive bias on the us-east-1 record.",
+      "B": "Latency-based routing records for both Regions.",
+      "C": "Geolocation routing records that assign each continent to one of the Regions.",
+      "D": "Weighted routing records that send 70% of all queries to us-east-1."
     },
     "isMulti": false,
     "requiredCount": 1,
     "correctAnswers": [
       "A"
     ],
-    "explanation": "### ✅ Why Option A is Correct\n\n* **Persistent, bidirectional connections:** API Gateway WebSocket APIs maintain a persistent connection with each client, so both client and server can send messages at any time.\n* **Server push to specific clients:** The backend stores connection IDs (for example, in DynamoDB on $connect) and uses the @connections management API to send messages to specific connected clients.\n* **Serverless scaling:** API Gateway, Lambda, and DynamoDB scale automatically with no servers to manage.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Polling adds latency of up to the polling interval, wastes requests when there are no messages, and is not server push.\n* **Option C is incorrect:** SNS HTTPS subscriptions deliver to publicly reachable web servers that confirm the subscription, not to individual browsers.\n* **Option D is incorrect:** This can work, but the company must manage EC2 instances, scaling, and connection state, which conflicts with the serverless requirement.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Real-time, bidirectional, server push to browsers, serverless\" -> API Gateway WebSocket API (or AWS AppSync subscriptions for GraphQL apps).\n2. **Polling is a red flag:** Options built on frequent polling usually fail \"real-time\" and \"cost-effective\" requirements."
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Location-based with adjustable areas:** Geoproximity routing routes users to the resource that is geographically closest, and lets you expand or shrink the area served by a resource by setting a bias value.\n* **Positive bias:** A positive bias on the us-east-1 record enlarges the region from which traffic is routed to us-east-1, shifting users near the boundary there.\n* **Single adjustable value:** The bias is one number per record, so the company can tune the split without maintaining country lists.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Latency-based routing chooses the Region with the lowest measured latency; it offers no way to deliberately shift more users toward one Region.\n* **Option C is incorrect:** Geolocation routing requires mapping continents or countries explicitly, which the company wants to avoid, and continent-level mapping is too coarse to adjust the boundary gradually.\n* **Option D is incorrect:** Weighted routing ignores user location, so users anywhere, including those very close to eu-west-1, would be sent to us-east-1.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Route by geography and shift traffic between nearby resources\" -> geoproximity routing with bias; \"route by country for compliance/content\" -> geolocation; \"best performance\" -> latency-based.\n2. **Bias values:** Positive bias expands a resource's area; negative bias shrinks it."
   },
   {
     "domain": 3,
     "task": "3.2",
     "topics": [
-      "Amazon EC2 Auto Scaling",
-      "Predictive scaling"
+      "Amazon OpenSearch Serverless",
+      "Log analytics",
+      "Serverless scaling"
     ],
-    "prompt": "An online learning platform runs on Amazon EC2 instances in an Auto Scaling group with a target tracking policy on CPU utilization. Traffic follows a consistent daily pattern: it rises sharply every weekday at 08:00 when classes start and falls in the evening. Instances need several minutes to become ready, so users see slow responses for the first 10-15 minutes of each morning peak. The schedule shifts slightly each semester, and the company does not want to maintain the timing manually. Which solution will improve performance at the start of each peak with the LEAST operational overhead?",
+    "prompt": "A company is launching a log analytics and search feature for a new product. Ingestion volume and query load are unknown and expected to spike unpredictably during incidents. Engineers want to use OpenSearch APIs and OpenSearch Dashboards, but the team does not want to choose instance types, size clusters, manage shards, or perform capacity planning. Which solution meets these requirements?",
     "options": {
-      "A": "Create scheduled scaling actions that set the desired capacity at 07:30 every weekday and update them each semester.",
-      "B": "Lower the target value of the target tracking policy so that the group scales out sooner throughout the day.",
-      "C": "Add a predictive scaling policy so that EC2 Auto Scaling forecasts the daily load and launches capacity before the peak.",
-      "D": "Replace the target tracking policy with a step scaling policy that adds more instances per step."
+      "A": "Create an Amazon OpenSearch Service provisioned domain sized for the expected peak and enable dedicated master nodes.",
+      "B": "Create an Amazon OpenSearch Service provisioned domain with UltraWarm nodes to handle ingestion spikes.",
+      "C": "Create an Amazon OpenSearch Serverless collection of the time series type and ingest the logs into it.",
+      "D": "Store the logs in Amazon S3 and query them with Amazon Athena."
     },
     "isMulti": false,
     "requiredCount": 1,
     "correctAnswers": [
       "C"
     ],
-    "explanation": "### ✅ Why Option C is Correct\n\n* **Forecast-based scaling:** Predictive scaling analyzes historical load to detect daily and weekly patterns and schedules capacity ahead of the forecast demand.\n* **Ready before the peak:** Instances are launched in advance (with a configurable pre-launch buffer), so they are ready when traffic arrives despite the long startup time.\n* **Adapts automatically:** Forecasts are regenerated regularly from recent data, so semester changes do not require manual updates. Predictive scaling can be used together with the existing target tracking policy.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Scheduled actions work but must be maintained manually whenever the schedule shifts, which the company wants to avoid.\n* **Option B is incorrect:** A lower target keeps more idle capacity all day, increasing cost, and still reacts only after load rises.\n* **Option D is incorrect:** Step scaling is still reactive, so instances launch only after the spike starts and remain unready for several minutes.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Recurring, cyclical traffic + slow startup\" -> predictive scaling; \"known one-off event at a fixed time\" -> scheduled scaling; \"unpredictable\" -> target tracking.\n2. **Combine policies:** Predictive scaling handles the forecastable baseline, while target tracking handles unexpected deviations."
+    "explanation": "### ✅ Why Option C is Correct\n\n* **No cluster management:** OpenSearch Serverless removes the need to choose instance types, size clusters, or manage shards and indexes' underlying capacity.\n* **Automatic scaling:** Compute capacity for indexing and search is measured in OpenSearch Compute Units (OCUs) and scales automatically and independently with the workload.\n* **Fits the use case:** Time series collections are optimized for log analytics, and collections support OpenSearch APIs and OpenSearch Dashboards.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** A provisioned domain requires the team to size instances and shards and plan capacity, and sizing for an unknown peak is guesswork that wastes money when idle.\n* **Option B is incorrect:** UltraWarm is a lower-cost storage tier for read-only, less frequently accessed indexes; it does not absorb ingestion spikes and still requires domain sizing.\n* **Option D is incorrect:** Athena runs SQL queries on S3 but does not provide OpenSearch APIs, full-text search relevance, or OpenSearch Dashboards.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"OpenSearch without managing clusters, unpredictable load\" -> OpenSearch Serverless; \"keep large volumes of older logs searchable at low cost\" -> UltraWarm/cold storage on a provisioned domain.\n2. **Serverless pattern:** When the requirement says no capacity planning and unpredictable load, prefer the serverless version of the service."
   },
   {
     "domain": 3,
@@ -114,23 +114,23 @@
     "domain": 3,
     "task": "3.3",
     "topics": [
-      "Amazon RDS Proxy",
-      "Amazon Aurora PostgreSQL",
-      "AWS Lambda"
+      "Amazon Redshift",
+      "Data sharing",
+      "Amazon Redshift Serverless"
     ],
-    "prompt": "A ticketing company uses AWS Lambda functions to process purchases and write them to an Amazon Aurora PostgreSQL-Compatible DB cluster. During ticket releases, thousands of concurrent Lambda invocations each open a new database connection. The database reports too many connections errors and high CPU from connection management, even though the query workload itself is light. The company wants to fix the issue with minimal code changes and without throttling purchases. Which solution meets these requirements?",
+    "prompt": "A company loads data into a central Amazon Redshift RA3 provisioned cluster every 15 minutes. Finance, marketing, and data science teams all query this cluster, and heavy data science queries slow down finance dashboards. Each team must see the latest data without delay, and each team's compute must be isolated and sized or billed separately. The company does not want to copy or move data between warehouses. Which solution meets these requirements?",
     "options": {
-      "A": "Set the Lambda function's reserved concurrency to 50 to limit the number of database connections.",
-      "B": "Add three Aurora Replicas to the cluster and change the Lambda functions to spread the purchase writes across the replicas by using the cluster reader endpoint.",
-      "C": "Scale the DB instance class up to the largest available size to raise the max_connections value.",
-      "D": "Create an Amazon RDS Proxy for the DB cluster and change the Lambda functions to connect to the proxy endpoint."
+      "A": "Unload the data to Amazon S3 every 15 minutes and have each team load it into its own Redshift cluster.",
+      "B": "Create separate workload management (WLM) queues for each team on the central cluster.",
+      "C": "Restore a snapshot of the central cluster to a separate cluster for each team every night.",
+      "D": "Use Redshift data sharing to a separate Redshift Serverless workgroup for each team."
     },
     "isMulti": false,
     "requiredCount": 1,
     "correctAnswers": [
       "D"
     ],
-    "explanation": "### ✅ Why Option D is Correct\n\n* **Connection pooling:** RDS Proxy maintains a pool of database connections and shares them among many client connections, so thousands of short-lived Lambda connections do not each create a new database connection.\n* **Minimal change:** The functions only need to use the proxy endpoint instead of the cluster endpoint; the proxy can use IAM authentication and Secrets Manager credentials.\n* **Resilience:** RDS Proxy also queues or rejects excess connections gracefully and reduces failover time for Aurora.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Limiting concurrency throttles purchases during the release, which the company explicitly wants to avoid.\n* **Option B is incorrect:** Aurora Replicas are read-only, so purchase writes cannot be sent to the reader endpoint, and replicas do not fix connection storms on the writer.\n* **Option C is incorrect:** A much larger instance raises cost significantly and only postpones the problem, because connection count still grows with Lambda concurrency.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Lambda + RDS/Aurora + too many connections\" -> Amazon RDS Proxy.\n2. **Serverless databases:** Alternatives that avoid connection management entirely include DynamoDB and the Aurora Data API, but they require code changes."
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Live data without copies:** Redshift data sharing gives consumer warehouses read access to live data in the producer's managed storage, so consumers see changes as soon as they are committed and no data is copied.\n* **Workload isolation:** Each team queries from its own consumer warehouse, so data science queries no longer compete with finance dashboards for the producer's compute.\n* **Independent sizing and billing:** Each Redshift Serverless workgroup scales and is billed on its own. Data sharing is supported for RA3 clusters and Redshift Serverless.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Unloading and reloading copies the data, adds pipelines, and introduces delay, which the company wants to avoid.\n* **Option B is incorrect:** WLM queues prioritize workloads but all teams still share the same cluster compute, so isolation and separate billing are not achieved.\n* **Option C is incorrect:** Nightly snapshot restores create copies whose data is up to a day old.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Share live Redshift data across teams/accounts with isolated compute, no copies\" -> Redshift data sharing; \"query S3 data from Redshift\" -> Redshift Spectrum.\n2. **Hub-and-spoke:** A common pattern is one ETL producer cluster feeding multiple consumer workgroups for BI and data science."
   },
   {
     "domain": 3,
@@ -156,25 +156,25 @@
   },
   {
     "domain": 3,
-    "task": "3.3",
+    "task": "3.5",
     "topics": [
-      "Amazon Aurora",
-      "Aurora custom endpoints",
-      "Aurora Replicas"
+      "Amazon Athena",
+      "Athena federated query",
+      "Data source connectors"
     ],
-    "prompt": "A company has an Amazon Aurora MySQL-Compatible DB cluster with one writer and four Aurora Replicas. Two replicas use a large memory-optimized instance class and are intended for long-running reporting queries. The other two replicas use a smaller instance class and serve short read queries from the customer-facing application. Both workloads currently use the cluster reader endpoint, so reporting queries sometimes run on the small replicas and slow down the application. Which solution will isolate the workloads with the LEAST operational overhead?",
+    "prompt": "Analysts need to run occasional ad hoc SQL queries that join customer profiles in Amazon DynamoDB, orders in an Amazon Aurora MySQL-Compatible database, and clickstream data in an Amazon S3 data lake cataloged in the AWS Glue Data Catalog. The company does not want to build or operate ETL pipelines or copy data for these queries, and it wants to pay only when queries run. Which solution meets these requirements?",
     "options": {
-      "A": "Create two Aurora custom endpoints, one for the large replicas and one for the small replicas, and point each workload to its endpoint.",
-      "B": "Point each workload to the instance endpoints of specific replicas and implement load balancing in the application.",
-      "C": "Create a second Aurora cluster from a snapshot every night for the reporting queries.",
-      "D": "Place a Network Load Balancer in front of the large replicas and send the reporting queries to it."
+      "A": "Use Amazon Athena federated query with connectors for DynamoDB and Aurora MySQL.",
+      "B": "Create AWS Glue ETL jobs that export the DynamoDB and Aurora data to S3 every night, and query everything with Athena.",
+      "C": "Create Amazon Redshift Spectrum external tables for DynamoDB, Aurora MySQL, and S3, and query them from a Redshift cluster.",
+      "D": "Use AWS DMS to continuously replicate DynamoDB and Aurora MySQL into Amazon S3, and query the replicas with Athena."
     },
     "isMulti": false,
     "requiredCount": 1,
     "correctAnswers": [
       "A"
     ],
-    "explanation": "### ✅ Why Option A is Correct\n\n* **Custom endpoints:** An Aurora custom endpoint load-balances connections across a chosen subset of DB instances in the cluster, such as only the large reporting replicas.\n* **Workload isolation:** Reporting tools connect to the reporting endpoint and the application connects to its own endpoint, so long queries no longer land on the small replicas.\n* **Managed membership:** Aurora manages the endpoint's DNS and membership, avoiding hardcoded instance hostnames.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Instance endpoints work, but the application must implement its own load balancing and failover handling, increasing operational effort.\n* **Option C is incorrect:** A nightly snapshot restore creates stale data and another cluster to manage and pay for.\n* **Option D is incorrect:** Aurora instance IP addresses can change (for example after failover or replacement), so maintaining NLB targets is fragile and unnecessary when custom endpoints exist.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Route different read workloads to different subsets of Aurora replicas\" -> Aurora custom endpoints; \"spread reads across all replicas\" -> reader endpoint; \"writes\" -> cluster (writer) endpoint.\n2. **Replica sizing:** Aurora Replicas can use different instance classes; use failover priority tiers to control which replica is promoted."
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Query data in place:** Athena federated query uses data source connectors (which run on AWS Lambda) to query sources such as DynamoDB and relational databases without moving the data.\n* **Single SQL statement:** Federated sources can be joined with Glue Data Catalog tables in S3 in the same Athena query.\n* **Serverless, pay per query:** Athena and its Lambda-based connectors incur charges only when queries run, which fits occasional ad hoc analysis.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Nightly ETL jobs are pipelines to build and operate, they copy the data, and query results would be up to a day old.\n* **Option C is incorrect:** Redshift Spectrum queries external tables over data in S3; it cannot create external tables over DynamoDB, and it requires a running Redshift warehouse.\n* **Option D is incorrect:** AWS DMS does not support DynamoDB as a source, and continuous replication would be an ongoing pipeline that copies data, which the company wants to avoid.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Ad hoc SQL across S3 plus other databases without moving data\" -> Athena federated query; \"repeatedly analyze data at scale\" -> consider loading/ETL into a lake or warehouse.\n2. **Format for performance:** For data that is queried often, convert it to partitioned Parquet (for example with Athena CTAS or Glue) rather than federating every time."
   },
   {
     "domain": 3,

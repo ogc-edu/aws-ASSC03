@@ -76,7 +76,7 @@
     {
       "id": "3",
       "title": "Claude & Gemini Mock Exam — Set 3",
-      "description": "Identity-heavy security (permissions boundaries, ABAC, Cognito, WAF), messaging resilience and storage/compute performance tuning.",
+      "description": "KMS, RCPs and IAM Roles Anywhere; chaos testing and service discovery; SnapStart, S3 Express One Zone and VPC Lattice; serverless and data-transfer cost tuning.",
       "questionCount": 65,
       "multiCount": 10,
       "domainCounts": [
@@ -151,7 +151,7 @@
     {
       "id": "8",
       "title": "Claude Mock Exam — Set 8",
-      "description": "Comprehensive scenarios on IAM trust policies, cross-Region Aurora and DynamoDB replication, event-driven microservices, and compute optimization.",
+      "description": "Identity-heavy security (permissions boundaries, ABAC, Cognito, WAF), messaging resilience and storage/compute performance tuning.",
       "questionCount": 65,
       "multiCount": 10,
       "domainCounts": [

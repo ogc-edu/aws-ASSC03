@@ -45,66 +45,67 @@
     "domain": 3,
     "task": "3.2",
     "topics": [
-      "Amazon EMR",
-      "EMR managed scaling",
-      "Amazon S3"
+      "Amazon EMR Serverless",
+      "Apache Spark",
+      "Apache Hive"
     ],
-    "prompt": "A company runs an on-premises Hadoop cluster that hosts Apache Spark batch jobs, Apache Hive queries, and an Apache HBase database used by internal applications. The jobs rely on custom Hadoop configuration and third-party JAR libraries. The company wants to move to AWS with minimal code changes, store data durably in Amazon S3, and have cluster capacity grow and shrink with the workload. Which solution meets these requirements?",
+    "prompt": "A data team runs Apache Spark and Apache Hive jobs that it wrote for open-source frameworks. The jobs run at irregular times, a few times each day, and their size varies from a few GB to several TB of input. Between runs, nothing needs to be running. The team does not want to choose instance types, size clusters, or manage cluster lifecycles, and it wants to pay only for the resources each job uses. Which solution meets these requirements?",
     "options": {
-      "A": "Rewrite all jobs as AWS Glue ETL jobs and store the HBase tables in Amazon DynamoDB.",
-      "B": "Run the Spark jobs as AWS Lambda functions that are triggered by Amazon S3 event notifications.",
-      "C": "Load all data into Amazon Redshift and convert the Spark and Hive jobs to SQL stored procedures.",
-      "D": "Run Spark, Hive, and HBase on Amazon EMR with Amazon S3 storage and EMR managed scaling."
+      "A": "Run a long-lived Amazon EMR on EC2 cluster sized for the largest job, and submit all jobs to it as steps.",
+      "B": "Package the jobs into containers and run them on AWS Batch with AWS Fargate, using Spark in local mode in each container.",
+      "C": "Rewrite each job as a set of AWS Lambda functions coordinated by AWS Step Functions.",
+      "D": "Create Amazon EMR Serverless applications for Spark and Hive and submit the jobs to them."
     },
     "isMulti": false,
     "requiredCount": 1,
     "correctAnswers": [
       "D"
     ],
-    "explanation": "### ✅ Why Option D is Correct\n\n* **Same open-source frameworks:** Amazon EMR runs Spark, Hive, HBase, and other Hadoop ecosystem applications, and supports custom configuration classifications, bootstrap actions, and custom JARs, so the jobs move with minimal changes.\n* **Durable storage in S3:** EMR reads and writes Amazon S3 directly, and HBase on EMR can store its data in S3, decoupling storage from compute.\n* **Elastic capacity:** EMR managed scaling automatically adds and removes cluster instances based on workload metrics.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** AWS Glue runs serverless Spark ETL, but it does not run HBase or Hive server workloads, and rewriting jobs and moving HBase data to DynamoDB is a significant re-architecture, not a minimal-change migration.\n* **Option B is incorrect:** Lambda functions have limited run time and memory and cannot host Spark or Hadoop jobs. This would require a complete rewrite.\n* **Option C is incorrect:** Redshift is a data warehouse. Converting Spark, Hive, and HBase workloads to Redshift SQL is a major redesign and does not provide an HBase-compatible store.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Existing Hadoop / Spark / Hive / HBase / Presto, custom libraries, minimal changes\" -> Amazon EMR; \"serverless Spark ETL with no cluster to manage\" -> AWS Glue.\n2. **Cost/perf tip:** Use S3 for persistent data, EMR managed scaling, and Spot Instances for task nodes to run elastic, transient clusters."
+    "explanation": "### ✅ Why Option D is Correct\n\n* **No clusters to manage:** EMR Serverless runs Spark and Hive applications without the team provisioning, sizing, or operating clusters or choosing instance types.\n* **Automatic scaling per job:** EMR Serverless automatically adds and removes workers as each job needs them, so a small job and a multi-TB job both get appropriate capacity.\n* **Pay for usage:** You pay for the vCPU, memory, and storage the workers use while jobs run; nothing runs between jobs (the application can stop automatically when idle).\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** A permanently running cluster sized for the largest job wastes capacity between and during smaller runs and keeps the cluster-management work the team wants to avoid.\n* **Option B is incorrect:** Spark in local mode runs on a single container, so it cannot distribute multi-TB jobs across workers, and it does not run Hive jobs.\n* **Option C is incorrect:** Rewriting distributed Spark and Hive jobs as Lambda functions is a major redesign, and Lambda's run-time and memory limits are not suited to multi-TB processing.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Spark/Hive, no cluster management, intermittent jobs, pay per use\" -> Amazon EMR Serverless; \"full control of the cluster, HBase, custom AMIs, long-running\" -> EMR on EC2; \"serverless ETL with a Data Catalog and crawlers\" -> AWS Glue.\n2. **Startup latency:** Pre-initialized capacity in EMR Serverless keeps workers warm so jobs can start within seconds when needed."
   },
   {
     "domain": 3,
     "task": "3.2",
     "topics": [
-      "Amazon EC2 Auto Scaling",
-      "Amazon SQS",
-      "Amazon CloudWatch"
+      "Amazon Managed Service for Apache Flink",
+      "Amazon Kinesis Data Streams",
+      "Stream processing"
     ],
-    "prompt": "A company's video-transcoding workers run on Amazon EC2 instances in an Auto Scaling group and poll an Amazon SQS standard queue. Each message takes about 2 minutes to process, and the business requires that messages wait no longer than about 10 minutes before processing starts. The current scaling policy uses average CPU utilization, and the queue frequently backs up even when CPU utilization is moderate. Which scaling approach will meet the requirement MOST effectively?",
+    "prompt": "A manufacturing company sends sensor readings from 50,000 machines to an Amazon Kinesis Data Streams data stream. The company must calculate a rolling 10-minute average for each machine that is updated every 30 seconds (sliding windows), compare it with the latest reading, and emit alerts within seconds. The processing must keep per-machine state reliably across failures. The company wants the LEAST operational overhead. Which solution meets these requirements?",
     "options": {
-      "A": "Use a scheduled scaling action that doubles the group's capacity every day during business hours.",
-      "B": "Publish a custom CloudWatch metric for queue backlog per instance and use a target tracking policy that keeps it at the acceptable backlog per instance.",
-      "C": "Create a step scaling policy based on the ApproximateAgeOfOldestMessage metric that adds one instance at a time.",
-      "D": "Change the scaling policy to track average network throughput of the instances."
+      "A": "Deliver the stream to Amazon S3 with Amazon Data Firehose and run Amazon Athena queries every 5 minutes to compute the averages.",
+      "B": "Build an Amazon Managed Service for Apache Flink application that reads the stream and uses sliding windows with managed state.",
+      "C": "Use an AWS Lambda event source mapping with tumbling windows to compute the averages in the function.",
+      "D": "Install and operate Apache Flink on an Amazon EMR on EC2 cluster that reads from the stream."
     },
     "isMulti": false,
     "requiredCount": 1,
     "correctAnswers": [
       "B"
     ],
-    "explanation": "### ✅ Why Option B is Correct\n\n* **Scale on the work waiting:** Backlog per instance (ApproximateNumberOfMessagesVisible divided by the number of InService instances) directly measures how much queued work each worker has, unlike CPU.\n* **Derived target:** The acceptable backlog per instance is the acceptable latency divided by the processing time per message (here about 10 / 2 = 5 messages per instance), which gives target tracking a precise target.\n* **AWS-recommended pattern:** This is the approach AWS documents for scaling an Auto Scaling group based on Amazon SQS.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Scheduled scaling cannot react to unpredictable queue growth and wastes capacity when the queue is empty.\n* **Option C is incorrect:** The age of the oldest message lags behind demand and adding one instance at a time reacts slowly. It also does not account for how many instances are already working on the queue.\n* **Option D is incorrect:** Network throughput, like CPU, is an indirect signal that does not reflect how many messages are waiting.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Workers consume from SQS, scale on queue depth\" -> custom backlog-per-instance metric + target tracking.\n2. **Metric selection:** Pick the scaling metric that is proportional to the work and that changes inversely with capacity; queue length alone does not change when instances are added, backlog per instance does."
+    "explanation": "### ✅ Why Option B is Correct\n\n* **Stateful stream processing:** Apache Flink supports event-time sliding windows and keyed per-entity state, which is what rolling per-machine averages need.\n* **Fault-tolerant state:** Managed Service for Apache Flink takes automatic checkpoints and snapshots of application state, so processing resumes correctly after failures.\n* **Fully managed:** The service provisions and scales the Flink infrastructure, so there are no clusters to operate.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Batch queries on S3 every few minutes cannot emit alerts within seconds and do not maintain streaming state.\n* **Option C is incorrect:** Lambda's Kinesis event source mapping supports only tumbling (non-overlapping) windows, not sliding windows, and state is limited to what is passed between invocations per shard.\n* **Option D is incorrect:** Self-managed Flink on EMR can meet the functional requirement but adds cluster provisioning, patching, scaling, and checkpoint management, so it is not the least operational overhead.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Real-time stateful analytics, windowed aggregations, anomaly detection on streams\" -> Amazon Managed Service for Apache Flink; \"load streams into S3/Redshift/OpenSearch\" -> Amazon Data Firehose.\n2. **Windows:** Tumbling windows do not overlap; sliding windows overlap and update at a fixed interval. Read the window requirement carefully."
   },
   {
     "domain": 3,
     "task": "3.2",
     "topics": [
-      "Amazon EC2 Auto Scaling",
-      "Warm pools"
+      "Lambda@Edge",
+      "Amazon CloudFront",
+      "Amazon DynamoDB global tables"
     ],
-    "prompt": "A company runs a web application on Amazon EC2 instances in an Auto Scaling group. Each new instance runs a startup script that loads a large dataset into memory and warms local caches, which takes about 12 minutes before the instance can serve traffic. During sudden traffic spikes, users experience errors because new capacity arrives too late. The company wants to reduce scale-out time without keeping many extra instances running all the time. Which solution meets these requirements?",
+    "prompt": "A global SaaS application runs identical API stacks behind Application Load Balancers in three AWS Regions. Each customer account is assigned a home Region where its data resides, and the assignment for tens of millions of users is stored in an Amazon DynamoDB global table and changes when customers move. All traffic enters through a single Amazon CloudFront distribution. Each request must be routed to the user's home Region based on the user ID in a signed cookie, regardless of where the user is currently located. Which solution meets these requirements?",
     "options": {
-      "A": "Add a warm pool of pre-initialized instances in the Stopped state to the Auto Scaling group.",
-      "B": "Increase the health check grace period of the Auto Scaling group to 15 minutes.",
-      "C": "Replace the launch template's instance type with a burstable T-family instance type.",
-      "D": "Enable instance scale-in protection for all instances in the Auto Scaling group."
+      "A": "Use a Lambda@Edge origin request function that looks up the home Region in DynamoDB and sets the origin.",
+      "B": "Use a CloudFront Function on the viewer request event that queries the DynamoDB table and rewrites the origin.",
+      "C": "Configure Amazon Route 53 geolocation routing for the origin domain name so that each Region's ALB serves users on its continent.",
+      "D": "Create a cache behavior with a path pattern for each Region and route each behavior to that Region's ALB."
     },
     "isMulti": false,
     "requiredCount": 1,
     "correctAnswers": [
       "A"
     ],
-    "explanation": "### ✅ Why Option A is Correct\n\n* **Pre-initialized capacity:** A warm pool keeps instances that have already completed the lengthy initialization. On scale-out, the group moves them into service far faster than launching and initializing new instances.\n* **Low standing cost:** Warm pool instances can be kept in the Stopped (or Hibernated) state, so the company pays for their EBS storage rather than for running compute.\n* **Lifecycle hooks:** Lifecycle hooks let the startup script finish before an instance enters the warm pool, so it is ready when needed.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** A longer grace period only prevents premature health check failures; it does not make capacity become ready any faster.\n* **Option C is incorrect:** Burstable instances do not shorten the data-loading time and can be throttled when CPU credits run out.\n* **Option D is incorrect:** Scale-in protection prevents instances from being terminated but does nothing to speed up scale-out during spikes.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Long boot / initialization time delays scale-out\" -> EC2 Auto Scaling warm pools.\n2. **Related options:** For predictable daily peaks, combine with predictive or scheduled scaling to launch capacity ahead of demand."
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Dynamic origin selection:** A Lambda@Edge function on the origin request event can change the origin that CloudFront forwards the request to, based on any request attribute such as a cookie.\n* **Network access:** Lambda@Edge functions can make network calls, so the function can read the user-to-Region mapping from the nearest replica of the DynamoDB global table.\n* **Edge execution:** The routing decision runs in the CloudFront network, so a single distribution serves all users while each request lands in the correct Region.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** CloudFront Functions cannot make network calls, so they cannot query DynamoDB for a mapping of tens of millions of frequently changing entries.\n* **Option C is incorrect:** Geolocation routing uses where the DNS resolver/user is located, not the user's assigned home Region, so traveling users would reach the wrong Region. CloudFront also resolves the origin domain, not the end user.\n* **Option D is incorrect:** Path patterns route by URL path, which does not contain the user's home Region. It would require clients to know and embed their Region in every URL.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Choose origin per request using an external lookup (database/API)\" -> Lambda@Edge origin request; \"simple header/URL logic with no network calls\" -> CloudFront Functions.\n2. **Edge compute placement:** Viewer events run on every request; origin events run only on cache misses, which is where origin selection belongs."
   },
   {
     "domain": 3,
@@ -134,24 +135,23 @@
     "domain": 3,
     "task": "3.3",
     "topics": [
-      "Amazon API Gateway",
-      "API caching",
-      "Amazon DynamoDB",
-      "AWS Lambda"
+      "Amazon Redshift",
+      "Distribution styles",
+      "Sort keys"
     ],
-    "prompt": "A company exposes a product-pricing API through an Amazon API Gateway REST API. The API invokes an AWS Lambda function that reads from an Amazon DynamoDB table. Prices change only a few times each hour, but the API receives thousands of identical GET requests per second for the same products. Latency and Lambda and DynamoDB costs have increased with traffic. The company wants to improve response time with the fewest changes to the application code. Which solution meets these requirements?",
+    "prompt": "A company has an Amazon Redshift cluster with a sales table of several billion rows and a customers table of several hundred million rows. Both tables were created with EVEN distribution and no sort key. Most queries join the two tables on customer_id and filter sales to the last 30 days by sale_date. Query plans show large amounts of data being redistributed between nodes for the joins, and full scans of the sales table. Which change will MOST improve query performance?",
     "options": {
-      "A": "Configure provisioned concurrency for the Lambda function.",
-      "B": "Add a DynamoDB Accelerator (DAX) cluster and change the Lambda function to use the DAX client.",
-      "C": "Enable API caching on the stage with the product ID in the cache key and a TTL of a few minutes.",
-      "D": "Migrate the REST API to an HTTP API to reduce per-request overhead."
+      "A": "Change the customers table to DISTSTYLE ALL and leave the sales table unchanged.",
+      "B": "Double the number of nodes in the cluster by using elastic resize.",
+      "C": "Distribute both tables on customer_id and sort the sales table by sale_date.",
+      "D": "Use KEY distribution on sale_date for the sales table, and define customer_id as its sort key."
     },
     "isMulti": false,
     "requiredCount": 1,
     "correctAnswers": [
       "C"
     ],
-    "explanation": "### ✅ Why Option C is Correct\n\n* **Responses served from cache:** With stage-level API caching, API Gateway returns cached responses for repeated requests until the TTL expires, without invoking the Lambda function or reading DynamoDB.\n* **Correct cache key:** Adding the product ID as a cache key parameter keeps responses for different products separate, and a TTL of a few minutes is acceptable because prices change only a few times per hour.\n* **No code change:** Caching is a configuration setting on the REST API stage and requires no changes to the function.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Provisioned concurrency removes cold starts but every request still invokes Lambda and reads DynamoDB, so cost and latency from repeated identical reads remain.\n* **Option B is incorrect:** DAX speeds up DynamoDB reads, but requests still invoke Lambda, and the function code must be changed to use the DAX client.\n* **Option D is incorrect:** HTTP APIs do not support API Gateway response caching, so migrating would remove the option that best solves this problem.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Many identical GET requests, data changes infrequently, API Gateway REST API\" -> enable stage caching with a TTL.\n2. **Caching layers:** Cache as close to the client as possible: CloudFront at the edge, API Gateway caching at the API, DAX or ElastiCache in front of the database."
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Collocated joins:** When both tables are distributed on the join column, matching rows are stored on the same node slices, so Redshift can join them without redistributing data across the network.\n* **Zone map pruning:** Sorting the sales table by sale_date lets Redshift use zone maps to skip blocks outside the 30-day range instead of scanning the entire table.\n* **Addresses both symptoms:** Distribution fixes the redistribution step; the sort key fixes the full scans.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** DISTSTYLE ALL copies the entire table to every node. It suits small, slowly changing dimension tables, not a table with hundreds of millions of rows, and it does not fix the full scans of sales.\n* **Option B is incorrect:** More nodes add cost and parallelism but the joins still require redistribution and the scans still read the entire table.\n* **Option D is incorrect:** Distributing on a date column concentrates recent data on few slices (skew) and does not collocate the join. Sorting by customer_id does not help a date-range filter.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Redistribution in joins (DS_DIST/DS_BCAST)\" -> distribution key on the join column; \"range filters scan too much\" -> sort key on the filter column; \"small dimension table\" -> DISTSTYLE ALL.\n2. **Automatic table optimization:** AUTO distribution and sort keys let Redshift choose keys from the workload, but understanding the manual choices is still tested."
   },
   {
     "domain": 3,
@@ -181,23 +181,23 @@
     "domain": 3,
     "task": "3.4",
     "topics": [
-      "Amazon CloudFront",
-      "CloudFront Functions",
-      "Lambda@Edge"
+      "AWS Global Accelerator",
+      "Custom routing accelerators",
+      "Amazon EC2"
     ],
-    "prompt": "A news website serves several million requests per second at peak through Amazon CloudFront. The company must rewrite incoming URLs to normalize them (for example, convert mixed-case paths to lowercase and add index.html to directory paths) and add security response headers to every response. The logic is a few lines of JavaScript, needs no network calls or request body access, and must add the least possible latency at the lowest cost. Which solution meets these requirements?",
+    "prompt": "A multiplayer game company runs thousands of game sessions on Amazon EC2 instances in private subnets in two AWS Regions. Each session listens on its own UDP port on a specific instance. The company's matchmaking service assigns each player to a specific session and must direct the player's traffic to that exact instance and port. The company wants players' traffic to enter the AWS global network close to them and use a small set of static IP addresses. Which solution meets these requirements?",
     "options": {
-      "A": "Lambda@Edge functions on the origin request and origin response events.",
-      "B": "An AWS Lambda function URL placed in front of the CloudFront distribution.",
-      "C": "Amazon API Gateway with request and response mapping templates configured as the CloudFront origin.",
-      "D": "CloudFront Functions associated with the viewer request and viewer response events."
+      "A": "Create a Global Accelerator standard accelerator with Network Load Balancers as endpoints in each Region.",
+      "B": "Create an Amazon CloudFront distribution with the EC2 instances as custom origins.",
+      "C": "Assign an Elastic IP address to each instance and use Amazon Route 53 latency-based routing records for each session.",
+      "D": "Create a Global Accelerator custom routing accelerator with the game server subnets as endpoints."
     },
     "isMulti": false,
     "requiredCount": 1,
     "correctAnswers": [
       "D"
     ],
-    "explanation": "### ✅ Why Option D is Correct\n\n* **Built for this use case:** CloudFront Functions run lightweight JavaScript at CloudFront edge locations for viewer request and viewer response events, such as URL rewrites, redirects, and header manipulation.\n* **Scale and latency:** CloudFront Functions are designed to scale to millions of requests per second with sub-millisecond startup, adding minimal latency.\n* **Lowest cost:** CloudFront Functions are priced lower than Lambda@Edge, and this logic needs none of the extra capabilities (network access, body access, longer run time) that Lambda@Edge provides.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Lambda@Edge supports these tasks but costs more and has higher startup latency. Origin request/response events also run only on cache misses, after the cache lookup, so differently cased URLs would still create separate cache entries before being normalized.\n* **Option B is incorrect:** A Lambda function URL is a regional HTTPS endpoint for a single function. It cannot sit in front of CloudFront and would add a regional round trip to every request.\n* **Option C is incorrect:** API Gateway as the origin would process only cache misses, add regional latency and cost, and is not designed to rewrite viewer URLs for static content.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Simple header/URL manipulation, viewer events, millions of RPS, cheapest\" -> CloudFront Functions; \"network calls, body access, origin events, longer processing\" -> Lambda@Edge.\n2. **CloudFront KeyValueStore:** CloudFront Functions can read from CloudFront KeyValueStore for data such as redirect maps without changing function code."
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Deterministic routing:** A custom routing accelerator maps each listener port to a specific EC2 instance private IP address and port in the endpoint subnets, so application logic decides exactly which instance receives a user's traffic.\n* **Global network and static IPs:** Like a standard accelerator, it provides static anycast IP addresses and carries traffic over the AWS global network from the edge location closest to the player.\n* **Built for matchmaking:** This is the use case AWS describes for custom routing: gaming or VoIP sessions where the application assigns users to specific servers.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** A standard accelerator with NLBs distributes traffic to healthy endpoints; it cannot send a given player to a specific instance and port chosen by the matchmaking service.\n* **Option B is incorrect:** CloudFront is a content delivery network for HTTP(S) traffic; it does not proxy custom UDP game traffic to specific instances.\n* **Option C is incorrect:** Per-instance Elastic IPs would put instances on public IP addresses, require many addresses, and send traffic over the public internet instead of entering the AWS network at the edge. DNS records per session are also impractical.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Route users to a specific EC2 instance/port chosen by the app\" -> Global Accelerator custom routing; \"health-based routing to the best endpoint\" -> standard accelerator.\n2. **Global Accelerator vs CloudFront:** Global Accelerator handles TCP/UDP with static anycast IPs and no caching; CloudFront caches HTTP(S) content."
   },
   {
     "domain": 3,
@@ -268,24 +268,23 @@
     "domain": 3,
     "task": "3.5",
     "topics": [
-      "Amazon Data Firehose",
-      "Dynamic partitioning",
-      "Amazon S3",
-      "Amazon Athena"
+      "Amazon Kinesis Data Streams",
+      "Kinesis Producer Library (KPL)",
+      "Record aggregation"
     ],
-    "prompt": "A SaaS company ingests JSON usage events for thousands of tenants through Amazon Data Firehose into a single Amazon S3 prefix. Each event contains a tenant_id field. Tenant-specific Amazon Athena queries now scan the entire dataset, and the company must also be able to apply per-tenant S3 lifecycle and access rules. The company wants the data written to S3 under prefixes such as tenant_id=123/year=2026/month=10/ with the LEAST operational overhead. Which solution meets these requirements?",
+    "prompt": "An application sends about 20,000 small telemetry records per second, each about 100 bytes, to an Amazon Kinesis Data Streams data stream that has 4 shards in provisioned mode. The total data rate is well below the stream's byte-throughput capacity, but producers receive ProvisionedThroughputExceededException errors. Consumers use the Kinesis Client Library (KCL). Which solution resolves the errors MOST cost-effectively?",
     "options": {
-      "A": "Run an hourly AWS Glue job that reads new objects and rewrites them into tenant-specific prefixes.",
-      "B": "Configure an S3 event notification that invokes an AWS Lambda function to copy each new object into the correct tenant prefix.",
-      "C": "Create a separate Firehose stream for each tenant and route events to the correct stream in the producer code.",
-      "D": "Enable Firehose dynamic partitioning with inline JQ parsing of tenant_id and the event timestamp."
+      "A": "Split the shards to increase the stream to 20 shards.",
+      "B": "Register the consumers for enhanced fan-out.",
+      "C": "Change the producers to send records with PutRecords calls of up to 500 records each.",
+      "D": "Enable record aggregation by using the Kinesis Producer Library (KPL)."
     },
     "isMulti": false,
     "requiredCount": 1,
     "correctAnswers": [
       "D"
     ],
-    "explanation": "### ✅ Why Option D is Correct\n\n* **Partition in flight:** Firehose dynamic partitioning extracts keys from the records (with inline JQ parsing for JSON, or a Lambda function) and writes each record to an S3 prefix built from those keys.\n* **Better queries and controls:** Data lands already partitioned by tenant and date, so Athena can prune partitions, and per-tenant prefixes allow prefix-based lifecycle rules and access policies.\n* **Fully managed:** No extra jobs, functions, or per-tenant streams are needed.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** A scheduled Glue job duplicates data, adds latency, and is an additional pipeline to build and operate.\n* **Option B is incorrect:** Copying every object with Lambda doubles writes and storage until cleanup, and an object can contain events from many tenants, so it would need to be split, adding custom code.\n* **Option C is incorrect:** Thousands of Firehose streams and routing logic in every producer create significant operational overhead and do not scale with tenant growth.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Firehose + partition S3 data by a field in the record\" -> dynamic partitioning; \"convert JSON to Parquet in flight\" -> record format conversion.\n2. **Athena performance:** Partition on the columns most used in WHERE clauses, and avoid very high-cardinality partition keys that create many small files."
+    "explanation": "### ✅ Why Option D is Correct\n\n* **Records-per-second limit:** Each shard accepts up to 1,000 records per second or 1 MB per second of writes. At 20,000 records per second, 4 shards hit the record-count limit long before the byte limit.\n* **Aggregation:** KPL aggregation packs many small user records into a single Kinesis Data Streams record, so far fewer records count against the per-shard limit while using the existing shards.\n* **Transparent to consumers:** The KCL automatically de-aggregates KPL-aggregated records, so consumers need no logic changes.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Twenty shards would remove the throttling but cost five times as much for capacity whose byte throughput is not needed.\n* **Option B is incorrect:** Enhanced fan-out increases read throughput for consumers; the errors occur on the write side.\n* **Option C is incorrect:** PutRecords batching reduces the number of API calls, but each record in the batch still counts separately toward the 1,000 records per second per shard limit.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Keyword mapping:** \"Many tiny records, throttled below byte limits\" -> KPL aggregation (and collection); \"write throttling with high byte volume\" -> more shards / on-demand mode; \"read contention\" -> enhanced fan-out.\n2. **Know the shard limits:** Writes: 1 MB/s or 1,000 records/s per shard. Shared reads: 2 MB/s per shard."
   },
   {
     "domain": 3,

@@ -93,22 +93,24 @@
     "domain": 2,
     "task": "2.1",
     "topics": [
-      "Amazon SQS",
-      "Long polling"
+      "Amazon S3",
+      "Amazon EventBridge",
+      "S3 event notifications",
+      "Event-driven architecture"
     ],
-    "prompt": "A company runs worker processes on Amazon EC2 instances that poll an Amazon SQS standard queue in a tight loop. Messages arrive in irregular bursts, and the queue is often empty for long periods. The SQS bill shows millions of ReceiveMessage requests per day that return no messages, and the workers use CPU constantly even when there is no work. The company wants to reduce cost and wasted CPU without delaying message processing. Which solution meets these requirements?",
+    "prompt": "A media company uploads files to the uploads/ prefix of an Amazon S3 bucket. An S3 event notification for s3:ObjectCreated:* on that prefix already invokes a thumbnail AWS Lambda function. Two new consumers must also react to the same uploads: an AWS Step Functions workflow that must run only for objects larger than 100 MB, and an Amazon SQS queue that receives every upload for auditing. More consumers will be added later. The company wants the LEAST operational overhead and no changes to the existing consumer code. Which solution meets these requirements?",
     "options": {
-      "A": "Configure the queue as a delay queue with a 15-minute delivery delay so that messages arrive in larger groups that the workers can process together.",
-      "B": "Add a sleep of 60 seconds to each worker loop after every ReceiveMessage call that returns no messages before polling the queue again.",
-      "C": "Increase the queue's visibility timeout to 12 hours so that each message is received fewer times by the worker processes.",
-      "D": "Enable long polling by setting the queue's ReceiveMessageWaitTimeSeconds attribute to 20 seconds."
+      "A": "Add two more S3 event notification configurations on the bucket for s3:ObjectCreated:* events on the uploads/ prefix, one targeting the Step Functions workflow and one targeting the SQS queue.",
+      "B": "Update the thumbnail Lambda function to start the Step Functions workflow for large objects and to send a message to the SQS queue for every object after it creates the thumbnail.",
+      "C": "Configure S3 Same-Region Replication to a second bucket, and configure separate event notifications on each bucket so that each bucket's notifications go to a different consumer.",
+      "D": "Turn on Amazon EventBridge notifications for the bucket, and create EventBridge rules that match uploads/ objects, using a numeric match on object size for the workflow rule."
     },
     "isMulti": false,
     "requiredCount": 1,
     "correctAnswers": [
       "D"
     ],
-    "explanation": "### ✅ Why Option D is Correct\n\n* **Long polling:** With long polling, a ReceiveMessage call waits up to 20 seconds for a message to arrive instead of returning immediately, which greatly reduces empty responses and request charges.\n* **No added latency:** The call returns as soon as a message is available, so processing is not delayed.\n* **Better results:** Long polling queries all SQS servers, which also eliminates false empty responses.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** A delivery delay holds every message back for 15 minutes, which delays processing.\n* **Option B is incorrect:** A fixed sleep reduces requests but delays processing by up to 60 seconds whenever a burst arrives.\n* **Option C is incorrect:** The visibility timeout controls how long a received message stays hidden; it does not reduce empty receives and slows recovery from failures.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Short vs. long polling:** Short polling (WaitTimeSeconds = 0) returns immediately and samples a subset of servers; long polling (1-20 seconds) waits for messages and checks all servers.\n2. **Keyword mapping:** \"Many empty receives\" / \"reduce SQS cost from polling\" = long polling."
+    "explanation": "### ✅ Why Option D is Correct\n\n* **One source, many consumers:** When EventBridge is turned on for a bucket, S3 sends all of its events to the default event bus, where any number of rules can route the same event to different targets.\n* **Advanced filtering:** EventBridge event patterns can match on fields such as the object key prefix and use numeric matching on detail.object.size, so only objects larger than 100 MB start the workflow.\n* **Extensible:** New consumers are added by creating new rules, without changing the bucket's notification setup or any consumer code. The existing Lambda notification keeps working alongside EventBridge.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** S3 does not allow overlapping event notification configurations (same event type and overlapping prefix) to different destinations, and S3 notifications cannot filter by object size.\n* **Option B is incorrect:** Making one consumer call the others couples the services together, changes existing code, and a failure in the thumbnail function would block the other consumers.\n* **Option C is incorrect:** Replicating objects only to get another notification source doubles storage cost, adds replication delay, and does not scale as more consumers are added.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **S3 event routing:** Native S3 notifications go to SNS, SQS, or Lambda with prefix/suffix filters only. EventBridge adds many targets per event, content filtering, archive and replay.\n2. **Fan-out options:** For several consumers of the same S3 event, use EventBridge rules or S3 -> SNS -> multiple subscribers instead of overlapping notification configurations."
   },
   {
     "domain": 2,

@@ -90,44 +90,45 @@
     "domain": 3,
     "task": "3.2",
     "topics": [
-      "Amazon EC2 Auto Scaling",
-      "Warm pools"
+      "AWS Batch",
+      "Multi-node parallel jobs",
+      "Elastic Fabric Adapter (EFA)"
     ],
-    "prompt": "A company runs an application on Amazon EC2 instances in an Auto Scaling group. Each new instance runs a 12-minute boot process that downloads large data files and warms an in-memory cache before it can serve traffic. Traffic spikes are sudden and unpredictable, and the slow scale-out causes timeouts during spikes. The company wants new capacity to be in service within a minute or two, without paying for fully running standby instances all the time. Which solution meets these requirements?",
+    "prompt": "A research lab runs tightly coupled MPI weather simulations. Each simulation must run across 16 Amazon EC2 instances at the same time, and the nodes exchange data constantly during the run. Researchers submit hundreds of simulations each month with different sizes, and jobs must wait in a queue when capacity is busy. The lab wants a managed job scheduler and does not want to install or operate a cluster scheduler such as Slurm. Which solution meets these requirements?",
     "options": {
-      "A": "Enable predictive scaling on the Auto Scaling group by using the last 14 days of load history.",
-      "B": "Reduce the default instance warmup and cooldown periods on the Auto Scaling group to 60 seconds.",
-      "C": "Add a warm pool to the Auto Scaling group with pre-initialized instances kept in the Stopped state.",
-      "D": "Replace the instances with larger instance types so that each instance can absorb more traffic."
+      "A": "Submit each simulation as an AWS Batch array job that has 16 child jobs.",
+      "B": "Run each simulation as 16 concurrent invocations of an AWS Lambda function that exchange data through Amazon SQS.",
+      "C": "Submit each simulation as an AWS Batch multi-node parallel job in a managed EC2 compute environment that uses EFA-capable instances in a cluster placement group.",
+      "D": "Run each simulation as an Amazon ECS service on AWS Fargate with a desired count of 16 tasks."
     },
     "isMulti": false,
     "requiredCount": 1,
     "correctAnswers": [
       "C"
     ],
-    "explanation": "### ✅ Why Option C is Correct\n\n* **Pre-initialized capacity:** A warm pool holds instances that have already completed their lengthy initialization (lifecycle hooks can run the boot process). On scale-out, Auto Scaling moves instances from the warm pool into service, so they serve traffic much sooner than newly launched instances.\n* **Cost control:** Warm pool instances can be kept in the Stopped (or Hibernated) state. While stopped, you pay only for their EBS volumes and Elastic IP addresses, not for compute.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Predictive scaling forecasts cyclical patterns from history. The spikes here are sudden and unpredictable, so forecasts would not launch capacity early enough.\n* **Option B is incorrect:** Shorter warmup and cooldown periods make the group react faster but do not shorten the 12-minute boot process. New instances still cannot serve traffic for 12 minutes.\n* **Option D is incorrect:** Larger instances add headroom at a constant cost but still face the same 12-minute delay when more capacity is needed, and capacity sits idle between spikes.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Long boot times:** When instances take a long time to initialize, use warm pools (for unpredictable spikes) or predictive scaling (for recurring patterns). Also consider baking dependencies into the AMI.\n2. **Warm pool states:** Stopped = lowest cost. Hibernated = memory state preserved. Running = fastest, but you pay for compute."
+    "explanation": "### ✅ Why Option C is Correct\n\n* **Gang-scheduled jobs:** AWS Batch multi-node parallel jobs run a single job across multiple EC2 instances that are launched and started together. One node is the main node, and the others are child nodes, which is what MPI applications need.\n* **HPC networking:** The compute environment can use a cluster placement group and instances with Elastic Fabric Adapter (EFA) for low-latency, high-throughput node-to-node communication.\n* **Managed scheduling:** Batch job queues hold jobs until capacity is available and scale the compute environment automatically, so no self-managed scheduler is needed.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Array jobs run many independent copies of a job in parallel. The child jobs are not launched as one tightly coupled group with MPI networking.\n* **Option B is incorrect:** Lambda functions cannot communicate directly with each other at low latency, are limited to 15 minutes per invocation, and do not support MPI or EFA.\n* **Option D is incorrect:** An ECS service keeps long-running tasks alive rather than running batch jobs to completion. Fargate does not support EFA or cluster placement groups, and there is no job queue.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **AWS Batch job types:** Single jobs, array jobs (many independent tasks), and multi-node parallel jobs (one tightly coupled job across many instances, such as MPI).\n2. **Tightly coupled HPC:** Look for cluster placement groups and EFA. With AWS Batch, use multi-node parallel jobs on EC2 compute environments."
   },
   {
     "domain": 3,
     "task": "3.2",
     "topics": [
-      "AWS Step Functions",
-      "Distributed Map",
-      "AWS Lambda"
+      "AWS Lambda",
+      "Lambda response streaming",
+      "Lambda function URLs"
     ],
-    "prompt": "A company must process 8 million image files that are stored in an Amazon S3 bucket. Each file is processed independently by an AWS Lambda function in a few seconds. The job must finish within a few hours, failed items must be retried and reported without restarting the whole job, and the company wants a serverless solution with the LEAST custom orchestration code. Which solution meets these requirements?",
+    "prompt": "A company uses a Node.js AWS Lambda function behind a Lambda function URL to generate long reports and AI-generated text for a web client. Generating a full response takes 10-20 seconds, and users see nothing until the entire response is complete. The company wants content to appear in the browser progressively as it is generated so that time to first byte is as short as possible, with minimal architectural change. What should a solutions architect do?",
     "options": {
-      "A": "Create an AWS Step Functions state machine that uses a Distributed Map state to iterate over the objects in the bucket and invoke the Lambda function for each object with high concurrency.",
-      "B": "Write a single Lambda function that lists all objects in the bucket and processes them sequentially in a loop.",
-      "C": "Run a script on an Amazon EC2 instance that lists the objects and invokes the Lambda function asynchronously for each object.",
-      "D": "Create an AWS Step Functions state machine that uses an inline Map state to process the list of object keys passed in the execution input."
+      "A": "Set the function URL's invoke mode to RESPONSE_STREAM and update the handler to write output to the response stream as it is produced.",
+      "B": "Configure provisioned concurrency for the function so that execution environments are initialized before requests arrive.",
+      "C": "Increase the function's memory allocation to the maximum value so that each response is generated faster.",
+      "D": "Change the client to invoke the function asynchronously, have the function write its output to Amazon S3, and have the client poll S3 until the file appears."
     },
     "isMulti": false,
     "requiredCount": 1,
     "correctAnswers": [
       "A"
     ],
-    "explanation": "### ✅ Why Option A is Correct\n\n* **Massive parallelism:** Distributed Map runs each item (or batch of items) in a child workflow execution and supports up to 10,000 parallel child executions. It can read items directly from an S3 bucket listing or from a large CSV or JSON file in S3.\n* **Built-in resilience and reporting:** Distributed Map has configurable retries, failure tolerance thresholds, and result writing to S3, so failed items are captured without restarting the whole job and with no custom orchestration code.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** A single Lambda invocation is limited to a maximum of 15 minutes and would process objects one at a time, which is far too slow for 8 million files.\n* **Option C is incorrect:** A custom script on EC2 adds a server to manage and requires custom code for throttling, retry tracking, and reporting. It is not serverless.\n* **Option D is incorrect:** An inline Map state runs within the parent execution, is limited in concurrency and execution history size, and requires the full item list in the state input. It is not designed for millions of items.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Large-scale parallel processing:** \"Millions of S3 objects\" + \"serverless orchestration\" = Step Functions Distributed Map. Inline Map is for small arrays within one execution.\n2. **Alternatives:** For container or HPC batch jobs with job queues and dependencies, consider AWS Batch. For big data frameworks such as Spark, consider Amazon EMR or AWS Glue."
+    "explanation": "### ✅ Why Option A is Correct\n\n* **Response streaming:** Lambda response streaming sends partial results to the client as soon as they are available instead of buffering the whole response. With function URLs, you enable it by setting the invoke mode to RESPONSE_STREAM and writing to the stream in the handler (for example, with streamifyResponse in Node.js).\n* **Better time to first byte:** Users see the first part of the report or text almost immediately, which improves perceived performance for long-running generation. Streaming also allows responses larger than the buffered response payload limit.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Provisioned concurrency removes initialization latency, but the delay here comes from generating the response, which is still fully buffered before it is returned.\n* **Option C is incorrect:** More memory and CPU might shorten generation somewhat, but users still wait for the entire response before seeing anything.\n* **Option D is incorrect:** Asynchronous invocation and polling add components and client logic, and the user still sees nothing until the full file is written.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Lambda latency tools:** Initialization latency = provisioned concurrency or SnapStart. Long generation with progressive output = response streaming. CPU-bound work = more memory.\n2. **Streaming patterns:** Response streaming fits LLM and chat output, large reports, and server-side rendering where time to first byte matters."
   },
   {
     "domain": 3,
@@ -155,17 +156,17 @@
     "domain": 3,
     "task": "3.3",
     "topics": [
-      "Amazon Aurora",
-      "Aurora Auto Scaling",
-      "Aurora reader endpoint"
+      "Amazon DynamoDB",
+      "Provisioned capacity",
+      "Read and write capacity units"
     ],
-    "prompt": "A company runs an Amazon Aurora MySQL-Compatible cluster with one writer and two Aurora Replicas. Read traffic varies widely during the day, and the replicas exceed 85% CPU utilization at peak while sitting mostly idle overnight. The application sends all queries, including reads, to the cluster endpoint. The company wants read capacity to grow and shrink automatically, and wants read traffic to be distributed across all available replicas without code changes each time a replica is added. Which combination of actions should a solutions architect take? (Select TWO.)",
+    "prompt": "A company is creating an Amazon DynamoDB table in provisioned capacity mode. At peak, the application must perform 600 strongly consistent reads per second of items that are 6 KB each, and 200 standard (non-transactional) writes per second of items that are 2.5 KB each. Which capacity settings meet the peak requirement with the LEAST provisioned capacity? (Select TWO.)",
     "options": {
-      "A": "Change the writer to a larger DB instance class so that it can absorb peak read traffic.",
-      "B": "Configure the application to send read-only queries to each replica's instance endpoint in round-robin order.",
-      "C": "Configure an Aurora Auto Scaling policy that uses target tracking on average replica CPU utilization, with minimum and maximum replica counts.",
-      "D": "Enable Multi-AZ on the cluster so that the standby instance can serve read traffic.",
-      "E": "Configure the application to send read-only queries to the cluster's reader endpoint."
+      "A": "600 read capacity units",
+      "B": "500 write capacity units",
+      "C": "1,200 read capacity units",
+      "D": "2,400 read capacity units",
+      "E": "600 write capacity units"
     },
     "isMulti": true,
     "requiredCount": 2,
@@ -173,7 +174,7 @@
       "C",
       "E"
     ],
-    "explanation": "### ✅ Why Options C & E are Correct\n\n* **Aurora Auto Scaling (C):** Aurora Auto Scaling adds and removes Aurora Replicas automatically according to a target tracking policy on a metric such as average replica CPU utilization or average connections. It respects the configured minimum and maximum.\n* **Reader endpoint (E):** The reader endpoint load-balances connections across all available replicas in the cluster and automatically includes replicas that Auto Scaling adds. No configuration changes are needed as the replica count changes.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Scaling up the writer is vertical scaling with a fixed cost. It keeps reads on the writer, competes with writes, and does not scale automatically.\n* **Option B is incorrect:** Instance endpoints must be maintained in application code. Replicas that Auto Scaling adds or removes would not be picked up automatically.\n* **Option D is incorrect:** Aurora does not use a separate Multi-AZ standby. Its Aurora Replicas in other AZs serve as both read capacity and failover targets, so this option does not apply.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Aurora read scaling:** Add up to 15 Aurora Replicas, use Aurora Auto Scaling for variable read load, and connect read traffic through the reader endpoint.\n2. **Endpoints:** Writes use the cluster endpoint. Reads use the reader endpoint. Workload isolation uses custom endpoints."
+    "explanation": "### ✅ Why Options C & E are Correct\n\n* **Reads (C):** One RCU provides one strongly consistent read per second for an item up to 4 KB. A 6 KB item rounds up to 8 KB, which is 2 RCUs per read. 600 reads x 2 RCUs = 1,200 RCUs.\n* **Writes (E):** One WCU provides one standard write per second for an item up to 1 KB. A 2.5 KB item rounds up to 3 KB, which is 3 WCUs per write. 200 writes x 3 WCUs = 600 WCUs.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** 600 RCUs would be enough only for eventually consistent reads, which cost half as much as strongly consistent reads. The application requires strongly consistent reads.\n* **Option B is incorrect:** 500 WCUs results from multiplying 2.5 KB by 200 without rounding the item size up to the next 1 KB. Write capacity is calculated per item in whole 1 KB increments.\n* **Option D is incorrect:** 2,400 RCUs is what transactional reads would require (twice the cost of strongly consistent reads). The scenario uses standard strongly consistent reads, so this over-provisions capacity.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Capacity unit math:** RCU: 4 KB per strongly consistent read, half for eventually consistent, double for transactional. WCU: 1 KB per standard write, double for transactional. Always round item size up first.\n2. **Mode choice:** Use provisioned capacity (with auto scaling) for predictable traffic and on-demand mode for unknown or spiky traffic."
   },
   {
     "domain": 3,

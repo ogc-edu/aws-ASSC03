@@ -4,7 +4,7 @@
   "description": "Multi-account governance (Organizations, Control Tower, Identity Center), disaster recovery strategies and storage cost tiers.",
   "examCode": "SAA-C03",
   "generatedBy": "Claude (Anthropic)",
-  "generatedAt": "2026-10-21",
+  "generatedAt": "2026-10-22",
   "format": {
     "examCode": "SAA-C03",
     "verifiedOn": "2026-10-20",
@@ -166,23 +166,24 @@
       "domain": 3,
       "task": "3.5",
       "topics": [
-        "Amazon Athena",
-        "Partition projection",
-        "AWS Glue Data Catalog"
+        "AWS DMS",
+        "Change data capture (CDC)",
+        "Amazon S3",
+        "Data lake ingestion"
       ],
-      "prompt": "A company stores IoT telemetry in Amazon S3 under prefixes that are partitioned by device_id, year, month, day, and hour, producing millions of partitions. Analysts query the data with Amazon Athena by using the AWS Glue Data Catalog. Queries that filter on a narrow time range for one device spend most of their time in query planning, and new partitions must currently be added by running MSCK REPAIR TABLE or a crawler before their data can be queried. Which solution will MOST improve query performance and remove the partition maintenance step?",
+      "prompt": "A company wants to feed data from its on-premises MySQL OLTP database into an Amazon S3 data lake so that analysts can query it with Amazon Athena within minutes of each change. The existing 3 TB of data must be loaded first, followed by continuous replication of inserts, updates, and deletes. The output must be stored in Apache Parquet format. The database is reachable from AWS over AWS Direct Connect, binary logging is enabled, and the company wants a managed service that minimizes the impact on the source database. Which solution meets these requirements?",
       "options": {
-        "A": "Run an AWS Glue crawler on a 5-minute schedule so that new partitions are registered in the Data Catalog more quickly after data arrives.",
-        "B": "Convert the data to Apache Parquet but keep the same partition registration process.",
-        "C": "Enable partition projection on the table and define the partition key ranges, formats, and S3 location template in table properties.",
-        "D": "Combine all data into a single unpartitioned table so that Athena does not need to load partition metadata."
+        "A": "Use AWS DataSync to copy the MySQL data directory files from the database server to Amazon S3 every 5 minutes.",
+        "B": "Run a nightly mysqldump export on the database server and upload the dump files to Amazon S3 with the AWS CLI.",
+        "C": "Create an AWS DMS task that performs a full load followed by ongoing change data capture (CDC), with the MySQL database as the source and Amazon S3 as the target configured for Parquet output.",
+        "D": "Configure an AWS Glue crawler with a JDBC connection to the MySQL database that runs every 5 minutes."
       },
       "isMulti": false,
       "requiredCount": 1,
       "correctAnswers": [
         "C"
       ],
-      "explanation": "### ✅ Why Option C is Correct\n\n* **Partition projection:** With partition projection, Athena calculates partition values and locations from configuration in the table properties instead of retrieving partition metadata from the Data Catalog. For highly partitioned tables this greatly reduces query planning time.\n* **No maintenance:** Because partitions are projected, new data written to S3 under the defined template is queryable immediately, with no MSCK REPAIR TABLE, ALTER TABLE ADD PARTITION, or crawler runs.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** More frequent crawlers shorten the delay but still add maintenance and cost. Planning remains slow because Athena still has to retrieve metadata for millions of catalog partitions.\n* **Option B is incorrect:** Parquet reduces the amount of data scanned, but it does not address slow planning or the partition registration step.\n* **Option D is incorrect:** Removing partitions forces Athena to scan the entire data set for every query, which makes performance and cost much worse.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Athena performance tuning:** Partition data (and use partition projection for very large numbers of partitions), use columnar formats (Parquet/ORC) with compression, and avoid many small files.\n2. **Keywords:** \"Millions of partitions,\" \"slow query planning,\" or \"avoid MSCK REPAIR\" point to Athena partition projection."
+      "explanation": "### ✅ Why Option C is Correct\n\n* **Full load + CDC:** AWS DMS migrates the existing data with a full load and then continuously replicates changes by reading the MySQL binary log. This keeps the S3 data lake within minutes of the source with minimal load on the database.\n* **S3 target in Parquet:** The DMS Amazon S3 target endpoint can write data in Apache Parquet format, which Athena queries efficiently. Change records can include the operation type (insert, update, or delete) for downstream processing.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Copying live database files does not produce a consistent, queryable data set, and DataSync does not understand database transactions. Athena cannot query raw MySQL data files.\n* **Option B is incorrect:** Nightly dumps leave data up to a day old, generate heavy load during each export, and produce SQL dump files rather than Parquet.\n* **Option D is incorrect:** Glue crawlers discover schemas and populate the Data Catalog. They do not copy data or capture changes.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Database ingestion:** Ongoing database replication to S3, Redshift, or Kinesis = AWS DMS with CDC. File servers = DataSync. SaaS sources = AppFlow.\n2. **Ingestion configuration:** Choose columnar output (Parquet) and partitioned S3 targets so that downstream Athena queries stay fast and inexpensive."
     },
     {
       "id": 7,
@@ -234,23 +235,23 @@
       "domain": 3,
       "task": "3.2",
       "topics": [
-        "Amazon ECS",
-        "Capacity providers",
-        "Cluster auto scaling"
+        "AWS Outposts",
+        "Hybrid compute",
+        "Low latency"
       ],
-      "prompt": "A company runs Amazon ECS services on an ECS cluster backed by an Amazon EC2 Auto Scaling group. ECS Service Auto Scaling correctly increases the desired task count during traffic spikes, but new tasks often stay in the PROVISIONING state because no container instance has enough free CPU or memory. Operators currently add EC2 instances by hand. The company wants the cluster's EC2 capacity to scale automatically with task demand and wants to keep using EC2 instances. What should a solutions architect do?",
+      "prompt": "A manufacturer runs quality-inspection software that must process camera feeds from its factory floor with single-digit millisecond latency to on-premises machine controllers. Regulations also require that production data be processed and stored in the factory. The company wants to run the software on Amazon EC2 and Amazon ECS with the same APIs, tools, and VPC constructs that it uses in its AWS Region, and it wants AWS to deliver, monitor, and maintain the infrastructure. Which solution meets these requirements?",
       "options": {
-        "A": "Create an ECS capacity provider for the Auto Scaling group with managed scaling enabled, and use it in the services' capacity provider strategy.",
-        "B": "Create a CloudWatch alarm on the cluster's average CPU utilization that triggers a step scaling policy on the Auto Scaling group.",
-        "C": "Increase the CPU and memory reservations in each task definition so that fewer tasks are placed on each instance.",
-        "D": "Change the task placement strategy from binpack to spread across Availability Zones."
+        "A": "Install AWS Outposts racks in the factory and run the EC2 instances and ECS tasks on the Outposts in a subnet of the company's VPC.",
+        "B": "Run the software in the nearest AWS Local Zone and connect the factory to it with AWS Site-to-Site VPN.",
+        "C": "Run the software in the AWS Region and connect the factory with an AWS Direct Connect dedicated connection.",
+        "D": "Run the software in an AWS Wavelength Zone and connect the factory cameras over the carrier's 5G network."
       },
       "isMulti": false,
       "requiredCount": 1,
       "correctAnswers": [
         "A"
       ],
-      "explanation": "### ✅ Why Option A is Correct\n\n* **Cluster auto scaling:** With managed scaling, an ECS capacity provider tracks a CapacityProviderReservation metric and scales the Auto Scaling group out when tasks need capacity and in when it is unused.\n* **Fixes PROVISIONING tasks:** Tasks that cannot be placed count toward the required capacity, so the Auto Scaling group launches instances for them automatically. No manual intervention is needed.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Average cluster CPU does not reflect pending tasks that cannot be placed. The cluster may look underutilized while tasks wait for capacity, so scaling would lag or never happen.\n* **Option C is incorrect:** Larger reservations reduce how many tasks fit on each instance, which makes the capacity shortage worse.\n* **Option D is incorrect:** Placement strategies only decide where tasks go on existing capacity. They do not add instances when the cluster is full.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Two layers of ECS scaling:** Service Auto Scaling changes the task count. Capacity providers with managed scaling (cluster auto scaling) change the EC2 capacity. With Fargate, only the task layer is needed.\n2. **Keyword:** \"Tasks stuck in PROVISIONING\" plus \"EC2 launch type\" points to capacity providers with managed scaling."
+      "explanation": "### ✅ Why Option A is Correct\n\n* **AWS infrastructure on premises:** AWS Outposts delivers AWS-designed racks that AWS installs, monitors, patches, and maintains in the customer's facility. EC2 instances, EBS volumes, and ECS tasks run locally in a subnet of the customer's VPC.\n* **Latency and data residency:** Because the compute runs in the factory, processing has single-digit millisecond latency to local machines, and data can be processed and stored on site to meet residency requirements. The same APIs and tools as in the Region are used.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** A Local Zone is in an AWS-operated metro location, not inside the factory. Data would leave the site, and latency over a VPN cannot be guaranteed to stay in single-digit milliseconds.\n* **Option C is incorrect:** Direct Connect provides consistent network performance to the Region, but data would be processed outside the factory, which violates the residency requirement. Round-trip latency to the Region is also higher.\n* **Option D is incorrect:** Wavelength Zones are inside telecom carrier networks for mobile 5G devices. Processing would happen outside the factory, so the residency requirement is not met.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Hybrid and edge compute:** Outposts = AWS infrastructure in your own facility (low latency to on-premises systems, local data processing, data residency). Local Zones = AWS-run metro locations. Wavelength = 5G carrier networks.\n2. **Same APIs everywhere:** Outposts, Local Zones, and Wavelength Zones all extend a VPC from a parent Region and use the standard AWS APIs and tools."
     },
     {
       "id": 10,
@@ -281,17 +282,18 @@
       "domain": 3,
       "task": "3.2",
       "topics": [
-        "Amazon EC2 Auto Scaling",
-        "Predictive scaling",
-        "Target tracking"
+        "Amazon EC2",
+        "Instance types",
+        "Compute optimized instances",
+        "Accelerated computing instances"
       ],
-      "prompt": "A company's web application runs on Amazon EC2 instances in an Auto Scaling group. Traffic follows a strong daily pattern: it rises sharply every weekday at 09:00 local time and falls in the evening. Instances take about 7 minutes to become ready, so users see high latency each morning while dynamic scaling catches up. The company also occasionally experiences unexpected traffic surges from marketing campaigns. Which combination of scaling configurations should a solutions architect apply? (Select TWO.)",
+      "prompt": "A company is moving two workloads to Amazon EC2. Workload 1 is a stateless, multi-threaded image-encoding service whose load tests show CPU near 100% while memory utilization stays below 25%. Workload 2 trains deep learning models with a framework that uses NVIDIA CUDA libraries, and its work consists of massively parallel matrix operations. The company wants the best performance for each workload without rewriting code. Which combination of instance choices should a solutions architect recommend? (Select TWO.)",
       "options": {
-        "A": "A predictive scaling policy that forecasts load from historical metrics and launches capacity ahead of the forecast demand",
-        "B": "A scheduled action that sets the group's maximum capacity to its current value every morning",
-        "C": "A target tracking scaling policy on average CPU utilization to respond to unforecasted changes in load",
-        "D": "A simple scaling policy with a 30-minute cooldown period",
-        "E": "Termination protection on all instances in the Auto Scaling group"
+        "A": "Compute optimized (C family) instances for Workload 1",
+        "B": "Memory optimized (R family) instances for Workload 1",
+        "C": "Accelerated computing instances with NVIDIA GPUs (for example, the P family) for Workload 2",
+        "D": "Storage optimized (I family) instances with local NVMe SSDs for Workload 2",
+        "E": "Burstable performance (T family) instances in unlimited mode for Workload 2"
       },
       "isMulti": true,
       "requiredCount": 2,
@@ -299,7 +301,7 @@
         "A",
         "C"
       ],
-      "explanation": "### ✅ Why Options A & C are Correct\n\n* **Predictive scaling (A):** Predictive scaling analyzes historical load to forecast daily and weekly patterns. It launches instances before the forecast demand, which accounts for the 7-minute warmup, so capacity is ready at 09:00.\n* **Target tracking (C):** Predictive scaling cannot foresee campaign-driven surges. A target tracking policy reacts to actual utilization in real time. When both policies are active, Auto Scaling uses whichever specifies the higher capacity. AWS recommends this combination.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Setting maximum capacity to the current value prevents the group from scaling out at all. It does not add capacity before the morning ramp.\n* **Option D is incorrect:** Simple scaling with a long cooldown responds slowly and only after load has already risen, which makes morning latency worse.\n* **Option E is incorrect:** Termination protection prevents instances from being terminated during scale-in. It does not add capacity or improve scale-out timing.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Choose by traffic shape:** Recurring cyclical patterns = predictive scaling (or scheduled actions). Unpredictable changes = target tracking or step scaling. Long instance boot = warm pools or predictive scaling.\n2. **Combine policies:** Predictive + target tracking covers both forecastable and unexpected load."
+      "explanation": "### ✅ Why Options A & C are Correct\n\n* **Workload 1 (A):** Compute optimized instances provide a high ratio of vCPUs to memory and high-performance processors. They suit CPU-bound work such as media encoding, batch processing, and scientific modeling that uses little memory.\n* **Workload 2 (C):** Accelerated computing instances such as the P family include NVIDIA GPUs that run thousands of parallel threads. CUDA-based deep learning training runs much faster on GPUs than on CPUs, with no code rewrite.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option B is incorrect:** Memory optimized instances add memory that Workload 1 does not use, so the company would pay for RAM instead of the extra CPU it needs.\n* **Option D is incorrect:** Storage optimized instances are designed for high local I/O. They have no GPUs, so CUDA training would not be accelerated.\n* **Option E is incorrect:** Burstable instances are for workloads with low baseline CPU and occasional bursts. Sustained, GPU-bound training cannot run efficiently on them, and they have no GPUs.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Instance family selection:** C = compute-bound. R/X = memory-bound. I/D = local storage I/O. P/G and AWS Trainium/Inferentia = accelerators for ML and graphics. T = burstable, low baseline.\n2. **Evidence-based sizing:** Use CloudWatch metrics and AWS Compute Optimizer to confirm the bottleneck before choosing a family."
     },
     {
       "id": 12,
@@ -350,41 +352,40 @@
       "domain": 3,
       "task": "3.3",
       "topics": [
-        "Amazon OpenSearch Service",
-        "Amazon DynamoDB",
-        "Full-text search"
+        "Amazon Aurora",
+        "Amazon Redshift",
+        "Zero-ETL integration"
       ],
-      "prompt": "An online marketplace stores its product catalog in Amazon DynamoDB. The company wants to add a search bar that supports full-text search across product titles and descriptions, typo tolerance (fuzzy matching), relevance ranking, and faceted filtering by brand and price range. Search results must reflect catalog changes within seconds. The company wants to minimize custom pipeline code. Which solution meets these requirements?",
+      "prompt": "A company runs its order system on Amazon Aurora MySQL-Compatible Edition. The analytics team needs to run complex aggregations in Amazon Redshift on order data that is no more than a few seconds old and to join it with data from other sources that is already in Redshift. A custom nightly ETL pipeline currently loads the data. It is brittle and leaves analytics up to 24 hours behind. The company wants to minimize the impact on the production database and eliminate ETL pipelines that it must build and maintain. Which solution meets these requirements?",
       "options": {
-        "A": "Create global secondary indexes on the title and description attributes and use Query operations with begins_with key conditions on them.",
-        "B": "Use Scan operations with contains filter expressions on the title and description attributes.",
-        "C": "Replicate the catalog to Amazon OpenSearch Service with the DynamoDB zero-ETL integration, and serve searches from OpenSearch.",
-        "D": "Export the table to Amazon S3 every hour and run Amazon Athena queries with LIKE predicates."
+        "A": "Add an Aurora Replica and run the analytical queries on the replica instead of in Redshift.",
+        "B": "Create an AWS DMS task that performs a full load from Aurora into Redshift every hour.",
+        "C": "Create an Aurora zero-ETL integration with Amazon Redshift that replicates the order tables into the Redshift data warehouse.",
+        "D": "Export Aurora snapshots to Amazon S3 every hour and query the exported data with Amazon Redshift Spectrum."
       },
       "isMulti": false,
       "requiredCount": 1,
       "correctAnswers": [
         "C"
       ],
-      "explanation": "### ✅ Why Option C is Correct\n\n* **Search engine for search features:** OpenSearch Service provides full-text search, fuzzy matching, relevance scoring, and aggregations for faceted navigation. DynamoDB does not natively provide these capabilities.\n* **Near real-time sync without code:** The DynamoDB zero-ETL integration with OpenSearch Service (built on OpenSearch Ingestion and DynamoDB Streams) continuously replicates item changes within seconds, so no custom pipeline is needed.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** GSIs support exact-match and prefix lookups on key attributes, not full-text search, fuzzy matching, or relevance ranking. Long descriptions are also poor key candidates.\n* **Option B is incorrect:** Scan with a contains filter reads the entire table for every search. It is slow and costly and still provides no fuzzy matching or relevance ranking.\n* **Option D is incorrect:** Hourly exports violate the within-seconds freshness requirement, and Athena is an ad hoc analytics engine, not a low-latency search service.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Search use cases:** Full-text search, log analytics, autocomplete, and relevance ranking = Amazon OpenSearch Service.\n2. **Zero-ETL integrations:** AWS increasingly offers managed zero-ETL integrations (for example, DynamoDB to OpenSearch, and Aurora or DynamoDB to Redshift) that remove the need for custom ETL pipelines."
+      "explanation": "### ✅ Why Option C is Correct\n\n* **Near real-time without pipelines:** An Aurora zero-ETL integration with Amazon Redshift continuously replicates data from Aurora into Redshift, typically within seconds of being written. AWS manages the replication, so there is no ETL pipeline to build or maintain.\n* **Low impact on production:** AWS designs the integration to have minimal impact on the source database's transactional workload. Analysts query fresh data in Redshift alongside their other Redshift data sets.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** An Aurora Replica offloads reads but is a row-oriented OLTP engine. It cannot join with data that lives in Redshift and is not optimized for complex analytical queries.\n* **Option B is incorrect:** Hourly full loads leave data up to an hour old, repeatedly copy the entire data set, and still create a pipeline to operate.\n* **Option D is incorrect:** Snapshot exports take time to run, leave data far more than a few seconds old, and require a recurring export process to manage.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Zero-ETL integrations:** Aurora MySQL, Aurora PostgreSQL, RDS for MySQL, and DynamoDB can replicate into Redshift through managed zero-ETL integrations for near real-time analytics.\n2. **OLTP vs. OLAP:** Keep transactional workloads on Aurora or RDS, and run analytics in Redshift. Look for zero-ETL when the scenario asks for fresh data without pipelines."
     },
     {
       "id": 15,
       "domain": 3,
       "task": "3.3",
       "topics": [
-        "Amazon ElastiCache",
-        "Valkey",
-        "Sorted sets",
-        "Cluster mode"
+        "Amazon DynamoDB",
+        "Burst capacity",
+        "Adaptive capacity"
       ],
-      "prompt": "A mobile game maintains thousands of real-time leaderboards (global, regional, and per-level) that rank tens of millions of players by score with sub-millisecond reads and updates. The combined rate of score updates across all leaderboards exceeds what a single cache node can handle, and the total data set is expected to outgrow the memory of the largest single node. Which combination of choices meets these requirements? (Select TWO.)",
+      "prompt": "A company uses an Amazon DynamoDB table in provisioned capacity mode with auto scaling. Two traffic patterns occur: occasional unpredictable spikes that last 20-30 seconds and briefly exceed the provisioned capacity, and a steady skew in which a small number of partition key values receive much more traffic than others while total consumption stays below the table's provisioned capacity. The team wants to know which built-in DynamoDB behaviors will help absorb these patterns without changes to the table design. Which statements are correct? (Select TWO.)",
       "options": {
-        "A": "Use Amazon ElastiCache for Memcached and store each player's rank as a separate key.",
-        "B": "Use Amazon ElastiCache for Valkey and store scores in sorted sets.",
-        "C": "Enable cluster mode on the ElastiCache cluster and distribute the data across multiple shards.",
-        "D": "Add read replicas to a single-shard ElastiCache cluster to scale score updates.",
-        "E": "Store scores in Amazon DynamoDB and compute rankings with a Scan sorted by score."
+        "A": "Auto scaling adjusts provisioned capacity within a second, so it absorbs spikes that last less than a minute.",
+        "B": "Burst capacity retains up to 5 minutes of unused read and write capacity, which DynamoDB can consume to absorb short spikes above the provisioned throughput.",
+        "C": "Adaptive capacity automatically gives more throughput to partitions that receive more traffic, as long as total consumption stays within the table's provisioned capacity and per-partition limits.",
+        "D": "Hot partition key values must be split manually by calling an API that redistributes partitions before the skew can be handled.",
+        "E": "Adaptive capacity removes per-partition throughput limits, so a single partition key value can use the table's entire provisioned capacity."
       },
       "isMulti": true,
       "requiredCount": 2,
@@ -392,7 +393,7 @@
         "B",
         "C"
       ],
-      "explanation": "### ✅ Why Options B & C are Correct\n\n* **Sorted sets (B):** Valkey (and Redis OSS) sorted sets keep members ordered by score. Commands such as ZADD, ZINCRBY, ZREVRANGE, and ZREVRANK update scores and return ranks in logarithmic time with sub-millisecond latency.\n* **Cluster mode (C):** With cluster mode enabled, data is partitioned across multiple shards, each with its own primary node. Each leaderboard is its own sorted set key, and keys are distributed across shards by hash slot, so write throughput and memory capacity scale beyond a single node.\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Memcached is a simple key-value cache without sorted data structures. Maintaining ranks across tens of millions of keys would require recomputing and rewriting many keys on every score change.\n* **Option D is incorrect:** Read replicas scale reads only. All writes still go to the single primary node, and memory is limited to one node's size.\n* **Option E is incorrect:** Scanning and sorting tens of millions of items for every leaderboard request is slow and expensive and cannot provide sub-millisecond rankings.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Leaderboards:** Real-time ranking = ElastiCache (Valkey or Redis OSS) sorted sets.\n2. **Scaling ElastiCache:** Scale reads with replicas. Scale writes and memory with cluster mode shards. Choose Memcached only for simple, multithreaded key-value caching without persistence or advanced data structures."
+      "explanation": "### ✅ Why Options B & C are Correct\n\n* **Burst capacity (B):** DynamoDB retains up to 300 seconds (5 minutes) of unused read and write capacity. When traffic briefly exceeds provisioned throughput, DynamoDB can draw on this reserve. It is best effort and should not be relied on for sustained load.\n* **Adaptive capacity (C):** Adaptive capacity is enabled automatically for every table. It lets heavily accessed partitions consume more of the table's unused capacity and can isolate frequently accessed items onto their own partitions. Each partition is still subject to per-partition limits (3,000 RCUs and 1,000 WCUs).\n\n---\n\n### ❌ Why Other Options Are Incorrect\n\n* **Option A is incorrect:** Auto scaling uses CloudWatch alarms and target tracking, so capacity changes take minutes, not seconds. It cannot react to spikes that last 20-30 seconds; burst capacity covers those.\n* **Option D is incorrect:** No manual partition-splitting API exists. DynamoDB manages partitions automatically, and adaptive capacity reacts without intervention.\n* **Option E is incorrect:** Per-partition limits still apply. A single partition key value cannot exceed 3,000 RCUs or 1,000 WCUs. Sustained hot keys above that require a better key design, such as write sharding.\n\n---\n\n### 💡 SAA-C03 Exam Concept & AWS Best Practice\n\n1. **Built-in resilience to uneven traffic:** Short spikes = burst capacity. Uneven key access = adaptive capacity. Sustained hot keys above per-partition limits = redesign the partition key or shard writes.\n2. **Scaling choices:** Auto scaling handles gradual changes. Use on-demand mode for highly unpredictable traffic."
     },
     {
       "id": 16,
