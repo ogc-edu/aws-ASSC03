@@ -39,6 +39,50 @@ export async function initQuestions() {
 }
 
 // 2. Progress Storage with localStorage and automatic server migration
+const normalizeProgress = (data) => ({
+  lastLeftOff: data?.lastLeftOff || 1,
+  highlights: Array.isArray(data?.highlights) ? data.highlights : [],
+  attempts: data?.attempts || {}
+});
+
+const latestAttemptTime = (attempts) =>
+  Object.values(attempts).reduce((max, a) => Math.max(max, Date.parse(a.timestamp) || 0), 0);
+
+// Combines this browser's copy with the server/snapshot copy so neither side's answers are lost:
+// newest attempt per question, union of highlights, and the left-off position of whichever
+// copy was used most recently.
+function mergeProgress(local, remote) {
+  const attempts = { ...remote.attempts };
+  for (const [id, att] of Object.entries(local.attempts)) {
+    const other = attempts[id];
+    if (!other || (Date.parse(att.timestamp) || 0) >= (Date.parse(other.timestamp) || 0)) {
+      attempts[id] = att;
+    }
+  }
+  const localIsNewer = latestAttemptTime(local.attempts) >= latestAttemptTime(remote.attempts);
+  return {
+    lastLeftOff: localIsNewer ? local.lastLeftOff : remote.lastLeftOff,
+    highlights: [...new Set([...remote.highlights, ...local.highlights])],
+    attempts
+  };
+}
+
+async function fetchRemoteProgress() {
+  try {
+    let res = await fetch('/api/progress');
+    if (!res.ok) {
+      res = await fetch('./user_progress.json');
+    }
+    if (res.ok) {
+      const data = await res.json();
+      if (data && (data.attempts || data.highlights)) return normalizeProgress(data);
+    }
+  } catch (e) {
+    console.log('No remote progress to import:', e);
+  }
+  return null;
+}
+
 export async function initProgress() {
   let localData = null;
   try {
@@ -50,48 +94,13 @@ export async function initProgress() {
     console.warn('Error reading localStorage:', e);
   }
 
-  // If localStorage already has attempts or highlights, use it!
-  const hasLocalAttempts = localData && Object.keys(localData.attempts || {}).length > 0;
-  const hasLocalHighlights = localData && (localData.highlights || []).length > 0;
+  const local = localData ? normalizeProgress(localData) : null;
+  const remote = await fetchRemoteProgress();
+  if (!remote) return local || normalizeProgress(null);
 
-  if (hasLocalAttempts || hasLocalHighlights) {
-    return {
-      lastLeftOff: localData.lastLeftOff || 1,
-      highlights: Array.isArray(localData.highlights) ? localData.highlights : [],
-      attempts: localData.attempts || {}
-    };
-  }
-
-  // First time or empty localStorage: import all existing progress from server or user_progress.json!
-  try {
-    let res = await fetch('/api/progress');
-    if (!res.ok) {
-      res = await fetch('./user_progress.json');
-    }
-    if (res.ok) {
-      const serverData = await res.json();
-      if (serverData && (serverData.attempts || serverData.highlights)) {
-        const imported = {
-          lastLeftOff: serverData.lastLeftOff || 100,
-          highlights: Array.isArray(serverData.highlights) ? serverData.highlights : [],
-          attempts: serverData.attempts || {}
-        };
-        // Save to localStorage immediately
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(imported));
-        } catch (err) {}
-        return imported;
-      }
-    }
-  } catch (e) {
-    console.log('No remote progress to import:', e);
-  }
-
-  return {
-    lastLeftOff: 1,
-    highlights: [],
-    attempts: {}
-  };
+  const merged = local ? mergeProgress(local, remote) : remote;
+  saveLocalProgress(merged);
+  return merged;
 }
 
 export function getLocalProgress() {
