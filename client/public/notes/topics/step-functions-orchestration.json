@@ -6,16 +6,16 @@
   "summary": "Coordinate multi-step workflows with retries, error handling, waits and massive parallelism.",
   "services": ["AWS Step Functions", "AWS Lambda", "Amazon S3"],
   "tldr": [
-    "**Step Functions** runs a state machine: sequence, branch (`Choice`), wait, run in parallel and handle errors, with a visual history of every execution.",
-    "**Standard** workflows are long-running (up to a year) and exactly-once, billed per state transition. **Express** workflows are short (up to 5 minutes), high-volume and billed per request and duration.",
-    "**Distributed Map** fans out over millions of S3 objects with thousands of child executions and a tolerated failure percentage."
+    "**Step Functions** runs a state machine: sequence, branch (`Choice`), wait, run in parallel and handle errors, with a visual history of every execution. It replaces Lambda functions that call each other or sleep.",
+    "**Standard** workflows run up to a year, are exactly-once and are billed per state transition. **Express** workflows run up to 5 minutes, are at-least-once (async) and are billed per execution, duration and memory.",
+    "**Distributed Map** fans out over millions of S3 objects or rows of a large CSV/JSON file as child executions, with a tolerated failure percentage or count."
   ],
   "keyFacts": [
     { "value": "1 year", "text": "Maximum duration of a **Standard** execution, which makes human approval steps and long waits possible. Express workflows stop at 5 minutes." },
-    { "value": "Task token", "text": "The `.waitForTaskToken` pattern pauses the workflow until an external system (an approval portal, a partner) returns the token with `SendTaskSuccess`." },
+    { "value": "Task token", "text": "The `.waitForTaskToken` pattern pauses a Standard workflow until an external system (approval portal, partner) returns the token with `SendTaskSuccess`." },
     { "value": "Retry / Catch", "text": "`Retry` sets `IntervalSeconds`, `MaxAttempts` and `BackoffRate` per error name. `Catch` routes remaining errors to a fallback state, such as a compensation step." },
-    { "value": "10,000", "text": "Child executions a **Distributed Map** can run in parallel. It reads items straight from an S3 prefix, CSV or JSON file instead of the execution input." },
-    { "value": "Wait state", "text": "A `Wait` state in a Standard workflow costs nothing while it waits, unlike a Lambda function that sleeps and is billed for idle time." }
+    { "value": "10,000", "text": "Parallel child executions a **Distributed Map** runs when you leave `MaxConcurrency` unset. Items come straight from an S3 prefix or a large file." },
+    { "value": "Wait state", "text": "A Standard workflow is billed per state transition, so a `Wait` state isn't billed for the time it waits, unlike a sleeping Lambda function." }
   ],
   "comparisons": [
     {
@@ -24,16 +24,31 @@
       "rows": [
         ["Maximum duration", "1 year", "5 minutes"],
         ["Execution semantics", "Exactly-once", "At-least-once (async) or at-most-once (sync)"],
-        ["Pricing", "Per state transition", "Per request and duration"],
-        ["Callbacks (.waitForTaskToken)", "Supported", "Not supported"],
-        ["Pick it when…", "Long-running, auditable, human steps", "High-volume, short, idempotent event processing"]
+        ["Pricing", "Per state transition", "Per execution, duration and memory"],
+        ["Callback (.waitForTaskToken) and .sync jobs", "Supported", "Not supported"],
+        ["Distributed Map", "Supported", "Not supported"],
+        ["Execution history", "Kept by Step Functions for 90 days", "Only if you enable CloudWatch Logs"],
+        ["Pick it when…", "Long-running, auditable, non-idempotent steps, human approval", "High-volume, short, idempotent event processing"]
       ]
+    },
+    {
+      "title": "Compare: inline vs Distributed Map",
+      "columns": ["Feature", "Inline Map", "Distributed Map"],
+      "rows": [
+        ["Item source", "Array in the state input", "S3 objects, a large CSV/JSON file in S3, or the state input"],
+        ["Scale", "Up to 40 concurrent iterations; input under 256 KiB", "Thousands of parallel child executions"],
+        ["History", "Shares the parent's execution history", "Each child execution has its own history"],
+        ["Failure tolerance", "Retry and Catch only", "Tolerated failure percentage or count"]
+      ],
+      "highlightRow": 1
     }
   ],
   "keywords": [
     { "cue": "pause until a human approves, up to days", "answer": "Standard workflow with .waitForTaskToken" },
     { "cue": "process millions of S3 files in parallel, job succeeds if under 1% fail", "answer": "Distributed Map with tolerated failure percentage" },
     { "cue": "tens of thousands of short workflows per second, duplicates OK", "answer": "Express workflows" },
+    { "cue": "non-idempotent steps such as payments must never run twice", "answer": "Standard workflow" },
+    { "cue": "start a Glue, Batch or ECS job and wait for it to finish without polling code", "answer": "Standard workflow with the .sync integration" },
     { "cue": "retry a specific error with exponential backoff", "answer": "Retry field with BackoffRate greater than 1" },
     { "cue": "run a refund step if anything else fails", "answer": "Catch on States.ALL to a compensation task" },
     { "cue": "Lambda polls a job for 15 minutes, mostly idle", "answer": "Standard workflow with Wait state and short Lambda calls" },
@@ -41,11 +56,12 @@
     { "cue": "orchestrate several Lambda functions with branching", "answer": "Step Functions state machine with Choice states" }
   ],
   "traps": [
-    "Express workflows can't wait for days and don't support the task-token callback pattern.",
+    "Express workflows can't run past 5 minutes and don't support `.waitForTaskToken` or `.sync`, so they can't wait for a human.",
     "Chaining Lambda functions that invoke each other, or one Lambda that sleeps, is costly and fragile compared with a state machine.",
-    "An **inline** Map gets its items from the execution input, which is capped by the state payload size. Huge item lists need Distributed Map.",
+    "An **inline** Map takes its items from the execution input, which has a size limit. Huge item lists need Distributed Map reading from S3.",
     "Switching from Standard to Express does not add automatic retries. Retries come from the `Retry` field.",
-    "Moving a polling loop to Express doesn't help when jobs take longer than 5 minutes."
+    "Moving a polling loop to Express doesn't help when jobs take longer than 5 minutes.",
+    "The workflow type can't be changed after the state machine is created; you create a new one."
   ],
   "relatedNotes": ["lambda-event-processing", "eventbridge-event-driven", "sqs-sns-decoupling", "lambda-performance"],
   "sources": [

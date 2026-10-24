@@ -12,7 +12,7 @@
     "Lock down both sides: an **endpoint policy** limits what can be reached through the endpoint, and an `aws:SourceVpce` condition in the bucket or API policy limits who can reach the resource."
   ],
   "keyFacts": [
-    { "value": "S3 + DynamoDB", "text": "The only services with gateway endpoints. Gateway endpoints can't be used from on-premises, peered VPCs or through Transit Gateway." },
+    { "value": "S3 + DynamoDB", "text": "The only services with gateway endpoints. A gateway endpoint can't be reached from on-premises, a peered VPC or through Transit Gateway; use an interface endpoint there." },
     { "value": "Private DNS", "text": "With private DNS on, the standard service hostname resolves to the endpoint's private IPs, so SDKs need no code change." },
     { "value": "SourceVpce", "text": "Deny access to a bucket unless `aws:SourceVpce` equals your endpoint ID to force all access through one endpoint." },
     { "value": "One-way", "text": "PrivateLink lets consumers start connections to the provider only; no routing between VPCs, so CIDR overlap doesn't matter." }
@@ -41,7 +41,10 @@
     { "cue": "on-premises to S3 over Direct Connect with private IPs", "answer": "S3 interface endpoint" },
     { "cue": "API reachable only from one VPC", "answer": "Private API Gateway, execute-api interface endpoint, resource policy" },
     { "cue": "ECR pulls through NAT are expensive", "answer": "ecr.api and ecr.dkr interface endpoints plus S3 gateway endpoint" },
-    { "cue": "same interface endpoints duplicated in 40 VPCs", "answer": "Centralize in a shared services VPC with Route 53 private hosted zones" }
+    { "cue": "same interface endpoints duplicated in 40 VPCs", "answer": "Centralize in a shared services VPC with Route 53 private hosted zones" },
+    { "cue": "S3 interface endpoint for on-premises, but in-VPC traffic runs up PrivateLink charges", "answer": "Add an S3 gateway endpoint and enable private DNS only for inbound Resolver endpoints" },
+    { "cue": "stop exfiltration to tables or buckets in other accounts through the endpoint", "answer": "Endpoint policy limited to your resource ARNs or aws:ResourceAccount" },
+    { "cue": "provider must approve which customer accounts can connect", "answer": "Endpoint service allowed principals with acceptance required" }
   ],
   "traps": [
     "A gateway endpoint doesn't work for traffic arriving from on-premises; use an interface endpoint for that.",
@@ -52,6 +55,7 @@
   "relatedNotes": ["vpc-security-groups-nacls", "nat-ipv4-ipv6-costs", "s3-security-access-control", "hybrid-connectivity-dx-vpn", "vpc-connectivity-tgw-lattice"],
   "sources": [
     { "title": "Gateway endpoints", "url": "https://docs.aws.amazon.com/vpc/latest/privatelink/gateway-endpoints.html" },
-    { "title": "What is AWS PrivateLink?", "url": "https://docs.aws.amazon.com/vpc/latest/privatelink/what-is-privatelink.html" }
+    { "title": "What is AWS PrivateLink?", "url": "https://docs.aws.amazon.com/vpc/latest/privatelink/what-is-privatelink.html" },
+    { "title": "AWS PrivateLink for Amazon S3", "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/privatelink-interface-endpoints.html" }
   ]
 }

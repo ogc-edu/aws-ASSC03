@@ -15,8 +15,8 @@
     { "value": "3,000 / 1,000", "text": "Per-partition ceiling of RCU and WCU. **Adaptive capacity** shifts throughput to busy partitions but can't lift one key past this limit." },
     { "value": "300 s", "text": "**Burst capacity** keeps up to five minutes of unused throughput to absorb short spikes. Auto scaling reacts in minutes, too slow for 30-second bursts." },
     { "value": "400 KB", "text": "Maximum item size. Store big objects in S3 and keep a pointer in the item." },
-    { "value": "24 h", "text": "**DynamoDB Streams** retention. Streams feed Lambda, EventBridge Pipes and global table replication." },
-    { "value": "MREC / MRSC", "text": "**Global tables** default to multi-Region eventual consistency (last writer wins). Multi-Region strong consistency is an option chosen at creation." }
+    { "value": "24 h", "text": "**DynamoDB Streams** retention. Streams feed Lambda and EventBridge Pipes, and they carry replication for eventually consistent global tables." },
+    { "value": "MREC / MRSC", "text": "**Global tables** default to multi-Region eventual consistency (last writer wins). Multi-Region strong consistency must be chosen at creation and can't be switched later." }
   ],
   "comparisons": [
     {
@@ -53,11 +53,14 @@
     "Raising table capacity or switching to on-demand doesn't fix one hot key, because the per-partition limit still applies.",
     "An LSI can't be added to an existing table and shares the base table's partition key, so it can't serve a lookup by a different attribute.",
     "A GSI on the same hot attribute just moves the hot partition into the index.",
-    "DAX serves eventually consistent reads; strongly consistent reads pass through to the table."
+    "DAX serves eventually consistent reads; strongly consistent reads pass through to the table.",
+    "ElastiCache in front of DynamoDB needs cache-aside code and invalidation logic; when the question says \"same DynamoDB API, no invalidation code\", pick **DAX**.",
+    "Aurora Global Database has a single writer Region and needs a failover step, so \"write locally in every Region with no promotion\" points to **DynamoDB global tables**."
   ],
   "relatedNotes": ["dynamodb-cost", "elasticache-in-memory", "database-engine-selection", "lambda-event-processing", "eventbridge-event-driven"],
   "sources": [
     { "title": "Best practices for designing and using partition keys effectively", "url": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-design.html" },
+    { "title": "DynamoDB burst and adaptive capacity", "url": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/burst-adaptive-capacity.html" },
     { "title": "DynamoDB read/write capacity mode", "url": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/capacity-mode.html" },
     { "title": "Global tables - multi-active, multi-Region replication", "url": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GlobalTables.html" }
   ]

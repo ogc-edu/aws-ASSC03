@@ -6,15 +6,15 @@
   "summary": "Route events between services and SaaS apps, connect sources to targets, and run schedules.",
   "services": ["Amazon EventBridge", "EventBridge Pipes", "EventBridge Scheduler", "Amazon S3 event notifications"],
   "tldr": [
-    "**Event bus + rules**: many producers, many consumers. Rules match on event content (including numeric ranges and prefixes) and route to targets. SaaS partners deliver straight to a **partner event bus**.",
-    "**Pipes**: one source to one target, with optional **filter**, **enrichment** and transformation in between. It replaces glue Lambda functions that poll SQS, Kinesis or DynamoDB Streams.",
-    "**Scheduler**: cron, rate and **one-time** schedules at massive scale, with time zones, retries and a DLQ. It's the answer for \"run X at time T\" without polling a database."
+    "**Event bus + rules**: many producers, many consumers. Rules match on event content (including numeric ranges and prefixes) and route to targets. SaaS partners deliver straight to a **partner event bus**, and AWS services publish to the **default bus**.",
+    "**Pipes**: one source to one target, with optional **filter**, **enrichment** and transformation in between. It replaces glue code that polls SQS, Kinesis, DynamoDB Streams, Amazon MQ or Kafka.",
+    "**Scheduler**: cron, rate and **one-time** schedules for millions of tasks, with time zones, retries and a DLQ. It's the answer for \"run X at time T\" without polling a database."
   ],
   "keyFacts": [
-    { "value": "Archive & replay", "text": "An **archive** on an event bus keeps events for a retention period you choose. A **replay** re-sends a time window of them, ideal after a consumer bug." },
-    { "value": "S3 → EventBridge", "text": "Turn on EventBridge notifications for a bucket to send every S3 event to the default bus. Then add rules per consumer instead of overlapping S3 notifications." },
-    { "value": "Retry + DLQ", "text": "Scheduler and rule targets support a **retry policy** (maximum event age and retry attempts) and an **SQS dead-letter queue** for events that still fail." },
-    { "value": "Pipe sources", "text": "Pipes read from polling sources such as **SQS, Kinesis, DynamoDB Streams, Amazon MQ and Kafka (MSK)**, then send to targets like Step Functions, SQS or an event bus." },
+    { "value": "5 targets", "text": "Maximum targets on one rule (fixed). Need more consumers? Add more rules on the same bus, each matching the same pattern." },
+    { "value": "Archive & replay", "text": "An **archive** keeps matching bus events for the days you set (indefinitely by default). A **replay** re-sends a time window to the source bus." },
+    { "value": "S3 → EventBridge", "text": "Turn on EventBridge for a bucket and every S3 event goes to the default bus. Then add a rule per consumer instead of overlapping S3 notifications." },
+    { "value": "Retry + DLQ", "text": "Scheduler and rule targets support a **retry policy** (maximum event age, retry attempts) and an **SQS dead-letter queue** for events that still fail." },
     { "value": "15 min max", "text": "An SQS delay queue or message timer can postpone delivery by at most 15 minutes. Longer delays (hours, days) call for **Scheduler one-time schedules**." }
   ],
   "comparisons": [
@@ -28,6 +28,18 @@
         ["Archive & replay", "Stored copy of bus events", "Re-send past events after a consumer failure"]
       ],
       "highlightRow": 0
+    },
+    {
+      "title": "Compare: EventBridge vs SNS for pub/sub",
+      "columns": ["Need", "EventBridge (bus + rules)", "Amazon SNS"],
+      "rows": [
+        ["Event sources", "AWS service events, SaaS partners, custom apps", "Your publishers and AWS service notifications"],
+        ["Routing", "Rules match any field of the JSON event", "Filter policy per subscription, on attributes or body"],
+        ["Delivery to people", "Not direct; route to SNS", "Email, SMS and mobile push"],
+        ["Ordering", "Not guaranteed by rules", "Per message group with SNS FIFO"],
+        ["Pick it when…", "Content routing across many event types, SaaS integration, replay", "Simple high-fan-out broadcast or notifying people"]
+      ],
+      "highlightRow": 0
     }
   ],
   "keywords": [
@@ -35,10 +47,12 @@
     { "cue": "filter a DynamoDB stream into SQS without Lambda", "answer": "EventBridge Pipes with a filter pattern" },
     { "cue": "filter, enrich with Lambda, then start a Step Functions workflow from a queue", "answer": "EventBridge Pipes (source, filter, enrichment, target)" },
     { "cue": "do something exactly 72 hours after each signup", "answer": "EventBridge Scheduler one-time schedule" },
+    { "cue": "retry failed scheduled invocations for an hour, keep the rest", "answer": "Scheduler retry policy (maximum event age) plus SQS DLQ" },
     { "cue": "stop dev instances at night, start them in the morning", "answer": "EventBridge Scheduler calling Stop/Start APIs" },
     { "cue": "nightly container job, no servers", "answer": "EventBridge Scheduler running an ECS task on Fargate" },
     { "cue": "re-send the last 30 days of events to a fixed consumer", "answer": "EventBridge archive and replay" },
     { "cue": "several consumers for the same S3 upload, filter by object size", "answer": "S3 EventBridge notifications with rules" },
+    { "cue": "send async Lambda results to an event bus and failures to a queue, no code", "answer": "Lambda destinations (on-success and on-failure)" },
     { "cue": "auto-remediate a Security Hub finding", "answer": "EventBridge rule to SSM Automation or Lambda" }
   ],
   "traps": [
@@ -46,12 +60,14 @@
     "An EventBridge rule can't match \"a message arriving in an SQS queue\". Reading from a queue is a job for Pipes or a Lambda event source mapping.",
     "DynamoDB TTL deletes items on a best-effort schedule, not at an exact time, so it is a poor timer.",
     "A rule that runs every minute and scans a database is the polling design the question wants you to avoid.",
-    "SNS subscription filter policies filter messages, but SNS can't poll an SQS queue or enrich a message."
+    "SNS subscription filter policies filter messages, but SNS can't poll an SQS queue or enrich a message.",
+    "Rules on a classic event bus don't guarantee delivery order; ordered fan-out is an SNS FIFO job."
   ],
   "relatedNotes": ["sqs-sns-decoupling", "step-functions-orchestration", "lambda-event-processing", "threat-detection-security-hub"],
   "sources": [
-    { "title": "Amazon EventBridge User Guide", "url": "https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-what-is.html" },
-    { "title": "Amazon EventBridge Pipes", "url": "https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes.html" },
+    { "title": "Amazon EventBridge quotas", "url": "https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-quota.html" },
+    { "title": "Archiving and replaying events in Amazon EventBridge", "url": "https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-archive.html" },
+    { "title": "Amazon EventBridge Pipes sources", "url": "https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-event-source.html" },
     { "title": "EventBridge Scheduler User Guide", "url": "https://docs.aws.amazon.com/scheduler/latest/UserGuide/what-is-scheduler.html" }
   ]
 }

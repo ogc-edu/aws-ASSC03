@@ -31,7 +31,7 @@
     },
     {
       "value": "Weight 0–255",
-      "text": "**Weighted** records split traffic by ratio. Use them for canary releases and gradual migrations; weight 0 stops traffic to a record."
+      "text": "**Weighted** records split traffic by each weight's share of the total. Use them for canary releases and gradual migrations; weight 0 stops traffic unless every other record is unhealthy."
     },
     {
       "value": "Bias",
@@ -132,6 +132,7 @@
     "A **CNAME can't be created at the zone apex**. Use an alias record.",
     "**Simple routing** with several values does no health checking, so it can't fail over.",
     "Latency-based routing picks the fastest Region, not the closest country. Use geolocation when the rule is about *where the user is*.",
+    "Geolocation with no **default** record returns no answer for users in locations you didn't map.",
     "Raising a health check's failure threshold to avoid false failovers still leaves failover automatic. If people must decide, use ARC routing controls.",
     "Adding Route 53 health-checker IP ranges to a security group doesn't help a private-only endpoint. The checkers can't route to private IPs.",
     "Global Accelerator traffic dials and ARC routing controls move traffic without waiting for DNS caches. Editing weighted records does not."
@@ -157,6 +158,10 @@
     {
       "title": "Types of Amazon Route 53 health checks",
       "url": "https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/health-checks-types.html"
+    },
+    {
+      "title": "Weighted routing - Amazon Route 53",
+      "url": "https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy-weighted.html"
     },
     {
       "title": "Routing control in Amazon Application Recovery Controller",

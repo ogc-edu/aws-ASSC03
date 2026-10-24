@@ -11,9 +11,9 @@
     "**TTL** deletes expired items in the background at no write cost, which replaces scan-and-delete jobs."
   ],
   "keyFacts": [
-    { "value": "Up to 60% less storage", "text": "Standard-IA table class cuts storage price versus Standard, with higher read/write prices. Best when storage is the main cost. Changing the class needs no code change." },
+    { "value": "~60% cheaper storage", "text": "Standard-IA table class versus Standard, with reads and writes about 25% dearer. AWS suggests it when storage is about half or more of the table's cost. No code change." },
     { "value": "Free TTL deletes", "text": "Items whose TTL timestamp has passed are removed in the background without consuming write capacity, typically within a few days of expiry." },
-    { "value": "Reserved = provisioned", "text": "Reserved capacity (1 or 3 years) applies only to provisioned capacity on the Standard table class, not to on-demand or Standard-IA tables." },
+    { "value": "RC: provisioned only", "text": "Reserved capacity (1 or 3 years) applies only to provisioned capacity on the Standard table class, not to on-demand or Standard-IA tables. Database Savings Plans (2025) are the newer, flexible option." },
     { "value": "Pay per request", "text": "On-demand bills each read and write request, so near-idle tables cost almost nothing and sudden spikes need no capacity planning." }
   ],
   "comparisons": [
@@ -48,7 +48,8 @@
   "relatedNotes": ["dynamodb-design-performance", "database-cost-optimization", "database-engine-selection"],
   "sources": [
     { "title": "DynamoDB read/write capacity modes", "url": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/capacity-mode.html" },
-    { "title": "DynamoDB table classes", "url": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.TableClasses.html" },
+    { "title": "Evaluate your DynamoDB table class selection", "url": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/CostOptimization_TableClass.html" },
+    { "title": "DynamoDB reserved capacity", "url": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/reserved-capacity.html" },
     { "title": "Using Time to Live (TTL) in DynamoDB", "url": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/TTL.html" }
   ]
 }

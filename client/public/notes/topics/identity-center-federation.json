@@ -12,7 +12,7 @@
   ],
   "keyFacts": [
     { "value": "SCIM", "text": "Automatically provisions and deprovisions users and groups from an external IdP, so joiners, movers and leavers are updated without manual steps." },
-    { "value": "AD Connector", "text": "A proxy to on-premises Active Directory. No directory data is cached in AWS; users sign in with existing AD credentials." },
+    { "value": "AD Connector", "text": "A proxy that forwards sign-in requests to your on-premises domain controllers. Nothing is synchronized to AWS; users keep their existing AD credentials." },
     { "value": "ABAC", "text": "**Attributes for access control** pass IdP attributes (department, project) as session tags, so one permission set can compare them with resource tags." },
     { "value": "CLI", "text": "`aws configure sso` and `aws sso login` give developers short-lived CLI credentials, replacing IAM user access keys." }
   ],
@@ -27,6 +27,16 @@
         ["Servers or workloads outside AWS", "IAM Roles Anywhere", "Machine identity via certificates, no humans involved"]
       ],
       "highlightRow": 0
+    },
+    {
+      "title": "Compare: AWS Directory Service options",
+      "columns": ["Option", "What it is", "Pick it when…"],
+      "rows": [
+        ["AD Connector", "Proxy to your existing on-premises AD", "On-premises users sign in to AWS with AD credentials; nothing to sync"],
+        ["AWS Managed Microsoft AD", "Real Microsoft AD run by AWS, can trust on-premises AD", "AD-aware workloads in AWS (RDS for SQL Server, SharePoint) or a forest trust"],
+        ["Simple AD", "Samba 4 AD-compatible directory", "Small, low-cost standalone directory; no trusts, no MFA"]
+      ],
+      "highlightRow": 0
     }
   ],
   "keywords": [
@@ -35,7 +45,8 @@
     { "cue": "access level per account from group membership", "answer": "Assign groups to permission sets" },
     { "cue": "IdP attribute decides which tagged resources a user can touch", "answer": "Identity Center attributes for access control (ABAC)" },
     { "cue": "eliminate developers' long-term CLI keys", "answer": "aws sso login with Identity Center profiles" },
-    { "cue": "workforce SSO with least operational overhead", "answer": "IAM Identity Center" }
+    { "cue": "workforce SSO with least operational overhead", "answer": "IAM Identity Center" },
+    { "cue": "AD-aware apps in AWS need a real AD with a trust to on-premises", "answer": "AWS Managed Microsoft AD with a trust relationship" }
   ],
   "traps": [
     "**Cognito** is for customer (app) identities, not employees signing in to AWS accounts.",
@@ -46,6 +57,7 @@
   "relatedNotes": ["iam-policies-evaluation", "iam-roles-sts-cross-account", "organizations-scps-control-tower", "cognito-app-auth", "secure-remote-access"],
   "sources": [
     { "title": "What is IAM Identity Center?", "url": "https://docs.aws.amazon.com/singlesignon/latest/userguide/what-is.html" },
-    { "title": "Attributes for access control", "url": "https://docs.aws.amazon.com/singlesignon/latest/userguide/attributesforaccesscontrol.html" }
+    { "title": "Attributes for access control", "url": "https://docs.aws.amazon.com/singlesignon/latest/userguide/attributesforaccesscontrol.html" },
+    { "title": "What is AWS Directory Service?", "url": "https://docs.aws.amazon.com/directoryservice/latest/admin-guide/what_is.html" }
   ]
 }

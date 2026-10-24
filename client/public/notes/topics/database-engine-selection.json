@@ -14,7 +14,7 @@
     { "value": "15", "text": "Maximum **Aurora Replicas** per cluster, sharing the cluster storage volume so replica lag is usually well under a second." },
     { "value": "6 copies / 3 AZs", "text": "Aurora storage keeps six copies of data across three AZs and grows automatically, with no volume to size." },
     { "value": "Local NVMe", "text": "**RDS Optimized Reads** puts temporary tables on instance-local NVMe storage (\"d\" instance classes), speeding queries that spill sorts and GROUP BYs to disk." },
-    { "value": "Gremlin / openCypher / SPARQL", "text": "**Neptune** query languages. Use it for friends-of-friends, fraud rings and knowledge graphs where recursive SQL joins are too slow." },
+    { "value": "openCypher/Gremlin", "text": "**Neptune** graph query languages (SPARQL too). Use it for friends-of-friends, fraud rings and knowledge graphs where recursive SQL joins are too slow." },
     { "value": "End of support", "text": "Amazon **QLDB** reached end of support in July 2025. Don't pick it for new designs; AWS points ledger workloads to Aurora PostgreSQL." }
   ],
   "comparisons": [
@@ -27,7 +27,7 @@
         ["Document", "DocumentDB", "MongoDB drivers, flexible JSON", "Moving MongoDB workloads with minimal change"],
         ["Wide-column", "Keyspaces", "Cassandra drivers, CQL", "Moving Cassandra workloads, serverless"],
         ["Graph", "Neptune", "Relationships several hops deep", "Recommendations, social graphs, fraud detection"],
-        ["Time series", "Timestream", "Timestamped metrics, IoT telemetry", "Time-window queries over sensor or ops data"],
+        ["Time series", "Timestream", "Timestamped metrics, IoT telemetry", "Time-window queries over sensor or ops data (new customers get Timestream for InfluxDB)"],
         ["Data warehouse (OLAP)", "Redshift", "Aggregations over TBs, BI dashboards", "Analytics separate from the OLTP database"]
       ],
       "highlightRow": 4
@@ -41,19 +41,24 @@
     { "cue": "temp tables spill to disk, storage latency is the bottleneck", "answer": "RDS Optimized Reads on an instance class with local NVMe" },
     { "cue": "drop Oracle licensing costs, willing to change SQL", "answer": "DMS Schema Conversion + DMS to Aurora PostgreSQL" },
     { "cue": "heavy analytics slow the OLTP database", "answer": "Amazon Redshift (zero-ETL from Aurora)" },
-    { "cue": "unpredictable load, near idle at night, MySQL-compatible", "answer": "Aurora Serverless v2" }
+    { "cue": "unpredictable load, near idle at night, MySQL-compatible", "answer": "Aurora Serverless v2" },
+    { "cue": "Aurora, other Regions read locally with under 1 s lag, promote in minutes", "answer": "Aurora Global Database" },
+    { "cue": "RDS for PostgreSQL, faster reads in a far Region, don't change engine", "answer": "Cross-Region read replica" }
   ],
   "traps": [
     "DynamoDB is not a drop-in for MongoDB; switching to its API means rewriting data access code.",
     "Aurora MySQL doesn't support PostGIS; that's a PostgreSQL extension.",
     "Adding read replicas or bigger instances doesn't fix temp-table I/O latency; Optimized Reads does.",
     "Running heavy analytics on the production OLTP database (or a replica of it) is the wrong answer when the question stresses TB-scale aggregations; use Redshift.",
-    "A Multi-AZ standby (non-cluster RDS) doesn't serve reads; it exists only for failover."
+    "A Multi-AZ standby (non-cluster RDS) doesn't serve reads; it exists only for failover.",
+    "Aurora Global Database needs an Aurora cluster, so it is wrong when the question says to stay on RDS for PostgreSQL or MySQL; use a cross-Region read replica.",
+    "QLDB is retired and Timestream for LiveAnalytics is closed to new customers, so neither should be the answer for a brand-new design."
   ],
   "relatedNotes": ["rds-aurora-ha", "dynamodb-design-performance", "redshift-data-warehouse", "data-migration-transfer", "database-cost-optimization"],
   "sources": [
     { "title": "Choosing an AWS database service", "url": "https://docs.aws.amazon.com/decision-guides/latest/databases-on-aws-how-to-choose/databases-on-aws-how-to-choose.html" },
     { "title": "Improving query performance for RDS for MySQL with Amazon RDS Optimized Reads", "url": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/rds-optimized-reads.html" },
+    { "title": "Amazon Timestream for LiveAnalytics availability change", "url": "https://docs.aws.amazon.com/timestream/latest/developerguide/AmazonTimestreamForLiveAnalytics-availability-change.html" },
     { "title": "What is Amazon Aurora?", "url": "https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/CHAP_AuroraOverview.html" }
   ]
 }

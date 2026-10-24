@@ -4,7 +4,7 @@
   "domain": 3,
   "task": "3.5",
   "summary": "Move databases, files and SaaS data into AWS, once or continuously.",
-  "services": ["AWS DMS", "DMS Schema Conversion", "AWS DataSync", "AWS Transfer Family", "Amazon AppFlow"],
+  "services": ["AWS DMS", "DMS Schema Conversion", "AWS DataSync", "AWS Transfer Family", "Amazon AppFlow", "AWS Snowball Edge"],
   "tldr": [
     "Match the *kind* of data to the service: **databases → DMS**, **files on NFS/SMB/HDFS → DataSync**, **partners using SFTP/FTPS/AS2 → Transfer Family**, **SaaS apps such as Salesforce → AppFlow**.",
     "**DMS** does a full load followed by **change data capture (CDC)** so the source stays online. Changing engines (Oracle → Aurora PostgreSQL) also needs **DMS Schema Conversion** for schema and code.",
@@ -12,9 +12,9 @@
   ],
   "keyFacts": [
     { "value": "Full load + CDC", "text": "The DMS pattern for minimal downtime: copy existing data, then stream ongoing inserts, updates and deletes until cutover. Targets include RDS, Aurora, S3 (Parquet) and Redshift." },
-    { "value": "≈ 100 TB/day", "text": "Rough ceiling of a fully used 10 Gbps link. If the deadline fits, an online DataSync transfer over Direct Connect beats shipping devices." },
+    { "value": "≈ 100 TB/day", "text": "Rough ceiling of a fully used 10 Gbps link. If the deadline fits, an online DataSync transfer over Direct Connect beats shipping devices. If it doesn't, think offline transfer." },
     { "value": "S3 or EFS backend", "text": "Transfer Family servers store files directly in S3 or EFS. Partners keep their SFTP clients; a custom hostname can point at the server endpoint." },
-    { "value": "Snowball for new customers: closed", "text": "AWS no longer offers Snow Family devices to new customers. AWS now steers online transfers to DataSync." }
+    { "value": "Snowball: legacy", "text": "Snowball Edge is closed to new customers; AWS points them to DataSync (online) or Data Transfer Terminal (physical). Older exam questions still expect Snowball Edge for offline bulk moves." }
   ],
   "comparisons": [
     {
@@ -26,7 +26,8 @@
         ["AWS DataSync", "Files and objects (NFS, SMB, HDFS, S3-compatible)", "Scheduled incremental tasks", "Bulk or recurring file copy into S3, EFS or FSx"],
         ["AWS Transfer Family", "Files pushed by external users", "Continuous", "Partners must keep using SFTP/FTPS/FTP/AS2"],
         ["Amazon AppFlow", "SaaS records", "Scheduled or event-driven flows", "Salesforce, SAP, Zendesk and similar into S3 or Redshift with no code"],
-        ["Storage Gateway", "Files used by on-premises apps", "Continuous hybrid access", "Apps on premises keep using a local share backed by AWS"]
+        ["Storage Gateway", "Files used by on-premises apps", "Continuous hybrid access", "Apps on premises keep using a local share backed by AWS"],
+        ["Snowball Edge (legacy)", "Bulk data on a shipped device", "No", "Classic answer when the network can't meet the deadline; closed to new customers"]
       ],
       "highlightRow": 2
     }
@@ -39,14 +40,16 @@
     { "cue": "external partners upload via SFTP, land in S3, no servers", "answer": "AWS Transfer Family SFTP server" },
     { "cue": "per-partner folders on a managed SFTP service", "answer": "Transfer Family users with home directories and scoped IAM roles" },
     { "cue": "Salesforce records into S3 hourly without integration code", "answer": "Amazon AppFlow" },
-    { "cue": "final incremental sync during the cutover weekend", "answer": "Rerun the DataSync task" }
+    { "cue": "final incremental sync during the cutover weekend", "answer": "Rerun the DataSync task" },
+    { "cue": "hundreds of TB, slow or saturated link, deadline in weeks", "answer": "Snowball Edge in older questions; DataSync over Direct Connect when bandwidth allows" }
   ],
   "traps": [
     "DataSync copies files, not live database transactions; copying a MySQL data directory is never a valid database migration.",
     "A Glue crawler only reads schemas into the catalog; it does not replicate data or capture changes.",
     "`aws s3 sync` and rsync scripts lack managed scheduling, retries and integrity verification, so they lose to DataSync on operational overhead.",
     "S3 File Gateway is for ongoing hybrid access, not for external partners uploading over SFTP.",
-    "Rehosting Oracle on EC2 or RDS for Oracle keeps license costs; only an engine change removes them."
+    "Rehosting Oracle on EC2 or RDS for Oracle keeps license costs; only an engine change removes them.",
+    "Snowball Edge is wrong when a fast Direct Connect link can finish in time; it adds shipping time and can't import straight into EFS."
   ],
   "relatedNotes": ["storage-gateway-hybrid", "hybrid-connectivity-dx-vpn", "athena-glue-data-lake", "efs-fsx-file-storage", "database-engine-selection"],
   "sources": [

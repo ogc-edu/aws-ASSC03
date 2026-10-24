@@ -21,7 +21,7 @@
   "keyFacts": [
     {
       "value": "≥ 72 h grace",
-      "text": "A **compliance-mode** Vault Lock can be changed only during its grace time (at least 3 days). After that nobody, not root and not AWS, can remove it or delete recovery points early."
+      "text": "A **compliance-mode** Vault Lock can be changed or removed only during its grace time (at least 72 hours). After that no user, not root and not AWS, can remove it or delete recovery points early."
     },
     {
       "value": "Governance",
@@ -33,7 +33,7 @@
     },
     {
       "value": "Continuous",
-      "text": "**Continuous backup** gives point-in-time restore for RDS, Aurora and S3 (up to 35 days). Combine it with snapshot rules for long retention."
+      "text": "**Continuous backup** gives point-in-time restore (to the second) for RDS, Aurora and S3, for up to 35 days. Add snapshot rules for longer retention."
     },
     {
       "value": "Restore testing",
@@ -122,6 +122,7 @@
   ],
   "traps": [
     "RDS automated backups can't be kept for 7 years (maximum 35 days). Long retention needs AWS Backup or manual snapshots.",
+    "Continuous (PITR) backups max out at 35 days and can't move to cold storage; cross-Region or cross-account copies of them are plain snapshots.",
     "Deletion protection on RDS or DynamoDB stops the *resource* being deleted. It doesn't protect backups.",
     "Governance mode is not enough when the requirement says *no one* can delete backups.",
     "Copying backups to another vault in the **same** account doesn't survive an account compromise.",
@@ -140,6 +141,10 @@
     {
       "title": "AWS Backup Vault Lock",
       "url": "https://docs.aws.amazon.com/aws-backup/latest/devguide/vault-lock.html"
+    },
+    {
+      "title": "Continuous backups and point-in-time recovery (PITR)",
+      "url": "https://docs.aws.amazon.com/aws-backup/latest/devguide/point-in-time-recovery.html"
     },
     {
       "title": "Logically air-gapped vaults - AWS Backup",

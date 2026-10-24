@@ -13,7 +13,7 @@
   "keyFacts": [
     { "value": "Cache key", "text": "Every header, cookie or query string in the cache key splits the cache. Values the origin needs but that don't change the response belong in the **origin request policy**." },
     { "value": "< 1 ms", "text": "**CloudFront Functions** run JavaScript on viewer request and viewer response only, with no network or body access, at millions of requests per second." },
-    { "value": "us-east-1", "text": "**Lambda@Edge** functions are authored in N. Virginia and replicated. They run on viewer or origin events, can call other services, but have no VPC access or arm64." },
+    { "value": "us-east-1", "text": "**Lambda@Edge** functions are authored in N. Virginia and replicated. They run on viewer or origin events and can call other services, but only as Node.js or Python on x86_64, with no VPC access." },
     { "value": "Extra cache layer", "text": "**Origin Shield** adds one regional cache in front of the origin, so duplicate misses from many edge locations collapse into one origin fetch." },
     { "value": "Origin group", "text": "**Origin failover** retries a secondary origin when the primary returns chosen 5xx/4xx codes or times out. It applies to GET, HEAD and OPTIONS requests." }
   ],
@@ -36,12 +36,16 @@
     { "cue": "origin overloaded by duplicate requests from many edge locations", "answer": "CloudFront Origin Shield" },
     { "cue": "keep serving if the S3 bucket's Region fails, no DNS change", "answer": "S3 CRR + CloudFront origin group failover" },
     { "cue": "global users, slow static assets, private bucket", "answer": "CloudFront with S3 origin and origin access control (OAC)" },
-    { "cue": "cheaper Lambda@Edge for simple viewer logic", "answer": "Rewrite as a CloudFront Function" }
+    { "cue": "cheaper Lambda@Edge for simple viewer logic", "answer": "Rewrite as a CloudFront Function" },
+    { "cue": "most viewers in North America and Europe, cut CloudFront cost, still serve everyone", "answer": "Price Class 100" },
+    { "cue": "same large files downloaded repeatedly from S3 worldwide, high transfer-out bill", "answer": "CloudFront in front of the bucket with OAC" }
   ],
   "traps": [
     "Increasing TTLs doesn't help when the cache key includes every cookie and header; nearly every request is still unique.",
     "CloudFront Functions can't make network calls, so they can't read DynamoDB.",
     "Origin Shield reduces origin load; it isn't failover. Failover needs an **origin group**.",
+    "Origin failover only retries GET, HEAD and OPTIONS requests, so it doesn't protect POST or PUT writes.",
+    "Geographic restrictions or a WAF geo block *refuse* viewers; to cut cost but keep serving distant viewers, lower the **price class**.",
     "S3 Transfer Acceleration speeds uploads to one bucket; it doesn't cache content for global readers.",
     "Global Accelerator doesn't cache. For repeated content downloads, CloudFront is the right edge service."
   ],
@@ -49,6 +53,7 @@
   "sources": [
     { "title": "Control the cache key with a policy", "url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/controlling-the-cache-key.html" },
     { "title": "Differences between CloudFront Functions and Lambda@Edge", "url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/edge-functions-choosing.html" },
+    { "title": "Optimize high availability with CloudFront origin failover", "url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/high_availability_origin_failover.html" },
     { "title": "Use Amazon CloudFront Origin Shield", "url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/origin-shield.html" }
   ]
 }

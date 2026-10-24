@@ -11,7 +11,7 @@
     "Tape Gateway"
   ],
   "tldr": [
-    "**Storage Gateway** runs on premises (VM or hardware) and gives existing apps local protocols (NFS, SMB, iSCSI, VTL) backed by AWS storage, with a local cache for hot data.",
+    "**Storage Gateway** runs on premises (VM or hardware appliance, or on EC2) and gives existing apps local protocols (NFS, SMB, iSCSI, VTL) backed by AWS storage, with a local cache for hot data.",
     "Files → **S3 File Gateway** (each file becomes an S3 object). Block → **Volume Gateway**. Tape backups → **Tape Gateway**.",
     "Volume Gateway **cached** keeps the full data set in AWS and only hot data locally; **stored** keeps everything on premises and backs up asynchronously to AWS."
   ],
@@ -26,7 +26,7 @@
     },
     {
       "value": "Stored",
-      "text": "**Stored volumes**: full data set on premises for low latency to everything, with point-in-time snapshots sent to AWS as EBS snapshots."
+      "text": "**Stored volumes**: full data set on premises for low latency to everything, with asynchronous point-in-time snapshots to AWS that restore as EBS volumes."
     },
     {
       "value": "VTL",
@@ -34,7 +34,7 @@
     },
     {
       "value": "Closed",
-      "text": "**Amazon FSx File Gateway** no longer accepts new customers (since October 2024). New designs reach FSx for Windows directly."
+      "text": "**Amazon FSx File Gateway** is no longer open to new customers. Older questions may still pick it for cached on-prem access to FSx for Windows; new designs use FSx for Windows directly."
     }
   ],
   "comparisons": [
@@ -93,6 +93,10 @@
       "answer": "Volume Gateway stored volumes"
     },
     {
+      "cue": "recover on-prem iSCSI volumes onto EC2 after a disaster",
+      "answer": "Volume Gateway snapshots restored as EBS volumes"
+    },
+    {
       "cue": "replace tape library without changing backup app",
       "answer": "Tape Gateway"
     },
@@ -121,7 +125,7 @@
   ],
   "sources": [
     {
-      "title": "What is AWS Storage Gateway?",
+      "title": "What is Volume Gateway?",
       "url": "https://docs.aws.amazon.com/storagegateway/latest/vgw/WhatIsStorageGateway.html"
     },
     {

@@ -19,6 +19,16 @@
   ],
   "comparisons": [
     {
+      "title": "Compare: user pool vs identity pool",
+      "columns": ["Feature", "User pool", "Identity pool"],
+      "rows": [
+        ["Answers", "Who is this user? (authentication)", "Which AWS permissions do they get? (authorization)"],
+        ["Output", "JWTs (ID, access, refresh tokens)", "Temporary AWS credentials for an IAM role"],
+        ["Sign-in sources", "Own directory, social IdPs, SAML/OIDC", "User pool tokens, social or SAML IdPs, or guest"],
+        ["Use it to call", "API Gateway, AppSync, your own backend", "AWS services directly (S3, DynamoDB, Kinesis)"]
+      ]
+    },
+    {
       "title": "Compare: API Gateway authorization options",
       "columns": ["Option", "Caller proves identity with", "Pick it when…"],
       "rows": [
@@ -45,6 +55,7 @@
     "A user pool token **cannot** call AWS services such as Kinesis or S3 directly; you need an identity pool for IAM credentials.",
     "API keys identify a client for throttling; they are not an authentication mechanism.",
     "GuardDuty doesn't detect or block compromised Cognito passwords; Cognito threat protection does.",
+    "A WAF rate-based rule can't spot leaked passwords used slowly; it complements, but doesn't replace, Cognito threat protection.",
     "Letting the app choose the identity pool or role by tier stored on the device is insecure; derive the role from the token."
   ],
   "relatedNotes": ["identity-center-federation", "api-gateway", "iam-policies-evaluation", "waf-shield-ddos"],

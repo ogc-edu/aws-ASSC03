@@ -7,15 +7,15 @@
   "services": ["AWS Direct Connect", "Direct Connect gateway", "AWS Site-to-Site VPN", "AWS Transit Gateway"],
   "tldr": [
     "**Site-to-Site VPN**: encrypted IPsec over the internet, up in minutes, cheap, variable latency. **Direct Connect**: a private physical link with consistent performance and lower data transfer out rates, but it takes weeks to provision and **isn't encrypted by default**.",
-    "Encrypt DX with **MACsec** (supported dedicated ports) or a **VPN over DX**. Make it resilient with a second DX at another location, or a VPN as backup.",
+    "Encrypt DX with **MACsec** (10, 100 or 400 Gbps dedicated ports, not hosted connections) or a **VPN over DX**. Make it resilient with a second DX at another location, or a VPN as backup.",
     "Reach VPCs in many Regions from one DX with a **Direct Connect gateway**. Reach many VPCs at scale with a **transit VIF to a transit gateway**. Connect your own sites over the AWS backbone with **SiteLink**."
   ],
   "keyFacts": [
-    { "value": "1.25 Gbps", "text": "Maximum bandwidth of a standard VPN tunnel (large bandwidth tunnels go to 5 Gbps). Aggregate more with **ECMP** across tunnels on a transit gateway, which requires BGP." },
-    { "value": "1/10/100/400 Gbps", "text": "Dedicated DX port speeds. **Hosted connections** from a partner range from 50 Mbps to 25 Gbps, so you can right-size a mostly idle link." },
+    { "value": "1.25 Gbps", "text": "Maximum bandwidth of a standard VPN tunnel (newer large bandwidth tunnels reach 5 Gbps). Aggregate more with **ECMP** across BGP (dynamic) VPNs on a transit gateway." },
+    { "value": "1/10/100/400G", "text": "Dedicated DX port speeds. **Hosted connections** from a partner range from 50 Mbps to 25 Gbps, so you can right-size a mostly idle link." },
     { "value": "3 VIF types", "text": "**Private VIF** to a VGW or DX gateway, **public VIF** to AWS public endpoints, **transit VIF** to transit gateways through a DX gateway." },
     { "value": "Global", "text": "A **Direct Connect gateway** is a global object: one private or transit VIF can reach VPCs in many Regions without extra circuits." },
-    { "value": "2 tunnels", "text": "Each Site-to-Site VPN connection has two tunnels in different AZ-backed endpoints. Configure both for high availability." }
+    { "value": "2 tunnels", "text": "Each Site-to-Site VPN connection has two tunnels to separate AWS endpoints for redundancy. Configure both on the customer gateway, or maintenance on one tunnel drops the link." }
   ],
   "comparisons": [
     {
@@ -47,12 +47,15 @@
     "DX takes weeks to provision, so it fails any \"within a week\" requirement.",
     "A virtual private gateway doesn't support ECMP across VPN connections; you need a transit gateway.",
     "Private VIFs attach to one VGW in one Region; for several Regions use a DX gateway, not one VIF per VPC.",
-    "S3 gateway endpoints can't be used from on premises; on-premises access needs an interface endpoint."
+    "S3 gateway endpoints can't be used from on premises; on-premises access needs an interface endpoint.",
+    "A link aggregation group (LAG) adds bandwidth at one location; it doesn't save money on an underused link (downsize to a hosted connection) and isn't location-level resilience.",
+    "Accelerated VPN and ECMP both need a transit gateway; neither works on a VPN that ends on a virtual private gateway."
   ],
   "relatedNotes": ["vpc-connectivity-tgw-lattice", "vpc-endpoints-privatelink", "data-transfer-costs", "data-migration-transfer", "secure-remote-access"],
   "sources": [
     { "title": "What is AWS Direct Connect?", "url": "https://docs.aws.amazon.com/directconnect/latest/UserGuide/Welcome.html" },
     { "title": "AWS Site-to-Site VPN quotas", "url": "https://docs.aws.amazon.com/vpn/latest/s2svpn/vpn-limits.html" },
-    { "title": "Hosted Direct Connect connections", "url": "https://docs.aws.amazon.com/directconnect/latest/UserGuide/hosted_connection.html" }
+    { "title": "Hosted Direct Connect connections", "url": "https://docs.aws.amazon.com/directconnect/latest/UserGuide/hosted_connection.html" },
+    { "title": "Dedicated Direct Connect connections", "url": "https://docs.aws.amazon.com/directconnect/latest/UserGuide/dedicated_connection.html" }
   ]
 }

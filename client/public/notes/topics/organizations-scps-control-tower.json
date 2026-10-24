@@ -15,7 +15,7 @@
     { "value": "Mgmt account", "text": "SCPs and RCPs **never** apply to the management account. Keep workloads out of it, because a Region-deny SCP won't stop anyone there." },
     { "value": "Allow-list", "text": "If `FullAWSAccess` is replaced at an OU, only actions the OU's SCP allows remain available. Add the service to the allow-list to unblock it." },
     { "value": "PrincipalOrgID", "text": "`aws:PrincipalOrgID` in a bucket, ECR or KMS policy admits every current and future account in the org; `aws:PrincipalOrgPaths` narrows it to an OU." },
-    { "value": "Service-linked", "text": "SCPs and RCPs don't restrict service-linked roles, and RCPs don't apply to AWS managed KMS keys." },
+    { "value": "Service-linked", "text": "Neither SCPs nor RCPs restrict service-linked roles. RCPs also skip AWS managed KMS keys and cover only supported services (S3, KMS, STS, SQS, Secrets Manager and others)." },
     { "value": "3 control types", "text": "Control Tower controls are **preventive** (SCP/RCP), **detective** (AWS Config rules) and **proactive** (CloudFormation hooks that block noncompliant resources before creation)." }
   ],
   "comparisons": [
@@ -42,7 +42,9 @@
     { "cue": "nobody except the security role may change the audit role", "answer": "SCP with aws:PrincipalArn exception" },
     { "cue": "security team should not use the management account", "answer": "Delegated administrator in a security tooling account" },
     { "cue": "share central subnets with application accounts", "answer": "AWS RAM VPC sharing" },
-    { "cue": "remove root credentials from hundreds of member accounts", "answer": "IAM centralized root access management" }
+    { "cue": "remove root credentials from hundreds of member accounts", "answer": "IAM centralized root access management" },
+    { "cue": "no bucket in any member account may ever be public, admins can't undo it", "answer": "Account-level S3 Block Public Access plus an SCP denying s3:PutAccountPublicAccessBlock" },
+    { "cue": "block public AMIs and snapshots as a durable setting org-wide", "answer": "EC2 declarative policy attached to the root" }
   ],
   "traps": [
     "An SCP that allows an action does not grant it; the account still needs an IAM policy that allows it.",

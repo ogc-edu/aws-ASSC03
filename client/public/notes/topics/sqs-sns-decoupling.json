@@ -4,59 +4,70 @@
   "domain": 2,
   "task": "2.1",
   "summary": "Buffer work with SQS, broadcast with SNS, and combine them for fan-out.",
-  "services": ["Amazon SQS", "Amazon SNS", "Amazon MQ"],
+  "services": ["Amazon SQS", "Amazon SNS", "Amazon MQ", "Amazon Kinesis Data Streams"],
   "tldr": [
-    "**SQS** is a pull-based buffer: producers keep working when consumers are slow or down, and workers scale on queue depth. One message goes to **one** consumer.",
+    "**SQS** is a pull-based buffer: producers keep working when consumers are slow or down, and workers scale on queue depth. Each message is handled by **one** consumer and deleted after processing.",
     "**SNS** pushes each message to **every** subscriber. **SNS → one SQS queue per consumer** is the classic fan-out: each service gets a copy, works at its own pace and can go offline without losing events.",
+    "Several apps must **re-read the same ordered stream** in real time? That's **Kinesis Data Streams**, not SQS. Content-based routing of AWS, SaaS or custom events? **EventBridge**.",
     "Migrating an app that speaks **JMS, AMQP, MQTT or OpenWire** without code changes? Use **Amazon MQ** (ActiveMQ or RabbitMQ), not SQS."
   ],
   "keyFacts": [
-    { "value": "Visibility timeout", "text": "Hides a received message from other consumers while it is processed (default 30 s, max 12 h). For Lambda, set it to at least **6×** the function timeout." },
+    { "value": "30 s / 12 h", "text": "Default and maximum **visibility timeout**. For a Lambda consumer, AWS recommends a visibility timeout of at least **6×** the function timeout." },
     { "value": "20 s", "text": "Maximum **long polling** wait (`ReceiveMessageWaitTimeSeconds`). It cuts empty responses and cost compared with short polling." },
-    { "value": "14 days", "text": "Maximum message retention (default 4 days). A **dead-letter queue** catches messages after `maxReceiveCount` failures; **DLQ redrive** sends them back after a fix." },
-    { "value": "15 min", "text": "Maximum delivery delay, set per queue (**delay queue**) or per message (**message timer**) on standard queues." },
-    { "value": "1 MiB", "text": "Maximum SQS message size. Larger payloads (up to 2 GB) go through the **SQS Extended Client Library**, which stores the body in S3." }
+    { "value": "4 days / 14 days", "text": "Default and maximum message retention. A **dead-letter queue** catches messages after `maxReceiveCount` failed receives; **DLQ redrive** moves them back after a fix." },
+    { "value": "15 min", "text": "Maximum delivery delay, set per queue (**delay queue**) or per message (**message timer**, standard queues only). Longer delays need EventBridge Scheduler." },
+    { "value": "1 MiB", "text": "Maximum SQS message size (older questions may still say 256 KB). Larger payloads, up to 2 GB, use the **SQS Extended Client Library**, which stores the body in S3." }
   ],
   "comparisons": [
     {
-      "title": "Compare: messaging building blocks",
+      "title": "Compare: SQS vs SNS vs Kinesis vs EventBridge vs Amazon MQ",
       "columns": ["Service", "Delivery model", "Pick it when…"],
       "rows": [
-        ["SQS standard", "Pull; each message to one consumer; at-least-once", "Buffer work, absorb spikes, scale workers on backlog"],
-        ["SNS standard", "Push to all subscribers", "Broadcast to email, SMS, HTTP, Lambda or queues"],
-        ["SNS → SQS fan-out", "Push to queues, each consumer pulls", "Several services need every event, at their own pace"],
-        ["EventBridge", "Content-based routing rules", "Routing on many fields, SaaS or AWS service events, schedules"],
-        ["Amazon MQ", "Managed ActiveMQ or RabbitMQ broker", "Existing JMS/AMQP/MQTT apps, no code change"]
+        ["SQS standard", "Pull; each message to one consumer; at-least-once, best-effort order", "Buffer work, absorb spikes, scale workers on backlog"],
+        ["SQS FIFO", "Pull; ordered per message group; duplicates dropped within 5 min", "Order or no-duplicate processing matters"],
+        ["SNS standard", "Push to all subscribers", "Broadcast to email, SMS, mobile push, HTTP, Lambda or queues"],
+        ["SNS → SQS fan-out", "Push to queues, each consumer pulls its own copy", "Several services need every event, at their own pace"],
+        ["Kinesis Data Streams", "Ordered per shard; records kept for the retention period and re-readable by many consumers", "Real-time streaming analytics, replay, several apps reading the same data"],
+        ["EventBridge", "Rules route events by content to targets", "Routing on many fields, SaaS or AWS service events, schedules"],
+        ["Amazon MQ", "Managed ActiveMQ or RabbitMQ broker", "Existing JMS/AMQP/MQTT/OpenWire apps, no code change"]
       ],
-      "highlightRow": 2
+      "highlightRow": 3
     }
   ],
   "keywords": [
     { "cue": "each service gets every event and processes at its own pace", "answer": "SNS topic with an SQS queue per service" },
-    { "cue": "only send some events to one consumer", "answer": "SNS subscription filter policy (attributes or MessageBody scope)" },
+    { "cue": "only send some events to one consumer", "answer": "SNS subscription filter policy on that subscription" },
+    { "cue": "filter on fields in the message body, publisher sets no attributes", "answer": "SNS filter policy with FilterPolicyScope set to MessageBody" },
     { "cue": "orders lost when backend is overwhelmed", "answer": "Put an SQS queue between the tiers" },
+    { "cue": "API must acknowledge jobs immediately and never lose them, minimal code", "answer": "API Gateway direct integration to SQS, workers consume the queue" },
     { "cue": "scale workers in proportion to pending work", "answer": "Target tracking on backlog per instance" },
     { "cue": "jobs of variable length processed twice", "answer": "Extend with ChangeMessageVisibility while working" },
+    { "cue": "Lambda consumer processes the same message twice", "answer": "Visibility timeout at least 6x the function timeout" },
     { "cue": "millions of empty ReceiveMessage calls", "answer": "Long polling, wait time 20 seconds" },
     { "cue": "poison messages retried forever", "answer": "Dead-letter queue with maxReceiveCount" },
     { "cue": "reprocess messages from the DLQ after a fix", "answer": "SQS DLQ redrive to source queue" },
     { "cue": "hold every message for 5 minutes before consumers see it", "answer": "Delay queue (DelaySeconds = 300)" },
     { "cue": "payloads of hundreds of MB through SQS", "answer": "SQS Extended Client Library with S3" },
     { "cue": "premium jobs first", "answer": "Separate premium queue with its own workers" },
-    { "cue": "lift-and-shift ActiveMQ or RabbitMQ, survive an AZ failure", "answer": "Amazon MQ active/standby or cluster deployment" }
+    { "cue": "alarm when messages wait too long to start processing", "answer": "ApproximateAgeOfOldestMessage CloudWatch alarm" },
+    { "cue": "partner account must send to our queue, cannot assume roles", "answer": "SQS queue policy allowing the partner role" },
+    { "cue": "lift-and-shift ActiveMQ or RabbitMQ, survive an AZ failure", "answer": "Amazon MQ active/standby (ActiveMQ) or cluster (RabbitMQ)" }
   ],
   "traps": [
     "Several consumers polling **one** SQS queue split the messages between them; none gets every message.",
-    "Standard SQS queues have no message priority. Use separate queues for priority tiers.",
+    "SQS deletes a message once it's processed, so it can't replay data to a second app; that's a Kinesis use case.",
+    "SQS has no message priority attribute; use separate queues for priority tiers.",
     "Raising the visibility timeout to the longest possible job delays retries when a worker crashes.",
+    "Setting the **visibility timeout** to delay new messages is wrong; a **delay queue** hides messages before their first receive.",
     "A delay of hours or days can't be done with SQS delays (15 min max); use EventBridge Scheduler.",
-    "SNS alone doesn't buffer for an offline consumer. Put an SQS queue behind each subscription.",
-    "Amazon SQS doesn't speak JMS/OpenWire or AMQP natively, so it means application code changes."
+    "SNS doesn't hold messages for a subscriber that is down for maintenance; put an SQS queue behind each subscription.",
+    "Moving a JMS/OpenWire or AMQP app to SQS means code changes, even with the SQS Java Messaging Library; Amazon MQ keeps the protocol."
   ],
-  "relatedNotes": ["sqs-fifo-ordering", "eventbridge-event-driven", "lambda-event-processing", "auto-scaling-elb"],
+  "relatedNotes": ["sqs-fifo-ordering", "eventbridge-event-driven", "kinesis-streaming-ingestion", "lambda-event-processing", "auto-scaling-elb"],
   "sources": [
     { "title": "Amazon SQS message quotas", "url": "https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/quotas-messages.html" },
     { "title": "Amazon SNS Developer Guide: Fanout to Amazon SQS queues", "url": "https://docs.aws.amazon.com/sns/latest/dg/sns-sqs-as-subscriber.html" },
-    { "title": "Amazon SQS Developer Guide: Visibility timeout", "url": "https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html" }
+    { "title": "AWS Lambda Developer Guide: Configuring an Amazon SQS event source", "url": "https://docs.aws.amazon.com/lambda/latest/dg/services-sqs-configure.html" },
+    { "title": "AWS Decision Guide: Amazon SQS, Amazon SNS, or Amazon EventBridge?", "url": "https://docs.aws.amazon.com/decision-guides/latest/sns-or-sqs-or-eventbridge/sns-or-sqs-or-eventbridge.html" }
   ]
 }

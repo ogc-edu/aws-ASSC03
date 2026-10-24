@@ -14,7 +14,7 @@
     { "value": "LOR", "text": "**Least outstanding requests** sends each request to the ALB target with the fewest in flight. Use it when request times vary widely; round robin overloads some targets." },
     { "value": "Slow start", "text": "ALB **slow start mode** ramps new targets up gradually over a set duration, so instances that must warm caches or a JIT compiler aren't flooded." },
     { "value": "Cross-zone", "text": "On by default for ALB, off by default for NLB and GWLB. With uneven target counts per AZ, turn it on for NLB to spread load evenly." },
-    { "value": "EIP per AZ", "text": "An internet-facing NLB can take one Elastic IP per AZ subnet, giving partners a fixed allowlist. ALB IPs change and can't be assigned." },
+    { "value": "EIP per AZ", "text": "An internet-facing NLB can take one Elastic IP per AZ subnet, giving partners a fixed allowlist. An ALB can't hold Elastic IPs, and its node addresses change as it scales." },
     { "value": "GENEVE 6081", "text": "GWLB passes traffic to appliances encapsulated in GENEVE on port 6081; **GWLB endpoints** in other VPCs route traffic through it." }
   ],
   "comparisons": [
@@ -38,19 +38,23 @@
     { "cue": "new instances overwhelmed while warming up", "answer": "Slow start mode on the target group" },
     { "cue": "NLB targets uneven across AZs, some overloaded", "answer": "Enable cross-zone load balancing" },
     { "cue": "insert third-party firewall appliances transparently", "answer": "Gateway Load Balancer" },
-    { "cue": "expose a service privately to many VPCs with overlapping CIDRs", "answer": "NLB-backed PrivateLink endpoint service" }
+    { "cue": "expose a service privately to many VPCs with overlapping CIDRs", "answer": "NLB-backed PrivateLink endpoint service" },
+    { "cue": "in-flight requests fail when targets are removed during scale-in", "answer": "Raise the deregistration delay above the longest request" },
+    { "cue": "CloudFront in front of an ALB that must have no public IPs", "answer": "Internal ALB as a CloudFront VPC origin" }
   ],
   "traps": [
-    "You can't attach Elastic IPs to an ALB; front it with an NLB if you need fixed addresses.",
+    "You can't attach Elastic IPs to an ALB; front it with an NLB (or Global Accelerator) if you need fixed addresses.",
     "Sticky sessions make load *less* even; they don't fix slow requests piling up on one target.",
     "Swapping an ALB for an NLB to save money loses host and path routing; consolidate ALBs with rules instead.",
     "Deregistration delay applies to targets being removed, not new ones; warm-up needs slow start.",
+    "Slow start can't be combined with the least outstanding requests algorithm on the same target group, so pick the one that matches the symptom.",
     "Classic Load Balancer is legacy and never the best answer for a new design."
   ],
   "relatedNotes": ["auto-scaling-elb", "global-accelerator-edge-locations", "vpc-endpoints-privatelink", "network-firewall-inspection", "acm-tls-encryption-in-transit"],
   "sources": [
     { "title": "What is an Application Load Balancer?", "url": "https://docs.aws.amazon.com/elasticloadbalancing/latest/application/introduction.html" },
     { "title": "What is a Network Load Balancer?", "url": "https://docs.aws.amazon.com/elasticloadbalancing/latest/network/introduction.html" },
+    { "title": "How Elastic Load Balancing works", "url": "https://docs.aws.amazon.com/elasticloadbalancing/latest/userguide/how-elastic-load-balancing-works.html" },
     { "title": "What is a Gateway Load Balancer?", "url": "https://docs.aws.amazon.com/elasticloadbalancing/latest/gateway/introduction.html" }
   ]
 }

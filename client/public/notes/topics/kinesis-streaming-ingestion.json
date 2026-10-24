@@ -9,13 +9,13 @@
     "**Kinesis Data Streams (KDS)** is a durable, replayable stream: many consumers each read every record, in order per partition key, with sub-second latency and retention up to 365 days.",
     "**Amazon Data Firehose** (formerly Kinesis Data Firehose) is zero-administration *delivery*: it buffers, converts (JSON to Parquet/ORC), partitions and loads data into S3, Redshift, OpenSearch, Splunk, Iceberg tables or HTTP endpoints. Near real-time, no replay, no custom consumers.",
     "Throttling (`ProvisionedThroughputExceededException`) means a **hot shard** or too little capacity: fix the partition key, add shards, or switch to **on-demand** mode.",
-    "Need windowed analytics or stateful processing on the stream? Use **Amazon Managed Service for Apache Flink**."
+    "Need windowed analytics or stateful processing on the stream? Use **Amazon Managed Service for Apache Flink** (formerly Kinesis Data Analytics, the name older questions may use)."
   ],
   "keyFacts": [
-    { "value": "1 MB/s · 1,000 rec/s", "text": "Write limit **per shard** in provisioned mode. Shared read is 2 MB/s per shard across all standard (polling) consumers." },
-    { "value": "2 MB/s per consumer", "text": "**Enhanced fan-out** gives each registered consumer its own 2 MB/s per shard, pushed over HTTP/2 (`SubscribeToShard`) with lower latency." },
+    { "value": "1 MB/s · 1,000 rec/s", "text": "Write limit **per shard** in provisioned mode. Standard (polling) consumers share 2 MB/s of reads per shard, so adding consumers slows them all." },
+    { "value": "2 MB/s per consumer", "text": "**Enhanced fan-out** gives each registered consumer its own 2 MB/s per shard, pushed over HTTP/2 (`SubscribeToShard`), typically ~70 ms versus ~200 ms or more for polling." },
     { "value": "24 h → 365 days", "text": "Default KDS retention is 24 hours and can be extended up to 365 days, so consumers can **reprocess** history after a bug fix." },
-    { "value": "Parallelization factor 1–10", "text": "Lets a Lambda event source mapping process up to 10 batches per shard at once while keeping order **per partition key**." },
+    { "value": "Up to 10 per shard", "text": "The Lambda event source mapping **parallelization factor** (1–10) processes that many batches per shard at once while keeping order **per partition key**." },
     { "value": "On-demand mode", "text": "KDS scales shard capacity automatically for unpredictable traffic; no shard planning. Consumers keep using the same APIs unchanged." }
   ],
   "comparisons": [
@@ -61,6 +61,7 @@
   "sources": [
     { "title": "Amazon Kinesis Data Streams quotas and limits", "url": "https://docs.aws.amazon.com/streams/latest/dev/service-sizes-and-limits.html" },
     { "title": "What is Amazon Data Firehose?", "url": "https://docs.aws.amazon.com/firehose/latest/dev/what-is-this-service.html" },
-    { "title": "Using Lambda with Kinesis Data Streams", "url": "https://docs.aws.amazon.com/lambda/latest/dg/with-kinesis.html" }
+    { "title": "Using Lambda with Kinesis Data Streams", "url": "https://docs.aws.amazon.com/lambda/latest/dg/with-kinesis.html" },
+    { "title": "Develop enhanced fan-out consumers", "url": "https://docs.aws.amazon.com/streams/latest/dev/enhanced-consumers.html" }
   ]
 }

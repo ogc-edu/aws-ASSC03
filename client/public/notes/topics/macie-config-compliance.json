@@ -4,54 +4,162 @@
   "domain": 1,
   "task": "1.3",
   "summary": "Find sensitive data, track configuration compliance and collect audit evidence.",
-  "services": ["Amazon Macie", "AWS Config", "AWS Audit Manager", "AWS Artifact", "CloudWatch Logs data protection"],
+  "services": [
+    "Amazon Macie",
+    "AWS Config",
+    "AWS Audit Manager",
+    "AWS Artifact",
+    "CloudWatch Logs data protection"
+  ],
   "tldr": [
     "**Macie** finds PII and other sensitive data **in S3 objects**. Turn on automated sensitive data discovery from a delegated administrator to cover a whole organization.",
     "**AWS Config** records resource configuration over time and evaluates it against rules. A **conformance pack** bundles rules and remediations and can be deployed organization-wide.",
-    "**Audit Manager** collects evidence about *your* resources and maps it to frameworks such as PCI DSS. **AWS Artifact** hands you *AWS's own* reports and agreements (SOC, PCI AoC, BAA)."
+    "**Audit Manager** collects evidence about *your* resources and maps it to frameworks such as PCI DSS. **AWS Artifact** hands you *AWS's own* reports and agreements (SOC, PCI AoC, BAA).",
+    "Audit Manager went into **maintenance mode** on 30 April 2026 (no new customers; AWS points to Config conformance packs). The exam may still expect Audit Manager as the evidence-collection answer."
   ],
   "keyFacts": [
-    { "value": "Custom identifier", "text": "A Macie **custom data identifier** combines a regular expression with optional keywords that must appear near the match, for formats Macie doesn't know." },
-    { "value": "Org-wide", "text": "Macie, Config conformance packs and Audit Manager all support a **delegated administrator** account so one team can manage every account in AWS Organizations." },
-    { "value": "Remediation", "text": "Config rules can trigger **Systems Manager Automation** documents to fix noncompliant resources automatically, such as turning on S3 versioning." },
-    { "value": "BAA", "text": "Accepting the **AWS Organizations BAA** in Artifact Agreements from the management account covers all member accounts at once." },
-    { "value": "logs:Unmask", "text": "A **CloudWatch Logs data protection policy** masks sensitive values in log events. Only principals with `logs:Unmask` can see the original values." }
+    {
+      "value": "Custom identifier",
+      "text": "A Macie **custom data identifier** combines a regular expression with optional keywords that must appear near the match, for formats Macie doesn't know."
+    },
+    {
+      "value": "Org-wide",
+      "text": "Macie, Config conformance packs and Audit Manager all support a **delegated administrator** account so one team can manage every account in AWS Organizations."
+    },
+    {
+      "value": "Remediation",
+      "text": "Config rules can trigger **Systems Manager Automation** documents to fix noncompliant resources automatically, such as turning on S3 versioning."
+    },
+    {
+      "value": "Multi-account view",
+      "text": "An **AWS Config aggregator** pulls configuration and compliance data from many accounts and Regions into one account. It shows state, not API activity."
+    },
+    {
+      "value": "BAA",
+      "text": "Accepting the **AWS Organizations BAA** in Artifact Agreements from the management account covers all member accounts at once."
+    },
+    {
+      "value": "logs:Unmask",
+      "text": "A **CloudWatch Logs data protection policy** masks sensitive values in log events. Only principals with `logs:Unmask` can see the original values."
+    }
   ],
   "comparisons": [
     {
       "title": "Compare: which compliance tool answers the question?",
-      "columns": ["Service", "Looks at", "Output", "Pick it when…"],
+      "columns": [
+        "Service",
+        "Looks at",
+        "Output",
+        "Pick it when…"
+      ],
       "rows": [
-        ["Amazon Macie", "Contents of S3 objects", "Sensitive data findings", "Find or classify PII, credit cards, credentials in S3"],
-        ["AWS Config", "Resource configuration and its history", "Compliant / noncompliant per rule", "Prove settings are right, auto-remediate drift"],
-        ["AWS Audit Manager", "Config, CloudTrail, Security Hub evidence about your account", "Assessment report mapped to a framework", "Continuously collect audit evidence for PCI DSS, HIPAA, etc."],
-        ["AWS Artifact", "AWS's own compliance programs", "Downloadable reports, agreements", "Need AWS's SOC report, PCI AoC, or to accept a BAA"],
-        ["CloudWatch Logs data protection", "Log events as they are ingested", "Masked values plus audit findings", "PII is showing up in application logs"]
+        [
+          "Amazon Macie",
+          "Contents of S3 objects",
+          "Sensitive data findings",
+          "Find or classify PII, credit cards, credentials in S3"
+        ],
+        [
+          "AWS Config",
+          "Resource configuration and its history",
+          "Compliant / noncompliant per rule",
+          "Prove settings are right, auto-remediate drift"
+        ],
+        [
+          "AWS Audit Manager",
+          "Config, CloudTrail, Security Hub evidence about your account",
+          "Assessment report mapped to a framework",
+          "Continuously collect audit evidence for PCI DSS, HIPAA, etc."
+        ],
+        [
+          "AWS Artifact",
+          "AWS's own compliance programs",
+          "Downloadable reports, agreements",
+          "Need AWS's SOC report, PCI AoC, or to accept a BAA"
+        ],
+        [
+          "CloudWatch Logs data protection",
+          "Log events as they are ingested",
+          "Masked values plus audit findings",
+          "PII is showing up in application logs"
+        ]
       ],
       "highlightRow": 1
     }
   ],
   "keywords": [
-    { "cue": "discover and classify PII in S3 across many accounts", "answer": "Macie automated sensitive data discovery with a delegated administrator" },
-    { "cue": "company-specific ID pattern Macie doesn't detect", "answer": "Macie custom data identifier (regex plus keywords)" },
-    { "cue": "single deployable package of rules and remediations for all accounts", "answer": "AWS Config organization conformance pack" },
-    { "cue": "fix noncompliant resources automatically", "answer": "Config rule with SSM Automation remediation" },
-    { "cue": "automatically collect evidence mapped to PCI DSS controls", "answer": "AWS Audit Manager prebuilt framework" },
-    { "cue": "give a customer AWS's SOC 2 report", "answer": "AWS Artifact Reports" },
-    { "cue": "accept a BAA for every account in the organization", "answer": "AWS Artifact Agreements from the management account" },
-    { "cue": "mask emails and card numbers in CloudWatch logs", "answer": "CloudWatch Logs data protection policy" }
+    {
+      "cue": "discover and classify PII in S3 across many accounts",
+      "answer": "Macie automated sensitive data discovery with a delegated administrator"
+    },
+    {
+      "cue": "detect malicious access to S3 data, not classify it",
+      "answer": "GuardDuty S3 Protection"
+    },
+    {
+      "cue": "company-specific ID pattern Macie doesn't detect",
+      "answer": "Macie custom data identifier (regex plus keywords)"
+    },
+    {
+      "cue": "single deployable package of rules and remediations for all accounts",
+      "answer": "AWS Config organization conformance pack"
+    },
+    {
+      "cue": "fix noncompliant resources automatically",
+      "answer": "Config rule with SSM Automation remediation"
+    },
+    {
+      "cue": "automatically collect evidence mapped to PCI DSS controls",
+      "answer": "AWS Audit Manager prebuilt framework"
+    },
+    {
+      "cue": "give a customer AWS's SOC 2 report",
+      "answer": "AWS Artifact Reports"
+    },
+    {
+      "cue": "accept a BAA for every account in the organization",
+      "answer": "AWS Artifact Agreements from the management account"
+    },
+    {
+      "cue": "mask emails and card numbers in CloudWatch logs",
+      "answer": "CloudWatch Logs data protection policy"
+    },
+    {
+      "cue": "compliance view of every account and Region in one place",
+      "answer": "AWS Config aggregator"
+    }
   ],
   "traps": [
     "**GuardDuty** detects threats and suspicious activity. It does not classify the data inside S3 objects; that is Macie.",
     "AWS Config evaluates *configuration*, not *content*. A Config rule can't tell you whether a bucket holds PII.",
     "Downloading AWS's compliance report from Artifact proves AWS's side only. Evidence about your own resources comes from Audit Manager.",
+    "Audit Manager can't generate AWS's SOC 2 report, and an AWS Support case isn't how you get one. Use Artifact.",
     "Security Hub compliance standards report on controls. Enabling one is never a BAA with AWS.",
+    "Trusted Advisor checks are best-practice advice, not framework-mapped audit evidence.",
     "Encrypting a log group with KMS doesn't hide values from people who can read the logs. Use a data protection policy to mask them."
   ],
-  "relatedNotes": ["threat-detection-security-hub", "cloudtrail-logging-audit", "s3-security-access-control", "organizations-scps-control-tower"],
+  "relatedNotes": [
+    "threat-detection-security-hub",
+    "cloudtrail-logging-audit",
+    "s3-security-access-control",
+    "organizations-scps-control-tower"
+  ],
   "sources": [
-    { "title": "Amazon Macie User Guide: Custom data identifiers", "url": "https://docs.aws.amazon.com/macie/latest/user/custom-data-identifiers.html" },
-    { "title": "AWS Config Developer Guide: Conformance packs", "url": "https://docs.aws.amazon.com/config/latest/developerguide/conformance-packs.html" },
-    { "title": "AWS Audit Manager User Guide", "url": "https://docs.aws.amazon.com/audit-manager/latest/userguide/what-is.html" }
+    {
+      "title": "Amazon Macie User Guide: Custom data identifiers",
+      "url": "https://docs.aws.amazon.com/macie/latest/user/custom-data-identifiers.html"
+    },
+    {
+      "title": "AWS Config Developer Guide: Conformance packs",
+      "url": "https://docs.aws.amazon.com/config/latest/developerguide/conformance-packs.html"
+    },
+    {
+      "title": "AWS Audit Manager User Guide: Availability change",
+      "url": "https://docs.aws.amazon.com/audit-manager/latest/userguide/audit-manager-availability-change.html"
+    },
+    {
+      "title": "Amazon CloudWatch Logs: Protect sensitive log data with masking",
+      "url": "https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/mask-sensitive-log-data.html"
+    }
   ]
 }

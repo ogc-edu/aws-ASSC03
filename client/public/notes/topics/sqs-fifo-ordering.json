@@ -6,27 +6,29 @@
   "summary": "When order and deduplication matter: SQS FIFO, SNS FIFO, message groups and idempotency.",
   "services": ["Amazon SQS FIFO", "Amazon SNS FIFO", "Amazon DynamoDB"],
   "tldr": [
-    "**SQS FIFO** keeps strict order *within a message group* and drops duplicates sent within the deduplication interval. Standard queues are at-least-once and best-effort order.",
+    "**SQS FIFO** keeps strict order *within a message group* and drops duplicates sent within the 5-minute deduplication interval. **Standard** queues are at-least-once with best-effort order but nearly unlimited throughput.",
     "Set the **message group ID** to the entity that needs ordering (account, trader, instrument). Different groups are processed in parallel; one group for everything kills throughput.",
-    "Need ordered **fan-out** to several services? Publish to an **SNS FIFO** topic and subscribe one SQS FIFO queue per service."
+    "Need ordered **fan-out** to several services? Publish to an **SNS FIFO** topic and subscribe one SQS FIFO queue per service.",
+    "Can't change a standard queue, or duplicates come from the consumer side? Make the consumer **idempotent** (DynamoDB conditional write on a request ID)."
   ],
   "keyFacts": [
     { "value": "5 minutes", "text": "The FIFO **deduplication interval**. A message with the same deduplication ID (or same body, with content-based deduplication) is accepted but not delivered again." },
-    { "value": "300 / s", "text": "Default FIFO throughput per API action without batching; batching 10 messages per call gives up to 3,000 messages per second." },
-    { "value": "High throughput", "text": "**High throughput mode** scopes deduplication and throughput to the message group, raising limits far above 300/s. Spread load across many group IDs." },
-    { "value": ".fifo", "text": "FIFO queue and topic names must end in `.fifo`. You can't convert an existing standard queue to FIFO; create a new queue." },
-    { "value": "Idempotency", "text": "With a standard queue, make consumers **idempotent**: record each request ID with a DynamoDB conditional write and skip ones already processed." }
+    { "value": "300 / s", "text": "Default FIFO limit per API action (send, receive, delete) without batching; batches of 10 give up to **3,000 messages per second**." },
+    { "value": "High throughput", "text": "**High throughput mode** sets deduplication scope and the throughput limit to the **message group**, raising limits far above 300/s. Use many distinct group IDs." },
+    { "value": ".fifo", "text": "FIFO queue and topic names must end in `.fifo`. A standard queue can't be converted to FIFO; create a new queue and move the app." },
+    { "value": "Queue-level delay", "text": "FIFO queues support a delay on the whole queue but **not per-message timers**; per-message delays are a standard-queue feature." }
   ],
   "comparisons": [
     {
-      "title": "Compare: getting order and no duplicates",
+      "title": "Compare: standard vs FIFO and other ways to get order",
       "columns": ["Option", "Ordering", "Duplicates", "Pick it when…"],
       "rows": [
-        ["SQS standard", "Best effort", "Possible (at-least-once)", "Order doesn't matter and consumers are idempotent"],
+        ["SQS standard", "Best effort", "Possible (at-least-once)", "Order doesn't matter, very high throughput, consumers are idempotent"],
         ["SQS FIFO, one group ID", "Global", "Removed within 5 min", "Small volume that truly needs global order"],
         ["SQS FIFO, group ID per entity", "Per group", "Removed within 5 min", "Per-account order with parallel consumers"],
         ["SQS FIFO + high throughput mode", "Per group", "Removed per group", "Thousands of messages/s across many groups"],
-        ["SNS FIFO → SQS FIFO queues", "Per group, every subscriber", "Removed", "Several services each need every event in order"]
+        ["SNS FIFO → SQS FIFO queues", "Per group, every subscriber", "Removed", "Several services each need every event in order"],
+        ["Kinesis Data Streams", "Per shard (partition key)", "Possible (producer retries)", "High-volume ordered streaming with replay and many readers"]
       ],
       "highlightRow": 2
     }
@@ -42,16 +44,19 @@
   ],
   "traps": [
     "A single message group ID for all messages forces one-at-a-time processing and caps throughput.",
-    "Content-based deduplication exists only on **FIFO** queues, not standard queues.",
+    "Content-based deduplication exists only on **FIFO** queues and topics, not on standard queues.",
     "A longer visibility timeout reduces redelivery but does **not** guarantee exactly-once processing.",
     "An SNS **standard** topic in front of SQS FIFO queues loses the ordering guarantee; the topic must be FIFO too.",
+    "EventBridge rules don't guarantee delivery order, so routing through an event bus is a weak answer for strict per-entity ordering.",
     "Several services polling **one** queue compete for messages; each message goes to only one of them.",
+    "Spreading messages randomly across several FIFO queues breaks per-entity ordering; enable high throughput mode instead.",
     "Reserved concurrency of 1 slows everything down and still doesn't remove duplicates."
   ],
   "relatedNotes": ["sqs-sns-decoupling", "lambda-event-processing", "eventbridge-event-driven", "kinesis-streaming-ingestion"],
   "sources": [
-    { "title": "Amazon SQS Developer Guide: FIFO queues", "url": "https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-fifo-queues.html" },
-    { "title": "Amazon SQS Developer Guide: High throughput for FIFO queues", "url": "https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/high-throughput-fifo.html" },
-    { "title": "Amazon SNS Developer Guide: FIFO topics", "url": "https://docs.aws.amazon.com/sns/latest/dg/sns-fifo-topics.html" }
+    { "title": "Amazon SQS Developer Guide: Exactly-once processing", "url": "https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/FIFO-queues-exactly-once-processing.html" },
+    { "title": "Amazon SQS message quotas", "url": "https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/quotas-messages.html" },
+    { "title": "Amazon SQS Developer Guide: Enabling high throughput for FIFO queues", "url": "https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/enable-high-throughput-fifo.html" },
+    { "title": "Amazon SQS Developer Guide: Moving from a standard queue to a FIFO queue", "url": "https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/FIFO-queues-moving.html" }
   ]
 }

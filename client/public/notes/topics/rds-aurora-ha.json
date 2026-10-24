@@ -20,15 +20,19 @@
   "keyFacts": [
     {
       "value": "< 35 s",
-      "text": "Typical failover for an **RDS Multi-AZ DB cluster** (one writer + two *readable* standbys in three AZs), versus 1–2 minutes for a Multi-AZ DB instance."
+      "text": "Typical failover for an **RDS Multi-AZ DB cluster** (one writer + two *readable* standbys in three AZs), versus 60–120 seconds for a Multi-AZ DB instance."
     },
     {
       "value": "Up to 15",
       "text": "Aurora Replicas per cluster. Each has a **promotion tier 0–15**; Aurora promotes the lowest tier first, so put a full-size replica in tier 0."
     },
     {
+      "value": "< 60 s vs < 10 min",
+      "text": "Aurora failover when a replica exists is typically under a minute. With no replica, Aurora must re-create the writer, which typically takes under 10 minutes."
+    },
+    {
       "value": "≈ 1 s / < 1 min",
-      "text": "**Aurora Global Database**: storage-level replication with typical lag under a second and cross-Region failover in about a minute. Up to 10 secondary Regions."
+      "text": "**Aurora Global Database**: storage-level replication with typical lag under a second and cross-Region promotion in about a minute. Up to 10 secondary Regions (older material says 5)."
     },
     {
       "value": "1–35 days",
@@ -36,7 +40,7 @@
     },
     {
       "value": "72 h",
-      "text": "Longest **Aurora Backtrack** window (Aurora MySQL only). It rewinds the *same* cluster in minutes, with no new endpoint."
+      "text": "Longest **Aurora Backtrack** window (Aurora MySQL only, enabled when the cluster is created). It rewinds the *same* cluster in minutes, with no new endpoint."
     }
   ],
   "comparisons": [
@@ -99,8 +103,16 @@
       "answer": "Read replica (RDS) or Aurora Replica with reader endpoint"
     },
     {
+      "cue": "read latency for users in another Region, stay on RDS",
+      "answer": "Cross-Region read replica"
+    },
+    {
       "cue": "Aurora single writer took 10 minutes to recover",
       "answer": "Add an Aurora Replica in another AZ"
+    },
+    {
+      "cue": "read replicas idle most of the day, spike at peaks",
+      "answer": "Aurora Auto Scaling or Aurora Serverless v2 readers"
     },
     {
       "cue": "too many connections from Lambda, slow failover",
@@ -137,6 +149,7 @@
     "Global Database is Aurora-only. You can't add an RDS for PostgreSQL instance to it; use a cross-Region read replica instead.",
     "**Managed failover** is for an unplanned outage. A planned Region move with zero data loss is a **switchover**.",
     "Replicas and Multi-AZ copy bad writes instantly. Recovering from human error needs PITR, snapshots or Backtrack.",
+    "Backtrack works only on Aurora MySQL clusters created (or restored) with it enabled; it isn't available for Aurora PostgreSQL or RDS.",
     "Increasing `max_connections` or the instance size doesn't fix connection storms from Lambda. RDS Proxy pools connections and also shortens failover."
   ],
   "sections": [
@@ -155,8 +168,12 @@
   ],
   "sources": [
     {
-      "title": "Configuring and managing a Multi-AZ deployment for Amazon RDS",
-      "url": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.MultiAZ.html"
+      "title": "Failing over a Multi-AZ DB instance for Amazon RDS",
+      "url": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.MultiAZ.Failover.html"
+    },
+    {
+      "title": "Failing over a Multi-AZ DB cluster for Amazon RDS",
+      "url": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/multi-az-db-clusters-concepts-failover.html"
     },
     {
       "title": "High availability for Amazon Aurora",

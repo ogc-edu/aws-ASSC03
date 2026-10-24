@@ -11,9 +11,9 @@
     "If the scenario already uses Kafka, answer MSK. Moving to Kinesis means rewriting clients, so it fails \"no code change\" requirements."
   ],
   "keyFacts": [
-    { "value": "RF 3 · min ISR 2 · acks=all", "text": "The durable topic recipe: three replicas across AZs, writes need two in-sync copies, so one broker or AZ can fail without losing acknowledged data." },
-    { "value": "Tiered storage", "text": "Provisioned MSK can move older log segments to a low-cost tier while keeping hot data on broker storage. Consumers still replay with standard Kafka APIs." },
-    { "value": "IAM, mTLS, SASL/SCRAM", "text": "MSK provisioned supports IAM access control, mutual TLS and SASL/SCRAM. MSK Serverless uses IAM access control." },
+    { "value": "RF 3 + acks=all", "text": "The durable topic recipe: replication factor 3 across AZs, `min.insync.replicas=2` and producer `acks=all`, so one broker or AZ can fail without losing acknowledged data." },
+    { "value": "Tiered storage", "text": "Provisioned MSK clusters only: older log segments move to a low-cost tier while hot data stays on broker storage. Consumers still replay with standard Kafka APIs." },
+    { "value": "IAM · mTLS · SCRAM", "text": "MSK provisioned supports IAM access control, mutual TLS and SASL/SCRAM. MSK Serverless **requires** IAM access control." },
     { "value": "MSK Connect", "text": "Managed Kafka Connect workers that run source and sink connectors (for example an S3 sink) without servers to operate." }
   ],
   "comparisons": [

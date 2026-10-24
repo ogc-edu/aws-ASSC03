@@ -8,16 +8,31 @@
   "tldr": [
     "**Bucket policies** with condition keys do most of the work: `aws:SecureTransport` (HTTPS only), `aws:PrincipalOrgID` / `aws:PrincipalOrgPaths` (whole org or OU), `aws:SourceVpce` (one VPC endpoint only).",
     "**Block Public Access** at the account level (protected by an SCP) is the guard that stops anything becoming public. **Object Ownership: bucket owner enforced** disables ACLs and makes the bucket owner own every object.",
+    "Encryption at rest: **SSE-S3** is automatic; pick **SSE-KMS** with a customer managed key when key use must be audited in CloudTrail and governed by a key policy, and add **S3 Bucket Keys** to cut KMS cost.",
     "**Object Lock compliance mode** is true WORM: nobody, not even root, can delete objects or shorten retention. **Governance mode** can be bypassed by users with a special permission."
   ],
   "keyFacts": [
-    { "value": "SSE-S3 default", "text": "Since January 2023 every new object is encrypted at rest with SSE-S3 automatically. Choose **SSE-KMS** when key use must be audited in CloudTrail and governed by a key policy." },
-    { "value": "Secure defaults", "text": "New buckets have **Block Public Access on and ACLs disabled** (bucket owner enforced) by default since April 2023." },
+    { "value": "SSE-S3 default", "text": "Since 5 January 2023 every new object is encrypted at rest with SSE-S3 automatically, at no cost. Default encryption doesn't touch objects that already existed." },
+    { "value": "Secure defaults", "text": "New buckets have all four **Block Public Access** settings on and **ACLs disabled** (bucket owner enforced). Turning either off needs an explicit extra permission." },
+    { "value": "SSE-C off", "text": "Since April 2026 new buckets block **SSE-C** uploads by default; a bucket must opt back in. Older questions may still offer SSE-C for customer-supplied keys." },
     { "value": "20 KB", "text": "Maximum bucket policy size. When many apps need different prefix rules, delegate to **S3 access points**, each with its own policy and optional VPC-only origin." },
-    { "value": "Versioning", "text": "Object Lock requires **S3 Versioning**. Retention applies to object versions; a default retention period can be set on the bucket, and **legal holds** have no expiry." },
+    { "value": "Versioning", "text": "Object Lock needs **S3 Versioning** (turning Object Lock on enables it). Locks apply per object version; a bucket can set a default retention, and **legal holds** never expire on their own." },
     { "value": "Two policies", "text": "Cross-account reads of SSE-KMS objects need S3 permission **and** `kms:Decrypt` allowed in both the key policy and the caller's IAM policy." }
   ],
   "comparisons": [
+    {
+      "title": "Compare: S3 encryption at rest",
+      "columns": ["Option", "Who manages the key", "Audit of key use", "Pick it when…"],
+      "rows": [
+        ["SSE-S3", "Amazon S3", "No per-key audit trail", "Default, least overhead, no extra cost"],
+        ["SSE-KMS (AWS managed `aws/s3`)", "AWS KMS, fixed policy", "CloudTrail", "KMS audit but no cross-account sharing needed"],
+        ["SSE-KMS (customer managed key)", "You, through the key policy", "CloudTrail", "Key policy control, cross-account access, disable on demand"],
+        ["DSSE-KMS", "You, through KMS", "CloudTrail", "A rule demands two layers of encryption"],
+        ["SSE-C", "You supply the key on every request", "None in KMS", "Keys must stay with the customer; S3 never stores them"],
+        ["Client-side encryption", "You, before upload", "Your own tooling", "S3 must never see plaintext"]
+      ],
+      "highlightRow": 2
+    },
     {
       "title": "Compare: protecting objects from deletion",
       "columns": ["Option", "Who can still delete or shorten?", "Pick it when…"],
@@ -32,6 +47,7 @@
   ],
   "keywords": [
     { "cue": "no one, including root, can delete or shorten retention", "answer": "S3 Object Lock compliance mode" },
+    { "cue": "WORM copy in a second Region", "answer": "Versioning + Cross-Region Replication + Object Lock compliance on both buckets" },
     { "cue": "reject any request over plain HTTP", "answer": "Bucket policy Deny when aws:SecureTransport is false" },
     { "cue": "all current and future accounts in the organization can read", "answer": "Bucket policy with aws:PrincipalOrgID" },
     { "cue": "only accounts in one OU", "answer": "Bucket policy with aws:PrincipalOrgPaths" },
@@ -39,20 +55,25 @@
     { "cue": "nothing in any account can ever be made public", "answer": "Account-level Block Public Access plus SCP denying changes" },
     { "cue": "bucket owner must own partner-uploaded objects without ACLs", "answer": "Object Ownership: bucket owner enforced" },
     { "cue": "bucket policy near size limit, many apps with different prefixes", "answer": "S3 access points with per-app policies" },
+    { "cue": "encryption key use logged in CloudTrail and governed by a key policy", "answer": "Default encryption with SSE-KMS and a customer managed key" },
     { "cue": "KMS costs and throttling from SSE-KMS", "answer": "S3 Bucket Keys" },
     { "cue": "upload one object for 10 minutes without AWS credentials", "answer": "S3 presigned URL" }
   ],
   "traps": [
     "Governance mode plus an SCP is not regulatory WORM; the root user and bypass permission can still remove protection.",
+    "A legal hold has no end date and anyone with `s3:PutObjectLegalHold` can lift it, so it doesn't satisfy a fixed 7-year rule.",
     "MFA Delete and lifecycle transitions don't stop a privileged user from deleting data.",
     "Default encryption with SSE-KMS doesn't enforce HTTPS; encryption in transit needs `aws:SecureTransport`.",
+    "Traffic through a VPC endpoint uses private IPs, so `aws:SourceIp` can't pin access to it. Use `aws:SourceVpce`.",
     "Turning on Block Public Access in each account isn't enough if admins can turn it off; add an SCP.",
-    "Using ACLs to fix cross-account object ownership is the legacy approach. Prefer bucket owner enforced."
+    "Using ACLs to fix cross-account object ownership is the legacy approach. Prefer bucket owner enforced.",
+    "Sharing a bucket through AWS RAM or listing every account ID is the high-overhead answer for org-wide access; use `aws:PrincipalOrgID`."
   ],
   "relatedNotes": ["kms-cloudhsm", "s3-replication", "vpc-endpoints-privatelink", "iam-policies-evaluation", "organizations-scps-control-tower"],
   "sources": [
     { "title": "Amazon S3 User Guide: Object Lock", "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html" },
-    { "title": "Amazon S3 User Guide: Controlling ownership of objects", "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/about-object-ownership.html" },
-    { "title": "Amazon S3 User Guide: Blocking public access", "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html" }
+    { "title": "Amazon S3 User Guide: Configuring default encryption", "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/default-bucket-encryption.html" },
+    { "title": "Amazon S3 User Guide: Default SSE-C setting for new buckets FAQ", "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/default-s3-c-encryption-setting-faq.html" },
+    { "title": "Amazon S3 User Guide: Creating a general purpose bucket", "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/create-bucket-overview.html" }
   ]
 }

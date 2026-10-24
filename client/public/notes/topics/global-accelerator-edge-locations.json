@@ -11,7 +11,7 @@
     "To move the *compute* closer: **Local Zones** (metro areas), **Wavelength** (inside a carrier's 5G network), **Outposts** (your own building)."
   ],
   "keyFacts": [
-    { "value": "2 static IPs", "text": "A standard accelerator provides two static anycast IPv4 addresses from separate network zones. They stay the same while endpoints change behind them." },
+    { "value": "2 static IPs", "text": "An accelerator gets two static anycast IPv4 addresses (four with dual-stack: two IPv4, two IPv6). They stay assigned until you delete the accelerator, while endpoints change behind them." },
     { "value": "Traffic dial", "text": "Each endpoint group has a **traffic dial** (0–100%) to shift traffic between Regions gradually, for example to drain a Region during maintenance." },
     { "value": "Custom routing", "text": "A **custom routing accelerator** maps an accelerator port deterministically to one EC2 instance IP and port in a VPC subnet, for matchmaking-style game sessions." },
     { "value": "No DNS TTL", "text": "Failover happens inside the AWS network based on health checks, so clients don't wait for DNS caches to expire as with Route 53 failover." },
@@ -43,11 +43,13 @@
     "Route 53 failover with a low TTL still depends on resolvers and clients honoring the TTL; it isn't \"within seconds without DNS caching\".",
     "Moving Elastic IPs between Regions is impossible; EIPs are Regional.",
     "A standard accelerator load-balances to healthy endpoints; it can't pin a player to a specific instance port. That needs custom routing.",
+    "A custom routing accelerator runs no health checks and never fails over, because you choose the destination; use a standard accelerator when Regional failover is the goal.",
     "Wavelength is for mobile 5G clients; a studio on a wired office network wants a Local Zone."
   ],
   "relatedNotes": ["cloudfront-caching-edge", "route53-routing-failover", "load-balancer-selection", "ec2-instances-placement-hpc", "disaster-recovery-strategies"],
   "sources": [
     { "title": "What is AWS Global Accelerator?", "url": "https://docs.aws.amazon.com/global-accelerator/latest/dg/what-is-global-accelerator.html" },
+    { "title": "How AWS Global Accelerator works", "url": "https://docs.aws.amazon.com/global-accelerator/latest/dg/introduction-how-it-works.html" },
     { "title": "What is AWS Local Zones?", "url": "https://docs.aws.amazon.com/local-zones/latest/ug/what-is-aws-local-zones.html" },
     { "title": "What is AWS Wavelength?", "url": "https://docs.aws.amazon.com/wavelength/latest/developerguide/what-is-wavelength.html" }
   ]

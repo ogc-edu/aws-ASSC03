@@ -20,11 +20,15 @@
   "keyFacts": [
     {
       "value": "80,000 / 2,000",
-      "text": "Current gp3 maximums: 80,000 IOPS and 2,000 MiB/s per volume, up to 64 TiB. Baseline stays 3,000 IOPS and 125 MiB/s."
+      "text": "Current gp3 maximums: 80,000 IOPS and 2,000 MiB/s per volume, up to 64 TiB. Baseline stays 3,000 IOPS and 125 MiB/s. Older material quotes 16,000 / 1,000."
     },
     {
       "value": "256,000 IOPS",
-      "text": "io2 Block Express maximum per volume, with 4,000 MiB/s, 64 TiB and under 500 µs average latency. Needs a Nitro-based instance."
+      "text": "io2 Block Express maximum per volume, with 4,000 MiB/s, 64 TiB and under 500 µs average latency. Only Nitro-based instances get the full performance."
+    },
+    {
+      "value": "3 IOPS/GiB",
+      "text": "**gp2** performance is tied to size (bursting to 3,000 IOPS on small volumes, 16,000 max), so it often forces over-provisioned capacity. gp3 removes that link."
     },
     {
       "value": "Up to 16",
@@ -35,8 +39,8 @@
       "text": "Maximum throughput of **st1** and **sc1**. Both are HDD, can't be boot volumes, and suit large sequential I/O only."
     },
     {
-      "value": "Fast snapshot restore",
-      "text": "Volumes restored from a snapshot load blocks lazily from S3. **FSR**, enabled per snapshot per AZ, gives full performance immediately."
+      "value": "Up to 75% less",
+      "text": "**EBS Snapshots Archive** cuts storage cost for snapshots kept 90+ days and rarely restored; restoring takes 24–72 hours. Automate it with **Data Lifecycle Manager**."
     }
   ],
   "comparisons": [
@@ -56,9 +60,15 @@
           "Boot volumes, most databases, cost-cutting from gp2"
         ],
         [
+          "gp2",
+          "Burst to 3,000 IOPS on small volumes",
+          "IOPS scale with size; 16,000 IOPS, 250 MiB/s max",
+          "Legacy only; migrate to gp3 in place"
+        ],
+        [
           "io2 Block Express",
           "Highest IOPS, sub-ms latency, 99.999% durability",
-          "Most expensive",
+          "Most expensive; full speed on Nitro only",
           "180,000 IOPS OLTP, Multi-Attach clusters"
         ],
         [
@@ -123,14 +133,27 @@
     {
       "cue": "Lambda No space left on device",
       "answer": "Increase Lambda ephemeral storage (/tmp up to 10,240 MB)"
+    },
+    {
+      "cue": "snapshot every 6 hours, copy to another Region, no custom code",
+      "answer": "Amazon Data Lifecycle Manager policy with cross-Region copy"
+    },
+    {
+      "cue": "keep snapshots for years, restore in 24-72 hours is fine",
+      "answer": "EBS Snapshots Archive tier via Data Lifecycle Manager"
+    },
+    {
+      "cue": "all new volumes encrypted without changing templates",
+      "answer": "EBS encryption by default with the chosen KMS key"
     }
   ],
   "traps": [
-    "Multi-Attach doesn't cross AZs and isn't a shared file system. For shared files across AZs use EFS or FSx.",
-    "Growing a gp3 volume does **not** raise its throughput; gp3 performance is provisioned separately (that was gp2 behaviour).",
+    "Multi-Attach works only on io1/io2 in one AZ and isn't a shared file system. For shared files across AZs use EFS or FSx.",
+    "Growing a gp3 volume does **not** raise its throughput; gp3 performance is provisioned separately (size-linked performance was gp2 behaviour).",
     "RAID 0 of more volumes doesn't help when the *instance* EBS bandwidth is the bottleneck.",
     "Instance store data does not survive a stop or hardware failure, so it never meets \"data must persist\".",
-    "The EBS Snapshots Archive tier is cheaper storage, not faster restore; restores take up to 72 hours.",
+    "The EBS Snapshots Archive tier is cheaper storage, not faster restore; restores take 24–72 hours.",
+    "Elastic Volumes can grow a volume but never shrink it; to get smaller, copy the data to a new, smaller volume.",
     "You can't encrypt an existing volume in place. Snapshot it, create an encrypted copy, and swap volumes."
   ],
   "relatedNotes": [
@@ -151,8 +174,12 @@
       "url": "https://docs.aws.amazon.com/ebs/latest/userguide/general-purpose.html"
     },
     {
-      "title": "Amazon EC2 instance store",
-      "url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/InstanceStorage.html"
+      "title": "Attach an EBS volume to multiple instances using Multi-Attach",
+      "url": "https://docs.aws.amazon.com/ebs/latest/userguide/ebs-volumes-multi.html"
+    },
+    {
+      "title": "Archive Amazon EBS snapshots",
+      "url": "https://docs.aws.amazon.com/ebs/latest/userguide/snapshot-archive.html"
     }
   ]
 }

@@ -42,19 +42,22 @@
     { "cue": "resources shared outside the organization", "answer": "Access Analyzer external access analyzer" },
     { "cue": "block risky IAM policies in the pull request", "answer": "Access Analyzer custom policy checks in CI/CD" },
     { "cue": "per-tenant credentials without per-tenant roles", "answer": "AssumeRole with an inline session policy" },
-    { "cue": "stop users retagging themselves into access", "answer": "Deny TagResource/UntagResource and iam:TagRole on the tag key" }
+    { "cue": "stop users retagging themselves into access", "answer": "Deny TagResource/UntagResource and iam:TagRole on the tag key" },
+    { "cue": "role may be assumed only after MFA", "answer": "aws:MultiFactorAuthPresent true in the role trust policy" },
+    { "cue": "moved to RDS or Lambda, what is still our job", "answer": "You keep SGs, IAM and DB users, encryption settings and code; AWS patches the host, engine or runtime" }
   ],
   "traps": [
     "A permissions boundary or SCP that lists an action does **not** grant it; something else must allow it.",
     "Rotating root access keys is wrong. The best practice is to **delete** them and use roles.",
     "An SCP denying root actions does not secure the root user of a standalone account, and SCPs never apply to the management account.",
     "Access Analyzer *policy validation* only lints syntax and best practice; blocking specific actions or new access needs the **custom policy checks**.",
-    "ABAC without denying tag changes lets users edit tags to gain access."
+    "ABAC without denying tag changes lets users edit tags to gain access.",
+    "On managed services AWS patches the host and engine or runtime, but security groups, permissions, encryption choices and application code remain the customer's job."
   ],
   "sections": [
     {
       "heading": "Evaluation order in one pass (same account)",
-      "body": "1. Any explicit **Deny** in any policy? Deny.\n2. Do SCPs and RCPs allow it? If not, deny.\n3. Does a resource-based policy allow it? Allow (within boundary/session limits for roles).\n4. Does the identity policy allow it, and also the permissions boundary and session policy if present? Allow.\n5. Otherwise implicit deny.\n\nCross-account: the caller's account **and** the resource's account must both allow the request (identity policy on one side, resource policy or role trust on the other)."
+      "body": "1. Any explicit **Deny** in any policy? Deny.\n2. Do the RCPs and SCPs that apply allow it? If not, deny.\n3. Is it allowed by an identity-based policy or by a resource-based policy in the same account? If neither, implicit deny.\n4. If a permissions boundary or session policy applies, it must also allow the action; otherwise deny.\n5. Otherwise allow.\n\nCross-account: the caller's account **and** the resource's account must both allow the request (identity policy on one side, resource policy or role trust on the other)."
     }
   ],
   "relatedNotes": ["iam-roles-sts-cross-account", "organizations-scps-control-tower", "identity-center-federation", "cloudtrail-logging-audit"],

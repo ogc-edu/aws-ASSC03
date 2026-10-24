@@ -8,14 +8,14 @@
   "tldr": [
     "**ElastiCache** (Valkey, Redis OSS or Memcached) offloads repeated reads from RDS or Aurora, holds shared session state, and runs leaderboards with **sorted sets**.",
     "**Lazy loading** caches only what's requested (stale until TTL). **Write-through** updates the cache on every write (always fresh, can fill with unread data). Combine write-through **with a TTL** for fresh, lean caches.",
-    "Need the in-memory store to be the **durable primary database** (no data loss)? Pick **MemoryDB**, which commits writes to a Multi-AZ transaction log. ElastiCache is a cache."
+    "Need the in-memory store to be the **durable primary database** (no data loss)? The classic exam answer is **MemoryDB**, which commits writes to a Multi-AZ transaction log. Node-based ElastiCache for Valkey now has an optional durability mode too, but older questions treat ElastiCache as a cache only."
   ],
   "keyFacts": [
     { "value": "Sub-ms", "text": "Typical ElastiCache read latency. Repeated SELECTs served from cache cut database CPU and let you avoid scaling the DB up." },
     { "value": "Serverless", "text": "**ElastiCache Serverless** scales memory and compute automatically with no node sizing, for Valkey, Redis OSS and Memcached. Good fit for unpredictable traffic." },
     { "value": "Sorted sets", "text": "Valkey/Redis OSS **sorted sets** keep members ranked by score, so \"top 100\" and \"my rank\" are single fast commands." },
     { "value": "Multi-AZ log", "text": "**MemoryDB** persists every write to a distributed transaction log across AZs before acknowledging, giving durability with microsecond reads." },
-    { "value": "Memcached", "text": "Simple, multithreaded cache with no replication, persistence or Multi-AZ failover. Choose Valkey/Redis OSS when you need any of those." }
+    { "value": "Memcached", "text": "Simple multithreaded cache. Node-based Memcached has no replication, snapshots or Multi-AZ failover; choose Valkey or Redis OSS when you need any of those." }
   ],
   "comparisons": [
     {
@@ -47,11 +47,13 @@
     { "cue": "cache only requested data, up to 5 minutes stale", "answer": "Lazy loading with a 5-minute TTL" },
     { "cue": "reads must reflect latest write, no cache miss", "answer": "Write-through (plus TTL)" },
     { "cue": "make web tier stateless, share sessions", "answer": "Session store in ElastiCache or DynamoDB" },
-    { "cue": "single cache node failure lost all sessions", "answer": "Replica in another AZ with Multi-AZ automatic failover" }
+    { "cue": "single cache node failure lost all sessions", "answer": "Replica in another AZ with Multi-AZ automatic failover" },
+    { "cue": "node-based cache cluster runs at a steady size for years", "answer": "ElastiCache reserved nodes" }
   ],
   "traps": [
-    "ElastiCache is not a durable system of record; replication and snapshots can still lose recent writes. Use MemoryDB for that.",
+    "A standard ElastiCache cluster is not a durable system of record, because replication and snapshots can still lose recent writes; pick MemoryDB when the question demands zero data loss.",
     "DAX works only with DynamoDB, so it can't cache an RDS or Aurora database.",
+    "Compute Savings Plans don't cover ElastiCache nodes; a steady node-based cluster gets its discount from **reserved nodes**.",
     "Raising the TTL to 24 hours increases hits but makes stale data worse.",
     "A `noeviction` policy makes writes fail when memory is full; it doesn't keep the cache fresh.",
     "Adding read replicas spreads read load but doesn't fix stale data from lazy loading."
@@ -60,6 +62,7 @@
   "sources": [
     { "title": "Caching strategies for Amazon ElastiCache", "url": "https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/Strategies.html" },
     { "title": "What is Amazon ElastiCache?", "url": "https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/WhatIs.html" },
-    { "title": "What is MemoryDB?", "url": "https://docs.aws.amazon.com/memorydb/latest/devguide/what-is-memorydb.html" }
+    { "title": "What is MemoryDB?", "url": "https://docs.aws.amazon.com/memorydb/latest/devguide/what-is-memorydb.html" },
+    { "title": "Durability in ElastiCache", "url": "https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/durability.html" }
   ]
 }

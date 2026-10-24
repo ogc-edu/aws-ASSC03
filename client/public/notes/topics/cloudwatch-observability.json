@@ -24,7 +24,7 @@
     },
     {
       "value": "1 s",
-      "text": "**High-resolution custom metrics** can be published at 1-second granularity for alarms that react within seconds."
+      "text": "**High-resolution custom metrics** are stored at 1-second granularity; high-resolution alarms can evaluate every 10 or 30 seconds (at extra cost)."
     },
     {
       "value": "Composite",
@@ -37,6 +37,10 @@
     {
       "value": "Logs Insights",
       "text": "**CloudWatch Logs Insights** runs ad hoc queries over log groups; metric filters turn log patterns into metrics you can alarm on."
+    },
+    {
+      "value": "Never expire",
+      "text": "Default retention of a new log group. Set a retention period, and send rarely queried logs to the cheaper **Infrequent Access** log class."
     }
   ],
   "comparisons": [
@@ -57,6 +61,11 @@
           "Who changed this resource?",
           "CloudTrail",
           "CloudWatch metrics"
+        ],
+        [
+          "What did this resource's configuration look like last week?",
+          "AWS Config",
+          "CloudWatch Logs"
         ],
         [
           "Memory or disk use on EC2",
@@ -122,6 +131,14 @@
     {
       "cue": "reduce alarm noise from many alarms",
       "answer": "Composite alarm"
+    },
+    {
+      "cue": "debug logs queried rarely, cut log ingestion cost",
+      "answer": "Infrequent Access log class plus a retention period"
+    },
+    {
+      "cue": "mask emails and card numbers in logs without code changes",
+      "answer": "CloudWatch Logs data protection policy"
     }
   ],
   "traps": [
@@ -129,6 +146,7 @@
     "VPC Flow Logs show IP traffic metadata, not application-level timing.",
     "An average metric hides intermittent slow requests. Traces or percentiles (p99) reveal them.",
     "EC2 status checks don't see an app that hangs. Use ELB health checks or app-level metrics.",
+    "The Infrequent Access log class has no metric filters, subscription filters or Live Tail, and a log group's class can't be changed after creation.",
     "To investigate a live instance without it being replaced or receiving traffic, put it in Auto Scaling **Standby**, rather than detaching it or suspending processes."
   ],
   "relatedNotes": [
@@ -143,6 +161,14 @@
     {
       "title": "What is Amazon CloudWatch?",
       "url": "https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/WhatIsCloudWatch.html"
+    },
+    {
+      "title": "Publish custom metrics (high-resolution metrics)",
+      "url": "https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/publishingMetrics.html"
+    },
+    {
+      "title": "CloudWatch Logs log classes",
+      "url": "https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/CloudWatch_Logs_Log_Classes.html"
     },
     {
       "title": "What is AWS X-Ray?",

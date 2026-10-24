@@ -4,7 +4,7 @@
   "domain": 2,
   "task": "2.1",
   "summary": "Run containers with the right orchestrator and launch type, and scale them.",
-  "services": ["Amazon ECS", "Amazon EKS", "AWS Fargate", "Amazon ECR", "AWS Cloud Map", "AWS App Runner"],
+  "services": ["Amazon ECS", "Amazon EKS", "AWS Fargate", "Amazon ECR", "AWS Cloud Map", "Amazon ECS Express Mode", "AWS App Runner"],
   "tldr": [
     "**ECS** is AWS's own orchestrator and the simplest answer. **EKS** is managed Kubernetes: pick it when the question mentions existing Kubernetes manifests, Helm or portability.",
     "**Fargate** removes the servers: no nodes to patch or scale, each task or pod gets its own isolated compute. **Fargate Spot** cuts cost for interruptible tasks.",
@@ -12,10 +12,12 @@
   ],
   "keyFacts": [
     { "value": "Base + weight", "text": "A capacity provider strategy such as `FARGATE base 2, weight 1` + `FARGATE_SPOT weight 3` keeps 2 tasks on regular capacity and puts ~75% of extra tasks on Spot." },
-    { "value": "Fargate profiles", "text": "On EKS, a **Fargate profile** selects pods by namespace and labels to run on Fargate. Fargate pods don't support DaemonSets or GPUs." },
+    { "value": "2-min warning", "text": "Fargate Spot tasks get a two-minute warning (SIGTERM plus an EventBridge event) before interruption, so only interruption-tolerant tasks belong there." },
+    { "value": "2 IAM roles", "text": "The **task execution role** lets ECS pull ECR images, send logs and inject Secrets Manager or Parameter Store secrets. The **task role** gives your application code its AWS permissions." },
+    { "value": "Fargate profiles", "text": "On EKS, a **Fargate profile** selects pods by namespace and labels. Fargate pods can't run DaemonSets, GPUs, privileged containers or EBS volumes." },
     { "value": "Cloud Map", "text": "ECS **service discovery** registers tasks in AWS Cloud Map and a Route 53 private hosted zone, so services find each other by DNS name without a load balancer each." },
     { "value": "Circuit breaker", "text": "The ECS **deployment circuit breaker** with rollback stops a failing rolling update and returns to the last working task definition automatically." },
-    { "value": "App Runner", "text": "App Runner closed to new customers on 30 April 2026. AWS points new users to **ECS Express Mode** (Fargate service, ALB and scaling from one call)." }
+    { "value": "App Runner closed", "text": "App Runner no longer accepts new customers; existing ones can keep using it. AWS points new users to **ECS Express Mode** (Fargate service, ALB and scaling from one image)." }
   ],
   "comparisons": [
     {
@@ -26,7 +28,7 @@
         ["ECS on EC2 (capacity provider)", "Instances, AMIs, ASG", "GPUs, specific instance types, maximum control or Reserved/Savings pricing on EC2"],
         ["EKS on Fargate", "Kubernetes objects, no nodes", "Keep Kubernetes manifests, stop managing worker nodes"],
         ["EKS managed node groups", "Node group settings; AWS handles node lifecycle", "Kubernetes with DaemonSets, GPUs or EBS-backed stateful pods"],
-        ["App Runner / ECS Express Mode", "Source or image only", "Simple web app with HTTPS and autoscaling, no VPC or ALB setup"]
+        ["ECS Express Mode (App Runner for existing customers)", "A container image only", "Simple web app or API with HTTPS and autoscaling, no hand-built ALB or cluster; older questions may still say App Runner"]
       ],
       "highlightRow": 0
     }
@@ -40,21 +42,29 @@
     { "cue": "microservices find each other by DNS without a load balancer each", "answer": "ECS service discovery with AWS Cloud Map" },
     { "cue": "CPU stays low but latency rises with traffic", "answer": "Target tracking on ALBRequestCountPerTarget" },
     { "cue": "failed deployment should roll back automatically", "answer": "ECS deployment circuit breaker with rollback" },
+    { "cue": "test the full new version, switch all traffic at once, roll back on alarms", "answer": "ECS blue/green deployment with test listener, bake time and CloudWatch alarm rollback" },
+    { "cue": "secrets must not be in the image or plaintext in the task definition", "answer": "Secrets Manager reference in the container definition, read by the task execution role" },
     { "cue": "shared POSIX storage for Fargate tasks across AZs", "answer": "Amazon EFS volume in the task definition" },
     { "cue": "pull ECR images from private subnets without NAT", "answer": "ECR api and dkr interface endpoints plus S3 gateway endpoint" },
-    { "cue": "per-pod IAM permissions on EKS", "answer": "EKS Pod Identity (or IRSA)" }
+    { "cue": "every account in the organization pulls from one ECR repository", "answer": "ECR repository policy with aws:PrincipalOrgID" },
+    { "cue": "per-pod IAM permissions on EKS", "answer": "EKS Pod Identity (or IRSA)" },
+    { "cue": "deploy a container web app with HTTPS and autoscaling, no VPC, ALB or cluster setup", "answer": "ECS Express Mode (App Runner in older questions)" }
   ],
   "traps": [
     "Fargate Spot tasks can be interrupted; keep a `base` on regular FARGATE for capacity that must stay up.",
+    "Fargate Spot is an ECS feature only; EKS doesn't support Fargate Spot.",
     "ECS Service Auto Scaling adds tasks, not EC2 instances. On the EC2 launch type you also need a capacity provider with managed scaling.",
+    "Secret and ECR pull permissions belong on the **task execution role**, not the EC2 container instance role or the image.",
     "Lambda is not a fit for a 2-hour, 8-vCPU job. Run it as a scheduled Fargate task.",
     "EBS volumes are AZ-bound. Stateful EKS pods need a node group per AZ so the autoscaler adds nodes in the right zone.",
     "ECR image layers are stored in S3, so pulling privately needs the **S3 gateway endpoint** as well as the ECR endpoints."
   ],
   "relatedNotes": ["auto-scaling-elb", "load-balancer-selection", "efs-fsx-file-storage", "compute-rightsizing-graviton", "vpc-endpoints-privatelink"],
   "sources": [
-    { "title": "Amazon ECS Developer Guide: Capacity providers for Fargate", "url": "https://docs.aws.amazon.com/AmazonECS/latest/developerguide/fargate-capacity-providers.html" },
+    { "title": "Amazon ECS clusters for Fargate (Fargate and Fargate Spot capacity providers)", "url": "https://docs.aws.amazon.com/AmazonECS/latest/developerguide/fargate-capacity-providers.html" },
+    { "title": "Amazon ECS task execution IAM role", "url": "https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_execution_IAM_role.html" },
     { "title": "Amazon EKS User Guide: AWS Fargate", "url": "https://docs.aws.amazon.com/eks/latest/userguide/fargate.html" },
+    { "title": "Amazon ECR interface VPC endpoints (AWS PrivateLink)", "url": "https://docs.aws.amazon.com/AmazonECR/latest/userguide/vpc-endpoints.html" },
     { "title": "AWS App Runner availability change", "url": "https://docs.aws.amazon.com/apprunner/latest/dg/apprunner-availability-change.html" }
   ]
 }

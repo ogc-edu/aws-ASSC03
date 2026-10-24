@@ -12,8 +12,8 @@
     "One NAT gateway per AZ is the high-availability design. For dev or test that accepts losing egress when one AZ fails, a single NAT gateway is the cheapest."
   ],
   "keyFacts": [
-    { "value": "$0.005 / IP-hour", "text": "Charge for each public IPv4 address, in use or idle (about $3.60 a month each). Applies to EC2, load balancers, NAT gateways and unattached Elastic IPs." },
-    { "value": "Free gateway endpoints", "text": "S3 and DynamoDB gateway endpoints have no hourly or per-GB charge. Same-Region S3 traffic through them skips NAT processing fees." },
+    { "value": "$0.005 / IP-hour", "text": "Charge for each public IPv4 address since February 2024, in use or idle (about $3.60 a month). Covers EC2, RDS, load balancers, NAT gateways and unattached Elastic IPs; BYOIP is exempt." },
+    { "value": "$0 gateway endpoints", "text": "S3 and DynamoDB gateway endpoints have no hourly or per-GB charge. Same-Region S3 traffic through them skips NAT processing fees." },
     { "value": "ECR = 2 + S3", "text": "Private image pulls need `ecr.api` and `ecr.dkr` interface endpoints, plus the S3 **gateway** endpoint because image layers are stored in S3." },
     { "value": "Free EIGW", "text": "An egress-only internet gateway has no hourly charge; you pay normal data transfer out. It works for IPv6 only." }
   ],
@@ -47,7 +47,7 @@
     "An egress-only internet gateway handles IPv6 only; it cannot replace a NAT gateway for IPv4 traffic.",
     "Swapping auto-assigned public IPs for Elastic IPs doesn't cut cost; both are public IPv4 addresses billed hourly.",
     "Unattached Elastic IPs still cost money; release them.",
-    "A Graviton NAT instance saves little and adds operational work; endpoints remove the per-GB charge instead."
+    "Swapping the NAT gateway for a NAT instance trades its fees for patching, scaling and failover work; VPC endpoints remove the per-GB charge without that burden."
   ],
   "sections": [
     {
@@ -59,6 +59,7 @@
   "sources": [
     { "title": "NAT gateways (Amazon VPC User Guide)", "url": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-gateway.html" },
     { "title": "New – AWS Public IPv4 Address Charge", "url": "https://aws.amazon.com/blogs/aws/new-aws-public-ipv4-address-charge-public-ip-insights/" },
-    { "title": "AWS NAT Gateway now supports regional availability", "url": "https://aws.amazon.com/about-aws/whats-new/2025/11/aws-nat-gateway-regional-availability" }
+    { "title": "AWS NAT Gateway now supports regional availability", "url": "https://aws.amazon.com/about-aws/whats-new/2025/11/aws-nat-gateway-regional-availability" },
+    { "title": "Egress-only internet gateway", "url": "https://docs.aws.amazon.com/vpc/latest/userguide/egress-only-internet-gateway.html" }
   ]
 }

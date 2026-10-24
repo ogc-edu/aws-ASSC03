@@ -15,7 +15,7 @@
     { "value": "Delegated admin", "text": "Each service supports an Organizations delegated administrator that **auto-enables** member accounts, including new ones." },
     { "value": "Runtime", "text": "GuardDuty **Runtime Monitoring** watches OS-level behavior in EKS, ECS (including Fargate) and EC2 via a managed agent." },
     { "value": "Malware for S3", "text": "GuardDuty Malware Protection for S3 scans new objects and can tag them; a bucket policy can deny reads until the tag says `NO_THREATS_FOUND`." },
-    { "value": "CSPM", "text": "The original Security Hub (controls, FSBP standard, ASFF findings) is now called **Security Hub CSPM**; a newer Security Hub correlates GuardDuty, Inspector and CSPM signals." }
+    { "value": "CSPM", "text": "The original Security Hub (FSBP checks, ASFF findings) is now **Security Hub CSPM**; the newer Security Hub correlates CSPM, GuardDuty, Inspector and Macie findings. Exam questions may just say Security Hub." }
   ],
   "comparisons": [
     {
@@ -48,7 +48,8 @@
     "GuardDuty detects; it doesn't fix. Remediation needs EventBridge plus Lambda or SSM Automation.",
     "Inspector finds vulnerabilities, not active attacks; Detective investigates, it doesn't detect first.",
     "Macie is for sensitive data discovery, not malware scanning.",
-    "Running these services from the management account is discouraged; use a delegated administrator."
+    "Running these services from the management account is discouraged; use a delegated administrator.",
+    "Most Security Hub CSPM control checks rely on AWS Config recording, so Config must be on in each account and Region."
   ],
   "relatedNotes": ["macie-config-compliance", "cloudtrail-logging-audit", "organizations-scps-control-tower", "eventbridge-event-driven"],
   "sources": [

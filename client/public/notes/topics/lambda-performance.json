@@ -22,7 +22,7 @@
       "title": "Compare: cold-start and concurrency controls",
       "columns": ["Option", "What it does", "Cost", "Pick it when…"],
       "rows": [
-        ["SnapStart", "Restores new environments from a snapshot of an initialized one", "Low (free for Java)", "Long framework init on Java/Python/.NET, unpredictable traffic, no code change"],
+        ["SnapStart", "Restores new environments from a snapshot of an initialized one", "No extra charge on Java; caching and restore fees on Python/.NET", "Long framework init on Java/Python/.NET, unpredictable traffic, no code change"],
         ["Provisioned concurrency", "Keeps N environments initialized at all times", "Pay for every hour they're kept warm", "Strict low latency; schedule it with Application Auto Scaling for business hours"],
         ["Reserved concurrency", "Caps the function and guarantees it that many slots", "No extra charge", "Protect a downstream API or DB, or stop one function starving others"],
         ["More memory", "Adds CPU and network share", "Higher per-ms price, often shorter duration", "CPU-bound work runs too long"],
@@ -39,19 +39,23 @@
     { "cue": "show output progressively, shorter time to first byte", "answer": "Lambda response streaming (function URL RESPONSE_STREAM)" },
     { "cue": "limit calls to a third-party API to 20 at a time", "answer": "Reserved concurrency (or SQS maximum concurrency)" },
     { "cue": "Kinesis IteratorAge growing, don't reshard, keep per-key order", "answer": "Raise the event source mapping parallelization factor" },
-    { "cue": "route to origin by data lookup at the edge", "answer": "Lambda@Edge origin request function" }
+    { "cue": "route to origin by data lookup at the edge", "answer": "Lambda@Edge origin request function" },
+    { "cue": "simple sub-millisecond URL rewrite or redirect at the edge, cut cost", "answer": "CloudFront Functions on the viewer request event" }
   ],
   "traps": [
     "**Reserved concurrency** does not pre-initialize environments, so it does nothing for cold starts.",
     "\"Keep-warm\" pings from EventBridge or a canary are a hack: they warm one environment, not the burst you actually get.",
     "Provisioned concurrency sized for peak and left on 24/7 is the expensive answer when the question says \"most cost-effective\".",
     "SnapStart and provisioned concurrency can't be used on the same function version; pick one.",
-    "Lambda@Edge supports only x86_64 and Node.js/Python, with no VPC access, so \"switch the edge function to arm64\" is not a valid cost fix."
+    "Lambda@Edge runs only x86_64 Node.js or Python functions authored in us-east-1, with no VPC access, so \"switch the edge function to arm64\" is not a valid cost fix.",
+    "SnapStart also can't be combined with EFS or with more than 512 MB of ephemeral storage, so a function that needs EFS or a large `/tmp` has to use provisioned concurrency instead.",
+    "CloudFront Functions can't make network calls, so a per-request DynamoDB lookup at the edge needs **Lambda@Edge**, not a CloudFront Function."
   ],
   "relatedNotes": ["lambda-event-processing", "api-gateway", "cloudfront-caching-edge", "compute-rightsizing-graviton", "step-functions-orchestration"],
   "sources": [
     { "title": "Improving startup performance with Lambda SnapStart", "url": "https://docs.aws.amazon.com/lambda/latest/dg/snapstart.html" },
     { "title": "Configuring provisioned concurrency for a function", "url": "https://docs.aws.amazon.com/lambda/latest/dg/provisioned-concurrency.html" },
-    { "title": "Configure Lambda function memory", "url": "https://docs.aws.amazon.com/lambda/latest/dg/configuration-memory.html" }
+    { "title": "Configure Lambda function memory", "url": "https://docs.aws.amazon.com/lambda/latest/dg/configuration-memory.html" },
+    { "title": "Restrictions on Lambda@Edge", "url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/lambda-at-edge-function-restrictions.html" }
   ]
 }

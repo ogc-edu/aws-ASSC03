@@ -39,18 +39,22 @@
     { "cue": "subnets out of IP addresses, keep the VPC", "answer": "Add a secondary CIDR block and new subnets" },
     { "cue": "update partner CIDRs in one place for many accounts", "answer": "Customer-managed prefix list shared via AWS RAM" },
     { "cue": "share interface endpoints across 40 VPCs to cut cost", "answer": "Central endpoints + Route 53 private hosted zones over TGW" },
-    { "cue": "central egress inspection for all VPCs", "answer": "Inspection VPC with Network Firewall on the transit gateway" }
+    { "cue": "central egress inspection for all VPCs", "answer": "Inspection VPC with Network Firewall on the transit gateway" },
+    { "cue": "same AZ name in two accounts but cross-AZ charges appear", "answer": "Match subnets by AZ ID, not AZ name" }
   ],
   "traps": [
     "VPC peering isn't transitive; VPC A can't reach VPC C through VPC B.",
     "Transit Gateway doesn't solve overlapping CIDRs; use PrivateLink or VPC Lattice.",
     "You can't attach a VPC in another Region directly to a transit gateway; peer two transit gateways.",
     "Changing a VPC's primary CIDR or editing a subnet's CIDR isn't possible; add a secondary CIDR.",
-    "A full mesh of peering connections across dozens of VPCs is the high-overhead answer."
+    "A full mesh of peering connections across dozens of VPCs is the high-overhead answer.",
+    "Transit gateway **appliance mode** keeps flows symmetric through a stateful inspection appliance; it doesn't reduce data processing charges.",
+    "AZ names such as us-east-1a map to different physical AZs in different accounts; co-locate tiers by **AZ ID**."
   ],
   "relatedNotes": ["hybrid-connectivity-dx-vpn", "vpc-endpoints-privatelink", "network-firewall-inspection", "data-transfer-costs", "organizations-scps-control-tower"],
   "sources": [
     { "title": "How transit gateways work", "url": "https://docs.aws.amazon.com/vpc/latest/tgw/how-transit-gateways-work.html" },
+    { "title": "Transit gateway peering attachments", "url": "https://docs.aws.amazon.com/vpc/latest/tgw/tgw-peering.html" },
     { "title": "What is VPC peering?", "url": "https://docs.aws.amazon.com/vpc/latest/peering/what-is-vpc-peering.html" },
     { "title": "What is Amazon VPC Lattice?", "url": "https://docs.aws.amazon.com/vpc-lattice/latest/ug/what-is-vpc-lattice.html" }
   ]

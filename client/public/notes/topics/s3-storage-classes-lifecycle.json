@@ -11,11 +11,11 @@
     "Lifecycle also removes waste: **NoncurrentVersionExpiration** for old versions and **AbortIncompleteMultipartUpload** for orphaned parts. **Storage Lens** shows where that waste is."
   ],
   "keyFacts": [
-    { "value": "30 / 90 / 90 / 180 days", "text": "Minimum storage charge for Standard-IA and One Zone-IA / Glacier Instant Retrieval / Glacier Flexible Retrieval / Glacier Deep Archive. Deleting earlier still bills the minimum." },
+    { "value": "30/90/90/180 days", "text": "Minimum storage charge for Standard-IA and One Zone-IA / Glacier Instant Retrieval / Glacier Flexible Retrieval / Glacier Deep Archive. Deleting or transitioning earlier still bills the minimum." },
     { "value": "128 KB", "text": "Minimum billable object size in Standard-IA, One Zone-IA and Glacier IR. Lifecycle skips transitioning objects under 128 KB by default." },
-    { "value": "+40 KB per object", "text": "Metadata overhead billed for each object in Glacier Flexible Retrieval and Deep Archive. Bundle millions of tiny objects into large archives first." },
-    { "value": "1–5 min · 3–5 h · 5–12 h", "text": "Glacier Flexible Retrieval restore times for Expedited, Standard and Bulk. Deep Archive: Standard within 12 h, Bulk within 48 h." },
-    { "value": "No retrieval fee", "text": "Intelligent-Tiering moves objects between frequent, infrequent (30 days) and Archive Instant (90 days) tiers automatically. Optional Archive and Deep Archive Access tiers need restores." }
+    { "value": "+40 KB per object", "text": "Overhead per object in Glacier Flexible Retrieval and Deep Archive (32 KB at the Glacier rate, 8 KB at the Standard rate). Bundle millions of tiny objects into large archives first." },
+    { "value": "Restore 1 min–48 h", "text": "Glacier Flexible Retrieval: Expedited 1–5 min, Standard 3–5 h, Bulk 5–12 h. Deep Archive: Standard within 12 h, Bulk within 48 h, no Expedited." },
+    { "value": "No retrieval fee", "text": "Intelligent-Tiering moves objects to Infrequent (30 days idle) and Archive Instant (90 days) tiers for a small per-object monitoring fee. Objects under 128 KB aren't monitored. Optional Archive (90+ days) and Deep Archive (180+ days) tiers need restores." }
   ],
   "comparisons": [
     {
@@ -57,13 +57,14 @@
   "sections": [
     {
       "heading": "Reading a lifecycle question",
-      "body": "Write the timeline from the question, then map each phase:\n\n- **Days 0–30, frequent** → S3 Standard.\n- **Rare but instant** → Glacier Instant Retrieval (quarterly) or Standard-IA (monthly).\n- **Rare, hours OK** → Glacier Flexible Retrieval.\n- **Almost never, 12–48 h OK** → Deep Archive.\n- **End of retention** → an Expiration action.\n\nRemember that a lifecycle rule can filter on prefix, tags or object size, so different data in one bucket can follow different paths."
+      "body": "Write the timeline from the question, then map each phase:\n\n- **Days 0–30, frequent** → S3 Standard.\n- **Rare but instant** → Glacier Instant Retrieval (quarterly) or Standard-IA (monthly).\n- **Rare, hours OK** → Glacier Flexible Retrieval.\n- **Almost never, 12–48 h OK** → Deep Archive.\n- **End of retention** → an Expiration action.\n\nRemember that a lifecycle rule can filter on prefix, tags or object size, so different data in one bucket can follow different paths.\n\n**Changed in July 2026:** lifecycle rules can now move objects to Standard-IA or One Zone-IA from day 0. Older questions (and older answer keys) assume objects must stay 30 days in Standard first. The 30-day minimum *storage charge* for the IA classes is unchanged."
     }
   ],
   "relatedNotes": ["s3-performance", "s3-replication", "block-file-storage-cost", "storage-gateway-hybrid", "data-transfer-costs"],
   "sources": [
     { "title": "Understanding and managing Amazon S3 storage classes", "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html" },
     { "title": "Transitioning objects using Amazon S3 Lifecycle", "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/lifecycle-transition-general-considerations.html" },
-    { "title": "Understanding archive retrieval options", "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/restoring-objects-retrieval-options.html" }
+    { "title": "Understanding archive retrieval options", "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/restoring-objects-retrieval-options.html" },
+    { "title": "Amazon S3 removes 30-day minimum for transitions to S3 Standard-IA and S3 One Zone-IA", "url": "https://aws.amazon.com/about-aws/whats-new/2026/07/s3-removes-30-day-transitions-standard-ia-one-zone-ia/" }
   ]
 }

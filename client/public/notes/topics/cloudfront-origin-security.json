@@ -14,7 +14,7 @@
     { "value": "Key groups", "text": "Signed URLs and cookies are verified with public keys in a **trusted key group**; use key groups, not the legacy root-user CloudFront key pairs." },
     { "value": "Field-level", "text": "CloudFront **field-level encryption** encrypts chosen POST form fields at the edge with your public key, so only the holder of the private key can read them downstream." },
     { "value": "Geo restriction", "text": "Allow or block lists by country at the distribution level; blocked viewers get HTTP 403." },
-    { "value": "us-east-1", "text": "An ACM certificate used by CloudFront must be requested in **us-east-1**, whatever Region the origin is in." }
+    { "value": "us-east-1", "text": "An ACM certificate for viewer HTTPS on CloudFront must be requested or imported in **us-east-1**. A certificate on an ALB origin stays in the ALB's own Region." }
   ],
   "comparisons": [
     {
@@ -37,18 +37,22 @@
     { "cue": "browser uploads large files directly to a private bucket", "answer": "S3 presigned PUT URL from the backend" },
     { "cue": "encrypt one sensitive form field end to end", "answer": "CloudFront field-level encryption" },
     { "cue": "block viewers from specific countries with 403", "answer": "CloudFront geographic restrictions" },
-    { "cue": "custom domain HTTPS on CloudFront", "answer": "ACM certificate in us-east-1" }
+    { "cue": "custom domain HTTPS on CloudFront", "answer": "ACM certificate in us-east-1" },
+    { "cue": "public ALB must accept traffic only from CloudFront", "answer": "CloudFront origin-facing managed prefix list in the ALB SG plus a secret custom header checked by an ALB rule or WAF" },
+    { "cue": "static website in a private bucket, global, HTTPS custom domain, lowest cost", "answer": "S3 with OAC behind CloudFront, ACM certificate, Route 53 alias" }
   ],
   "traps": [
     "**OAI** is legacy; new answers use **OAC**, which also works with SSE-KMS encrypted objects.",
     "Signed URLs for hundreds of segment files are impractical; signed cookies cover them all.",
     "A presigned URL is S3's feature, not CloudFront's; it bypasses CloudFront caching.",
-    "Restricting an ALB security group to CloudFront IPs still leaves the ALB public; VPC origins remove that exposure."
+    "Restricting an ALB security group to CloudFront IPs still leaves the ALB internet-facing; when the ALB must have no public exposure, VPC origins are the answer.",
+    "Requesting the CloudFront certificate in the origin's Region fails; viewer certificates must be in us-east-1."
   ],
   "relatedNotes": ["cloudfront-caching-edge", "waf-shield-ddos", "s3-security-access-control", "acm-tls-encryption-in-transit"],
   "sources": [
     { "title": "Restrict access to an Amazon S3 origin", "url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-restricting-access-to-s3.html" },
     { "title": "Serve private content with signed URLs and signed cookies", "url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/PrivateContent.html" },
-    { "title": "Restrict access with VPC origins", "url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-vpc-origins.html" }
+    { "title": "Restrict access with VPC origins", "url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-vpc-origins.html" },
+    { "title": "Requirements for using SSL/TLS certificates with CloudFront", "url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/cnames-and-https-requirements.html" }
   ]
 }

@@ -11,7 +11,7 @@
     "**Consolidated billing** in AWS Organizations pools usage for volume tiers and shares Reserved Instance and Savings Plans discounts across member accounts."
   ],
   "keyFacts": [
-    { "value": "Activate in payer account", "text": "User-defined tags appear in Cost Explorer, Budgets and CUR only after you activate them as cost allocation tags in the management (payer) account." },
+    { "value": "Mgmt account only", "text": "User-defined tags appear in Cost Explorer, Budgets and CUR only after you activate them as cost allocation tags in the management (payer) account. Allow up to 24 hours." },
     { "value": "Budget actions", "text": "When a threshold is hit, Budgets can attach an IAM policy, attach an SCP, or stop specific EC2 or RDS instances, automatically or after approval." },
     { "value": "CUR 2.0", "text": "Data Exports delivers hourly line items with resource IDs and tags to S3 in Parquet. It is the source for SQL with Athena or joins with business data." },
     { "value": "No fixed thresholds", "text": "Cost Anomaly Detection monitors accounts, services, cost categories or tags, learns normal patterns, and alerts through email or SNS." }
@@ -39,12 +39,14 @@
     { "cue": "hourly line items with resource IDs, query with SQL", "answer": "AWS Data Exports (CUR 2.0) to S3 with Athena" },
     { "cue": "alert on unusual spend without maintaining thresholds", "answer": "AWS Cost Anomaly Detection" },
     { "cue": "share unused Savings Plan with newly acquired accounts", "answer": "Join them to the organization (consolidated billing, discount sharing on)" },
-    { "cue": "find idle or unattached resources quickly", "answer": "Trusted Advisor cost optimization checks" }
+    { "cue": "find idle or unattached resources quickly", "answer": "Trusted Advisor cost optimization checks" },
+    { "cue": "how much Savings Plan commitment to buy", "answer": "Cost Explorer Savings Plans recommendations" },
+    { "cue": "estimate the monthly cost of a planned architecture before building it", "answer": "AWS Pricing Calculator" }
   ],
   "traps": [
     "Tagging resources isn't enough; until the tag is activated as a cost allocation tag it won't appear in billing tools.",
     "Cost allocation tags are activated in the management account, not separately in each member account.",
-    "Budgets alerts only notify unless you configure a **budget action**; an alert alone never stops spending.",
+    "Budgets alerts only notify unless you configure a **budget action**; an alert alone never stops spending. From the management account, actions can apply an SCP to another account but can't stop its instances.",
     "Savings Plans can't be shared with AWS RAM or resold on the RI Marketplace; sharing comes from consolidated billing.",
     "CloudTrail and S3 Storage Class Analysis don't produce cost reports by tag."
   ],

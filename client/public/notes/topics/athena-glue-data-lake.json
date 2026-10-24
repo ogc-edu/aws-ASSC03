@@ -21,7 +21,7 @@
   "keyFacts": [
     {
       "value": "Pay per TB scanned",
-      "text": "Athena bills by data scanned, so converting CSV to Parquet and partitioning by date often cuts cost and runtime by an order of magnitude."
+      "text": "Athena bills by data scanned, so converting CSV to compressed Parquet and partitioning by date cuts both cost and runtime sharply."
     },
     {
       "value": "Partition projection",
@@ -118,14 +118,23 @@
     {
       "cue": "Redshift cluster runs 24/7 for one monthly report on S3 data",
       "answer": "Parquet in S3 queried by Athena"
+    },
+    {
+      "cue": "join recent Redshift tables with years of history in S3 without loading it",
+      "answer": "Redshift Spectrum external schema on the Glue Data Catalog"
+    },
+    {
+      "cue": "discover the schema of new S3 data and register tables automatically",
+      "answer": "AWS Glue crawler into the Glue Data Catalog"
     }
   ],
   "traps": [
     "Moving data to a colder S3 class or turning on Transfer Acceleration does nothing for Athena scan cost; file format and partitioning do.",
     "Running a crawler or `MSCK REPAIR TABLE` more often does not stop a Glue job from reprocessing old files; job bookmarks do.",
     "Athena workgroups control query settings and cost limits, not row- or column-level access; that is Lake Formation.",
-    "Converting Parquet back to CSV makes queries slower and costlier; columnar formats are always the answer for analytics.",
-    "Redshift Spectrum needs a Redshift cluster or workgroup; for occasional queries with nothing in Redshift, Athena is cheaper."
+    "Converting Parquet back to CSV makes scans slower and costlier; for analytic queries that read a few columns, columnar formats win.",
+    "Redshift Spectrum needs a Redshift cluster or workgroup; for occasional queries with nothing in Redshift, Athena is cheaper.",
+    "S3 Select appears in older questions for filtering one object with SQL, but it is closed to new customers; Athena is the current answer."
   ],
   "relatedNotes": [
     "kinesis-streaming-ingestion",
@@ -142,6 +151,10 @@
     {
       "title": "Tracking processed data using job bookmarks",
       "url": "https://docs.aws.amazon.com/glue/latest/dg/monitor-continuations.html"
+    },
+    {
+      "title": "Querying data in place with Amazon S3 Select",
+      "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/selecting-content-from-objects.html"
     },
     {
       "title": "What is AWS Lake Formation?",

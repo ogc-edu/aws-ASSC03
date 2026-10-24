@@ -26,7 +26,7 @@
     },
     {
       "value": "Minutes / tens of min",
-      "text": "**Pilot light**: data replicated continuously (cross-Region read replica, Global Database), AMIs and templates ready, but no app servers running until failover."
+      "text": "**Pilot light**: data replicated continuously (cross-Region read replica, Global Database), AMIs and templates ready, but app servers stay switched off until failover."
     },
     {
       "value": "Seconds–min / minutes",
@@ -34,11 +34,11 @@
     },
     {
       "value": "≈ 0 / ≈ 0",
-      "text": "**Multi-site active-active**: both Regions take live traffic. Needs multi-writer data such as DynamoDB global tables and health-checked latency routing."
+      "text": "**Multi-site active-active**: every Region takes live traffic. Write locally with DynamoDB global tables, or write to one Region with Aurora Global Database."
     },
     {
       "value": "Seconds / minutes",
-      "text": "**Elastic Disaster Recovery** replicates block storage continuously into a low-cost staging area and launches full-size recovery instances only for drills or failover."
+      "text": "**Elastic Disaster Recovery** replicates servers at block level into a low-cost staging area and launches full-size recovery instances only for drills or failover."
     }
   ],
   "comparisons": [
@@ -103,12 +103,24 @@
       "answer": "AWS Elastic Disaster Recovery"
     },
     {
+      "cue": "relational DR, replication lag under 1 second, promote in under a minute",
+      "answer": "Aurora Global Database"
+    },
+    {
+      "cue": "point-in-time restore in another Region, no running DB there",
+      "answer": "RDS cross-Region automated backup replication"
+    },
+    {
       "cue": "non-disruptive recovery drills",
       "answer": "AWS Elastic Disaster Recovery drill instances"
     },
     {
       "cue": "read and write in both Regions, no promotion step",
       "answer": "DynamoDB global tables + Route 53 latency routing"
+    },
+    {
+      "cue": "operators trigger failover, no DNS edits during the event",
+      "answer": "Application Recovery Controller routing controls"
     },
     {
       "cue": "standby Region launches fail with vCPU limit error",
@@ -128,6 +140,8 @@
     "Pilot light and warm standby both keep a live database copy. If the question says no app servers may run, it is pilot light; if a small app fleet already runs, it is warm standby.",
     "Don't pay for active-active or a warm standby when the stated RPO/RTO is hours. The question usually asks for the *most cost-effective* option that still meets the numbers.",
     "Snapshots or DLM copies every 15 minutes can't give an RPO of seconds. Continuous replication (DRS, Global Database, global tables) can.",
+    "Aurora Global Database write forwarding still sends writes to one primary Region; when that Region fails you must promote a secondary, so it is not multi-writer.",
+    "Replication copies corruption and deletes too. Keep point-in-time backups alongside any pilot light, warm standby or active-active design.",
     "Service quotas are per Region. A DR Region with low vCPU or other quotas can't scale to production size, so raise the quotas before you need them and check them in DR tests.",
     "Remember the dependencies: AMIs, KMS keys, secrets and network routes must all exist in the DR Region, not only the data."
   ],

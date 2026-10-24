@@ -26,7 +26,7 @@
     },
     {
       "value": "Same instance ID",
-      "text": "**Simplified automatic recovery** brings an instance back on new hardware with the same ID, private IP, Elastic IP and EBS data, which suits license-bound servers."
+      "text": "**Simplified automatic recovery** (on by default) moves a failed instance to new hardware in the *same AZ*, keeping its ID, private and Elastic IPs, and EBS data."
     },
     {
       "value": "ELB health checks",
@@ -52,7 +52,7 @@
       "rows": [
         [
           "ARC zonal shift / autoshift",
-          "One AZ, behind ALB/NLB",
+          "One AZ for ALB, NLB, Auto Scaling groups or EKS",
           "Instances in an AZ pass health checks but are slow (gray failure)"
         ],
         [
@@ -101,6 +101,10 @@
       "answer": "Auto Scaling group min/max/desired 1 across AZs"
     },
     {
+      "cue": "VPC Lambda function failed during an AZ outage",
+      "answer": "Configure subnets in at least two AZs"
+    },
+    {
       "cue": "instances drift after in-place patching",
       "answer": "Immutable: new AMI + launch template + instance refresh"
     },
@@ -127,7 +131,7 @@
     "EFS **One Zone** and FSx **Single-AZ** don't survive an AZ failure. Pick Regional EFS or Multi-AZ FSx.",
     "EBS volumes and Multi-Attach are tied to one AZ. They can't share data across AZs.",
     "Rolling updates with min 100% / max 200% still mix old and new versions. Use blue/green when traffic must switch all at once.",
-    "An Auto Scaling replacement is a *new* instance with a new ID and IP. When the license is bound to the instance, use EC2 automatic recovery instead."
+    "An Auto Scaling replacement is a *new* instance with a new ID and IP; EC2 automatic recovery keeps the ID but stays in the same AZ, so it doesn't survive an AZ outage."
   ],
   "relatedNotes": [
     "auto-scaling-elb",
@@ -145,6 +149,10 @@
     {
       "title": "Zonal shift in Amazon Application Recovery Controller",
       "url": "https://docs.aws.amazon.com/r53recovery/latest/dg/arc-zonal-shift.html"
+    },
+    {
+      "title": "Automatic instance recovery - Amazon EC2",
+      "url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-recover.html"
     },
     {
       "title": "What is AWS Fault Injection Service?",

@@ -12,7 +12,7 @@
     "**Logs:** set retention instead of *Never expire*, use the CloudWatch Logs **Infrequent Access** class for rarely queried logs, and use OpenSearch **UltraWarm / cold** tiers with ISM policies."
   ],
   "keyFacts": [
-    { "value": "3,000 IOPS · 125 MiB/s", "text": "gp3 baseline at any size, with IOPS and throughput provisioned separately. Usually cheaper than gp2 or io2 when needs are moderate." },
+    { "value": "3,000 IOPS·125 MiB/s", "text": "gp3 baseline at any size, with IOPS and throughput provisioned separately. Usually cheaper than gp2, and than io2 unless you need io2's latency or very high IOPS." },
     { "value": "Up to 75% less", "text": "EBS Snapshots Archive storage cost versus standard tier. Minimum 90 days archived; restoring can take up to 72 hours." },
     { "value": "500 vs 250 MiB/s", "text": "Maximum throughput of st1 versus sc1. Both are HDD, can't be boot volumes, and suit large sequential I/O only." },
     { "value": "IA → Archive", "text": "EFS lifecycle moves files by days since last access, and can move them back to Standard on first access. Namespace and Multi-AZ stay unchanged." },
@@ -49,12 +49,13 @@
     "Increasing a gp3 volume's size doesn't raise its throughput; provision throughput directly with Elastic Volumes.",
     "EFS One Zone or FSx Single-AZ cuts cost but breaks any requirement to stay Multi-AZ.",
     "Unattached EBS volumes keep billing; snapshot them, delete them, and set `DeleteOnTermination` to true in launch templates.",
-    "Moving cold files out of a file system to S3 Glacier breaks the requirement to open them through the same mount path."
+    "Moving cold files out of a file system to S3 Glacier breaks the requirement to open them through the same mount path.",
+    "Archived EBS snapshots are stored as full copies, so archive monthly or yearly snapshots; archiving every daily incremental can cost more."
   ],
   "relatedNotes": ["ebs-volumes-performance", "efs-fsx-file-storage", "s3-storage-classes-lifecycle", "aws-backup", "cloudwatch-observability"],
   "sources": [
     { "title": "Amazon EBS volume types", "url": "https://docs.aws.amazon.com/ebs/latest/userguide/ebs-volume-types.html" },
-    { "title": "Archive Amazon EBS snapshots", "url": "https://docs.aws.amazon.com/ebs/latest/userguide/snapshot-archive.html" },
+    { "title": "Considerations for archiving EBS snapshots", "url": "https://docs.aws.amazon.com/ebs/latest/userguide/snapshot-archive-considerations.html" },
     { "title": "Amazon EFS lifecycle management", "url": "https://docs.aws.amazon.com/efs/latest/ug/lifecycle-management-efs.html" }
   ]
 }

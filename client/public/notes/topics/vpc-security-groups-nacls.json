@@ -27,7 +27,7 @@
         ["Rule types", "Allow only", "Allow and deny"],
         ["Evaluation", "All rules together", "In order by rule number, first match wins"],
         ["Sources", "CIDR, prefix list, or another security group", "CIDR only"],
-        ["Default (new custom one)", "Denies all inbound, allows all outbound", "Custom NACL denies everything until you add rules"]
+        ["Defaults", "New SG: no inbound rules, all outbound allowed", "Default NACL allows all; a new custom NACL denies all until you add rules"]
       ]
     }
   ],

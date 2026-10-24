@@ -22,7 +22,7 @@
       "columns": ["Option", "Who it's for", "Needs", "Pick it when…"],
       "rows": [
         ["Session Manager", "Admins", "SSM Agent + instance profile", "No bastion, no open ports, audit logs"],
-        ["EC2 Instance Connect Endpoint", "Admins", "SSH server; no agent", "Appliances where agents are forbidden"],
+        ["EC2 Instance Connect Endpoint", "Admins", "SSH or RDP on the instance; no SSM Agent", "Appliances where agents are forbidden"],
         ["AWS Client VPN", "Remote employees", "VPN client, SAML or AD auth", "Users need broad network access to the VPC"],
         ["AWS Verified Access", "Employees and contractors", "Identity + device trust providers", "Per-app zero-trust access without a VPN"],
         ["Bastion host", "Admins", "Public instance, SSH keys", "Almost never the best exam answer"]
@@ -47,6 +47,7 @@
   "relatedNotes": ["vpc-endpoints-privatelink", "vpc-security-groups-nacls", "identity-center-federation", "hybrid-connectivity-dx-vpn"],
   "sources": [
     { "title": "AWS Systems Manager Session Manager", "url": "https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager.html" },
+    { "title": "Use VPC endpoints for Systems Manager", "url": "https://docs.aws.amazon.com/systems-manager/latest/userguide/setup-create-vpc.html" },
     { "title": "Connect using EC2 Instance Connect Endpoint", "url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/connect-using-eice.html" },
     { "title": "What is AWS Verified Access?", "url": "https://docs.aws.amazon.com/verified-access/latest/ug/what-is-verified-access.html" }
   ]

@@ -20,7 +20,7 @@
   "keyFacts": [
     {
       "value": "3,500 / 5,500",
-      "text": "Requests per second **per prefix**: 3,500 PUT/COPY/POST/DELETE and 5,500 GET/HEAD. HTTP 503 Slow Down means spread keys across more prefixes."
+      "text": "At least 3,500 PUT/COPY/POST/DELETE and 5,500 GET/HEAD requests per second **per prefix**, with no limit on prefixes. HTTP 503 Slow Down means spread keys across more prefixes."
     },
     {
       "value": "100 MB / 5 GB",
@@ -28,11 +28,11 @@
     },
     {
       "value": "50 TB",
-      "text": "Maximum S3 object size since December 2025 (it was 5 TB). Objects that large must use multipart upload."
+      "text": "Maximum S3 object size since December 2025 (previously 5 TB, which older exam questions may still quote). Objects over 5 GB need multipart upload."
     },
     {
       "value": "Single-digit ms",
-      "text": "**S3 Express One Zone** stores data in one AZ in a *directory bucket*, with much lower latency and lower request cost than S3 Standard."
+      "text": "**S3 Express One Zone** keeps data in one AZ in a *directory bucket*: up to 10x faster access and much lower request cost than S3 Standard, 99.95% availability."
     },
     {
       "value": "Strong",
@@ -104,6 +104,10 @@
       "answer": "S3 Express One Zone directory bucket"
     },
     {
+      "cue": "same S3 objects downloaded repeatedly by users worldwide",
+      "answer": "Amazon CloudFront in front of the bucket"
+    },
+    {
       "cue": "request charges dominate for small temporary files",
       "answer": "S3 Express One Zone in the compute AZ"
     },
@@ -120,9 +124,10 @@
     "Transfer Acceleration helps long internet paths, not in-Region EC2 reads or request-rate limits.",
     "Versioning doesn't increase throughput; it only keeps old versions.",
     "S3 Express One Zone lives in one AZ, so use it for data you can regenerate or that has another copy.",
-    "Mountpoint isn't a full POSIX file system. It doesn't support editing existing files in place, so don't pick it for shared read-write workloads (use EFS or FSx).",
+    "Mountpoint isn't a full POSIX file system: it can't modify existing files, rename directories or lock files, so use EFS or FSx for shared read-write workloads.",
     "A gateway VPC endpoint gives private routing and avoids NAT cost; it doesn't add bandwidth.",
-    "Glacier storage classes can't be mounted or read directly at low latency."
+    "S3 Glacier Flexible Retrieval and Deep Archive objects must be restored before they can be read, so they never meet a low-latency requirement.",
+    "With SSE-KMS at very high request rates, KMS request quotas can throttle S3; turn on S3 Bucket Keys rather than adding prefixes."
   ],
   "relatedNotes": [
     "s3-storage-classes-lifecycle",
@@ -138,12 +143,16 @@
       "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/optimizing-performance.html"
     },
     {
-      "title": "S3 Express One Zone",
-      "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-one-zone.html"
+      "title": "High performance workloads: S3 Express One Zone",
+      "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/directory-bucket-high-performance.html"
     },
     {
-      "title": "Amazon S3 increases the maximum object size to 50 TB",
-      "url": "https://aws.amazon.com/about-aws/whats-new/2025/12/amazon-s3-maximum-object-size-50-tb/"
+      "title": "Uploading objects (single PUT and multipart limits)",
+      "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/upload-objects.html"
+    },
+    {
+      "title": "Mount an Amazon S3 bucket as a local file system",
+      "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/mountpoint.html"
     }
   ]
 }

@@ -11,10 +11,13 @@
     "Release safely with **versions** and **aliases**. An alias can split traffic by weight between two versions and be switched back instantly."
   ],
   "keyFacts": [
-    { "value": "15 min", "text": "Maximum function timeout. Memory goes up to 10,240 MB (CPU scales with it) and `/tmp` ephemeral storage up to 10,240 MB." },
-    { "value": "2 retries", "text": "Lambda retries a failed **asynchronous** invocation up to twice by default. Then an **on-failure destination** or DLQ keeps the event; destinations also record the error." },
+    { "value": "15 min", "text": "Maximum function timeout. Memory runs from 128 MB to 10,240 MB (CPU scales with it), and `/tmp` ephemeral storage from 512 MB to 10,240 MB." },
+    { "value": "1,000", "text": "Default concurrent executions per account per Region, shared by every function. Raise it with a quota request; **reserved concurrency** carves out a guaranteed slice for one function." },
+    { "value": "2 retries", "text": "A failed **asynchronous** invocation is retried twice by default (configurable 0–2). Events wait up to 6 hours in the async queue, then go to an **on-failure destination** or DLQ." },
+    { "value": "6 MB / 1 MB", "text": "Invocation payload limit: 6 MB synchronous, 1 MB asynchronous (older material says 256 KB). Put bigger data in S3 and pass the object key." },
+    { "value": "6× timeout", "text": "For an SQS trigger, set the queue's **visibility timeout** to at least six times the function timeout, and add a redrive policy (`maxReceiveCount` of 5 or more) for poison messages." },
     { "value": "Bisect + retries", "text": "For Kinesis and DynamoDB Streams, **BisectBatchOnFunctionError**, `MaximumRetryAttempts` and an on-failure destination stop one bad record from blocking a shard." },
-    { "value": "Parallelization", "text": "The **parallelization factor** (up to 10) processes several batches per Kinesis or DynamoDB shard at once, while keeping order per partition key." },
+    { "value": "Parallelization", "text": "The **parallelization factor** (1–10) processes several batches per Kinesis or DynamoDB shard at once, while keeping order per partition key." },
     { "value": "Multi-AZ", "text": "A VPC-connected function runs in the subnets you give it. Configure subnets in **at least two AZs** so an AZ failure doesn't stop it." }
   ],
   "comparisons": [
@@ -28,6 +31,17 @@
         ["API Gateway throttling", "API, stage, method or client", "Caller gets HTTP 429", "Protect a backend at the front door"]
       ],
       "highlightRow": 1
+    },
+    {
+      "title": "Compare: where failed (and successful) events go",
+      "columns": ["Mechanism", "Applies to", "What it keeps", "Pick it when…"],
+      "rows": [
+        ["On-failure destination", "Async invocations; Kinesis, DynamoDB Streams and Kafka mappings", "Invocation record: event plus error details", "You need the error context; targets SQS, SNS, Lambda, EventBridge or S3"],
+        ["On-success destination", "Async invocations", "Invocation record with the function's result", "Route results onward with no code in the function"],
+        ["Function DLQ (async setting)", "Async invocations only", "The original event, with a few error attributes", "Older setup; standard SQS queue or SNS topic only"],
+        ["SQS redrive DLQ (queue setting)", "SQS event source mappings", "The message after maxReceiveCount failed receives", "Poison messages from an SQS-triggered function"]
+      ],
+      "highlightRow": 0
     }
   ],
   "keywords": [
@@ -35,6 +49,8 @@
     { "cue": "async EventBridge-triggered function must stay under a concurrency limit without losing events", "answer": "Reserved concurrency" },
     { "cue": "send successful results to EventBridge and failures to a queue, no code", "answer": "Lambda destinations (on-success, on-failure)" },
     { "cue": "one bad record blocks a Kinesis or DynamoDB stream shard", "answer": "BisectBatchOnFunctionError plus retry limit and on-failure destination" },
+    { "cue": "SQS-triggered function sometimes processes the same message twice", "answer": "Visibility timeout at least 6x the function timeout, plus idempotent code" },
+    { "cue": "malformed SQS message retried forever", "answer": "Redrive policy to a DLQ on the source queue (maxReceiveCount)" },
     { "cue": "Kinesis iterator age grows but stream throughput is fine", "answer": "Raise the parallelization factor" },
     { "cue": "send 10% of traffic to a new version, roll back instantly", "answer": "Alias with weighted routing" },
     { "cue": "only a specific SNS topic or S3 bucket may invoke the function", "answer": "Resource-based policy with aws:SourceArn (and aws:SourceAccount)" },
@@ -45,14 +61,17 @@
   "traps": [
     "Reserved concurrency on an SQS-triggered function throttles pollers and can push valid messages to the DLQ; use maximum concurrency instead.",
     "Provisioned concurrency is not a limit. It pre-warms environments and still lets the function scale beyond it.",
-    "An asynchronous-invocation DLQ does nothing for event source mappings; streams use the mapping's on-failure destination.",
+    "A function-level DLQ does nothing for event source mappings: SQS uses the queue's own redrive policy, and streams use the mapping's on-failure destination.",
+    "Destinations don't apply to synchronous calls such as API Gateway; the caller gets the error and must handle it.",
     "A longer timeout or larger batch size makes a poison-record problem worse, not better.",
     "Lambda can't run longer than 15 minutes. Long jobs belong on Fargate, Batch or a Step Functions workflow."
   ],
   "relatedNotes": ["lambda-performance", "step-functions-orchestration", "sqs-sns-decoupling", "api-gateway", "kinesis-streaming-ingestion"],
   "sources": [
     { "title": "AWS Lambda Developer Guide: Lambda quotas", "url": "https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html" },
-    { "title": "AWS Lambda Developer Guide: Asynchronous invocation", "url": "https://docs.aws.amazon.com/lambda/latest/dg/invocation-async.html" },
-    { "title": "AWS Lambda Developer Guide: Using Lambda with Amazon SQS", "url": "https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html" }
+    { "title": "How Lambda handles errors and retries with asynchronous invocation", "url": "https://docs.aws.amazon.com/lambda/latest/dg/invocation-async-error-handling.html" },
+    { "title": "Capturing records of Lambda asynchronous invocations", "url": "https://docs.aws.amazon.com/lambda/latest/dg/invocation-async-retain-records.html" },
+    { "title": "Creating and configuring an Amazon SQS event source mapping", "url": "https://docs.aws.amazon.com/lambda/latest/dg/services-sqs-configure.html" },
+    { "title": "Using Lambda to process records from Amazon Kinesis Data Streams", "url": "https://docs.aws.amazon.com/lambda/latest/dg/with-kinesis.html" }
   ]
 }

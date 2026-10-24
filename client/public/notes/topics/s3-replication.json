@@ -14,18 +14,18 @@
   ],
   "tldr": [
     "S3 Replication copies new objects asynchronously to another bucket: **CRR** across Regions, **SRR** in the same Region. **Versioning must be on in both buckets.**",
-    "Need a guaranteed time? Turn on **S3 Replication Time Control (RTC)**: 99.99% of objects in 15 minutes, with SLA, metrics and missed-threshold events.",
+    "Need a guaranteed time? Turn on **S3 Replication Time Control (RTC)**: designed for 99.99% of new objects in 15 minutes, backed by an SLA, with metrics and missed-threshold events.",
     "Replication only applies to objects written *after* the rule exists. Existing or **FAILED** objects need **S3 Batch Replication**.",
     "**Multi-Region Access Points** give one global endpoint over buckets in several Regions, with active-passive failover controls."
   ],
   "keyFacts": [
     {
       "value": "15 min",
-      "text": "**RTC** replicates 99.99% of new objects within 15 minutes under an SLA, and emits events when an object misses the threshold or fails."
+      "text": "**RTC** is designed to replicate 99.99% of new objects within 15 minutes (the SLA commits to 99.9%), and emits events when an object misses the threshold."
     },
     {
       "value": "Versioning",
-      "text": "Required on source and destination. Replication copies metadata, tags and version IDs; delete markers replicate only if you enable it."
+      "text": "Required on source and destination. Once enabled, versioning can only be *suspended*, never turned off. Delete markers replicate only if you enable it."
     },
     {
       "value": "SSE-KMS",
@@ -59,7 +59,7 @@
         [
           "CRR + RTC",
           "New objects",
-          "99.99% in 15 min with SLA",
+          "Designed for 99.99% in 15 min, SLA-backed",
           "Regulator or contract states a replication time"
         ],
         [
@@ -85,6 +85,14 @@
     }
   ],
   "keywords": [
+    {
+      "cue": "recover objects that were overwritten or deleted",
+      "answer": "S3 Versioning"
+    },
+    {
+      "cue": "keep only the last few versions, cut versioning cost",
+      "answer": "Lifecycle NoncurrentVersionExpiration with newer versions to retain"
+    },
     {
       "cue": "copy in another Region within 15 minutes with SLA",
       "answer": "S3 CRR with Replication Time Control"
@@ -131,7 +139,8 @@
     "Transfer Acceleration speeds client uploads over the internet. It has nothing to do with replication time.",
     "S3 Replication without RTC has no time SLA, so it can't satisfy \"within 15 minutes, backed by an SLA\".",
     "SRR keeps the copy in the same Region, which doesn't protect against a Regional outage.",
-    "Lifecycle actions are not replicated, and replication doesn't make a destination immutable. Add Object Lock if deletions must be blocked.",
+    "Suspending versioning doesn't delete existing noncurrent versions; use Lifecycle rules to expire them.",
+    "Lifecycle actions are not replicated, and replication doesn't make a destination immutable. Add Object Lock (compliance mode) if deletions must be blocked.",
     "Route 53 CNAMEs pointing to bucket REST endpoints don't work as failover. Use a Multi-Region Access Point or a CloudFront origin group."
   ],
   "relatedNotes": [

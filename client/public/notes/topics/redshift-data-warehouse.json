@@ -11,10 +11,10 @@
     "Avoid ETL with **zero-ETL** from Aurora, RDS and DynamoDB; query S3 in place with **Spectrum**; give teams isolated compute over the same data with **data sharing**."
   ],
   "keyFacts": [
-    { "value": "AUTO / EVEN / KEY / ALL", "text": "Distribution styles. **KEY** on the join column co-locates matching rows; **ALL** copies a small table to every node. Both cut data redistribution during joins." },
+    { "value": "AUTO/EVEN/KEY/ALL", "text": "Distribution styles. **KEY** on the join column co-locates matching rows; **ALL** copies a small table to every node. Both cut data redistribution during joins." },
     { "value": "Sort key", "text": "Rows stored in sort-key order let Redshift skip blocks outside a filter range, so a `sale_date` sort key turns full scans into small range reads." },
     { "value": "RPU", "text": "**Redshift Serverless** bills in Redshift Processing Unit-hours only while queries run. Set a **base capacity** for performance and **usage limits** to cap spend." },
-    { "value": "Free credits", "text": "**Concurrency scaling** adds transient clusters for queued read queries; a cluster earns up to one hour of free concurrency-scaling credit per day." },
+    { "value": "Free credits", "text": "**Concurrency scaling** adds transient capacity for queued queries (reads and common writes such as COPY); a provisioned cluster earns up to one hour of free credit per day." },
     { "value": "Seconds", "text": "**Aurora zero-ETL** keeps Redshift copies of Aurora tables within seconds of the source, with no pipeline to build and little load on the database." }
   ],
   "comparisons": [
@@ -39,13 +39,15 @@
     { "cue": "join Redshift with Parquet history in S3, don't load it", "answer": "Redshift Spectrum external schema" },
     { "cue": "teams need isolated compute on the same live data, no copies", "answer": "Data sharing to Redshift Serverless workgroups" },
     { "cue": "ad hoc queries a few hours a month on a 24/7 cluster", "answer": "Redshift Serverless" },
-    { "cue": "cap daily Redshift Serverless spend", "answer": "Usage limits on RPU-hours" }
+    { "cue": "cap daily Redshift Serverless spend", "answer": "Usage limits on RPU-hours" },
+    { "cue": "24/7 cluster kept only for a monthly report on data already in S3", "answer": "Convert to partitioned Parquet and query with Athena" }
   ],
   "traps": [
     "Redshift has no \"read replica\"; scale reads with concurrency scaling, data sharing or a bigger cluster.",
     "Separate WLM queues prioritize workloads on one cluster but don't give teams isolated compute or separate billing.",
     "Distributing a fact table on a date column skews data and doesn't help joins on customer ID.",
     "Resizing the cluster every week for a predictable peak is high effort; concurrency scaling does it automatically.",
+    "Reserved nodes make an idle 24/7 cluster cheaper but never beat paying per query (Athena or Redshift Serverless) for occasional reports.",
     "Spectrum queries S3 in place; DMS or COPY into the cluster is wrong when the requirement is \"don't load the data\"."
   ],
   "relatedNotes": ["athena-glue-data-lake", "database-engine-selection", "kinesis-streaming-ingestion", "emr-big-data-processing", "database-cost-optimization"],

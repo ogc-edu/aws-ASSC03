@@ -15,7 +15,7 @@
     { "value": "7 per AZ", "text": "A **spread** placement group allows at most seven running instances per AZ, each on distinct hardware. Use it for a handful of critical nodes that must not fail together." },
     { "value": "7 partitions", "text": "A **partition** placement group has up to seven partitions per AZ, each on its own racks. Instance metadata exposes the partition number, so rack-aware software can use it." },
     { "value": "EFA", "text": "**Elastic Fabric Adapter** adds OS-bypass networking for MPI and NCCL, giving lower, more consistent latency than ENA alone. It needs a supported instance type." },
-    { "value": "MTU 9001", "text": "**Jumbo frames** are supported inside a VPC. Combined with current-generation **ENA** enhanced networking, they raise throughput and cut CPU spent on packet processing." }
+    { "value": "MTU 9001", "text": "**Jumbo frames** work inside a VPC and suit cluster placement groups. Traffic through an internet gateway or a Site-to-Site VPN is still capped at 1500 bytes." }
   ],
   "comparisons": [
     {
@@ -49,19 +49,23 @@
     { "cue": "managed job queue for batch jobs, no scheduler to run", "answer": "AWS Batch (Spot compute environment for cost)" },
     { "cue": "MPI job across many nodes with a managed scheduler", "answer": "AWS Batch multi-node parallel jobs" },
     { "cue": "low instance-to-instance throughput, high network CPU, old instance types", "answer": "Nitro instances with ENA plus jumbo frames (MTU 9001)" },
-    { "cue": "process data in the factory with AWS APIs, AWS maintains hardware", "answer": "AWS Outposts" }
+    { "cue": "process data in the factory with AWS APIs, AWS maintains hardware", "answer": "AWS Outposts" },
+    { "cue": "rerunnable cluster spread over AZs, big inter-AZ data transfer bill", "answer": "Move the nodes into one AZ in a cluster placement group" }
   ],
   "traps": [
     "A **spread** placement group spreads instances out, so it *adds* latency compared with a cluster group. It is for resilience, not speed.",
     "Spreading HPC nodes across AZs or Regions for \"availability\" hurts a latency-bound MPI job. Rerunnable HPC belongs in one AZ.",
     "A Batch **array job** runs independent child jobs. Nodes that must talk to each other during the run need a **multi-node parallel** job.",
     "Adding more ENIs does not multiply an instance's bandwidth. Bandwidth is set by the instance type, so move to a larger or newer Nitro type.",
+    "A spread group holds at most seven running instances per AZ, so a large rack-aware cluster (dozens of nodes) needs a **partition** group instead.",
+    "Jumbo frames do not help traffic that leaves the VPC through an internet gateway or VPN, because those paths carry only 1500-byte packets.",
     "**Outposts** is hardware in *your* building. If the requirement is \"no AWS hardware on site\" with metro latency, pick a **Local Zone**."
   ],
   "relatedNotes": ["ec2-purchasing-options", "compute-rightsizing-graviton", "global-accelerator-edge-locations", "efs-fsx-file-storage", "auto-scaling-elb"],
   "sources": [
     { "title": "Placement groups for your Amazon EC2 instances", "url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html" },
     { "title": "Elastic Fabric Adapter for AI/ML and HPC workloads on Amazon EC2", "url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/efa.html" },
+    { "title": "Network maximum transmission unit (MTU) for your EC2 instance", "url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/network_mtu.html" },
     { "title": "Multi-node parallel jobs (AWS Batch)", "url": "https://docs.aws.amazon.com/batch/latest/userguide/multi-node-parallel-jobs.html" }
   ]
 }

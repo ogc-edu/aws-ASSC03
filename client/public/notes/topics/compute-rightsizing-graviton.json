@@ -7,14 +7,14 @@
   "services": ["AWS Compute Optimizer", "AWS Graviton", "Amazon CloudWatch agent", "CloudWatch Container Insights", "AWS Lambda Power Tuning", "Amazon EventBridge Scheduler"],
   "tldr": [
     "Order of operations: **turn off** what isn't used (schedules, hibernation), **rightsize** what's left (Compute Optimizer), **switch to Graviton**, and only then **commit** with Savings Plans or Reserved Instances.",
-    "**Compute Optimizer** uses utilization history to recommend sizes for EC2, Auto Scaling groups, EBS, Lambda, ECS on Fargate and RDS. It sees **memory** only if the **CloudWatch agent** publishes it.",
+    "**Compute Optimizer** uses 14 days of utilization history (93 with the paid enhanced option) to recommend sizes for EC2, Auto Scaling groups, EBS, Lambda, ECS on Fargate, RDS/Aurora and more. It sees EC2 **memory** only if the **CloudWatch agent** publishes it.",
     "**Graviton (Arm64)** gives better price performance on EC2, Fargate, Lambda, RDS/Aurora and ElastiCache. Interpreted languages usually move with little or no code change; native binaries need arm64 builds.",
     "**Lambda** cost is memory × duration; use **Lambda Power Tuning** (or Compute Optimizer) to find the cheapest memory setting, and arm64 for a lower per-GB-second price."
   ],
   "keyFacts": [
-    { "value": "Memory needs the agent", "text": "EC2 doesn't report memory to CloudWatch by default. Install the CloudWatch agent so Compute Optimizer can rightsize memory-heavy fleets." },
-    { "value": "Up to 34% better", "text": "Price performance AWS quotes for Lambda functions on arm64 (Graviton2) versus x86. Test first; dependencies must ship arm64 builds." },
-    { "value": "< 150 GB RAM", "text": "Hibernation saves RAM to an **encrypted** EBS root volume, so long warm-ups survive a nightly stop and you pay only for storage overnight." },
+    { "value": "Agent for memory", "text": "EC2 doesn't report memory to CloudWatch by default. Install the CloudWatch agent so Compute Optimizer can rightsize memory-heavy fleets." },
+    { "value": "Up to 34% better", "text": "AWS's launch claim for Lambda price performance on arm64 (Graviton2) versus x86. Test first; dependencies, layers and extensions must have arm64 builds." },
+    { "value": "< 150 GiB RAM", "text": "Linux hibernation limit. RAM is saved to an **encrypted** EBS root volume, so long warm-ups survive a nightly stop and you pay only for storage overnight. Enable it at launch." },
     { "value": "Surplus credits", "text": "A T instance in unlimited mode with high CPU all day pays extra credit charges. A fixed-performance instance (for example m7g) is cheaper." },
     { "value": "50 of 168 hours", "text": "A dev box used 10 hours on weekdays runs about 30% of the week. Scheduling stop/start cuts its On-Demand compute bill by roughly 70%." }
   ],
@@ -48,12 +48,13 @@
     "Fargate Spot and EC2 Spot are wrong when the question says the service cannot tolerate interruption.",
     "Switching a busy T instance to standard mode throttles it to baseline CPU, which degrades performance.",
     "Changing an x86 instance to a Graviton type with the same AMI fails; Graviton needs an arm64 AMI.",
+    "Hibernation can't be turned on for an existing instance; it must be enabled at launch.",
     "Trusted Advisor's low-utilization check is CPU-based and coarse; Compute Optimizer gives specific, ML-based recommendations."
   ],
   "relatedNotes": ["ec2-purchasing-options", "lambda-performance", "containers-ecs-eks-fargate", "cost-management-tools", "auto-scaling-elb"],
   "sources": [
     { "title": "What is AWS Compute Optimizer?", "url": "https://docs.aws.amazon.com/compute-optimizer/latest/ug/what-is-compute-optimizer.html" },
     { "title": "Lambda instruction set architectures", "url": "https://docs.aws.amazon.com/lambda/latest/dg/foundation-arch.html" },
-    { "title": "Hibernate your Amazon EC2 instance", "url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Hibernate.html" }
+    { "title": "Prerequisites for EC2 instance hibernation", "url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/hibernating-prerequisites.html" }
   ]
 }

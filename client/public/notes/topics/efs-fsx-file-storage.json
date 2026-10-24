@@ -20,11 +20,11 @@
   "keyFacts": [
     {
       "value": "Elastic",
-      "text": "**Elastic Throughput** scales up and down with the workload and bills per use. **Bursting** ties throughput to stored size, so small file systems run out of credits."
+      "text": "**Elastic Throughput** (the recommended default) scales with the workload and bills per use. **Bursting** ties throughput to stored size, so small file systems run out of credits."
     },
     {
       "value": "3 classes",
-      "text": "EFS **Standard**, **Infrequent Access** and **Archive**. Lifecycle policies move files by last access and can move them back on first access."
+      "text": "EFS **Standard**, **Infrequent Access** and **Archive**. Lifecycle moves files by last access; moving them back to Standard on first access is an opt-in policy."
     },
     {
       "value": "Scratch",
@@ -105,12 +105,20 @@
       "answer": "FSx for NetApp ONTAP"
     },
     {
+      "cue": "cut cost of a Windows file share with duplicate files",
+      "answer": "FSx for Windows data deduplication and HDD storage"
+    },
+    {
       "cue": "currently using NetApp SnapMirror",
       "answer": "FSx for NetApp ONTAP"
     },
     {
       "cue": "ZFS snapshots and writable clones",
       "answer": "FSx for OpenZFS"
+    },
+    {
+      "cue": "ONTAP volumes, only a small share of data is hot",
+      "answer": "SSD for hot data plus Auto tiering to capacity pool storage"
     },
     {
       "cue": "hundreds of GB/s over S3 dataset for HPC",
@@ -130,6 +138,7 @@
     "FSx for Windows File Server speaks SMB only. Linux NFS and Windows SMB clients on the same data need ONTAP.",
     "Adding dummy files to earn EFS burst credits is a hack; the answer is Elastic Throughput.",
     "Provisioned Throughput sized for the peak pays for that peak 24/7. Choose Elastic for unpredictable spikes.",
+    "EFS **Max I/O** is a previous-generation performance mode with higher latency; AWS now recommends General Purpose (with Elastic Throughput) for nearly every workload.",
     "FSx for Lustre is not the answer for Windows or general office shares; it's for compute-heavy Linux workloads.",
     "Two Single-AZ FSx file systems synced with DFS Replication is more work than one Multi-AZ file system."
   ],
@@ -143,12 +152,16 @@
   ],
   "sources": [
     {
-      "title": "Amazon EFS throughput modes",
+      "title": "Amazon EFS performance specifications",
       "url": "https://docs.aws.amazon.com/efs/latest/ug/performance.html"
     },
     {
-      "title": "Amazon EFS storage classes",
-      "url": "https://docs.aws.amazon.com/efs/latest/ug/storage-classes.html"
+      "title": "Managing EFS storage lifecycle",
+      "url": "https://docs.aws.amazon.com/efs/latest/ug/lifecycle-management-efs.html"
+    },
+    {
+      "title": "Replicating EFS file systems",
+      "url": "https://docs.aws.amazon.com/efs/latest/ug/efs-replication.html"
     },
     {
       "title": "What is Amazon FSx for NetApp ONTAP?",

@@ -12,17 +12,20 @@
   ],
   "keyFacts": [
     { "value": "ELB health checks", "text": "ASGs use EC2 status checks by default. Turn on **ELB health checks** so instances whose app hangs are replaced, not just removed from the target group." },
-    { "value": "Grace period", "text": "The **health check grace period** must exceed boot time, or the ASG kills instances that are still starting and loops forever." },
-    { "value": "Deregistration", "text": "The target group **deregistration delay** (connection draining) lets in-flight requests finish. Set it longer than your slowest request." },
-    { "value": "Lifecycle hooks", "text": "A **termination lifecycle hook** pauses an instance in `Terminating:Wait` so a script can copy logs or drain work before it's terminated." },
-    { "value": "Instance refresh", "text": "New AMI → new **launch template version** → **instance refresh** with a minimum healthy percentage and checkpoints. That's immutable, zero-downtime rollout." }
+    { "value": "Grace period", "text": "The **health check grace period** must exceed boot time, or the ASG replaces instances that are still starting. Console default is 300 s; the CLI and API default is 0." },
+    { "value": "300 s drain", "text": "Default target group **deregistration delay** (connection draining). Set it longer than your slowest request so in-flight requests finish during scale-in." },
+    { "value": "Lifecycle hooks", "text": "A **termination lifecycle hook** pauses an instance in `Terminating:Wait` (one hour by default) so a script can copy logs or drain work before termination." },
+    { "value": "Instance refresh", "text": "New AMI → new **launch template version** → **instance refresh** with a minimum healthy percentage and checkpoints. That's immutable, zero-downtime rollout." },
+    { "value": "Warm pool states", "text": "Warm pool instances wait **Stopped** (cheapest: you pay only for EBS and Elastic IPs), **Hibernated** (RAM kept) or Running (rarely worth the cost)." }
   ],
   "comparisons": [
     {
-      "title": "Compare: scaling features for the scenario",
+      "title": "Compare: scaling policies and features",
       "columns": ["Feature", "Solves", "Pick it when…"],
       "rows": [
         ["Target tracking", "Keep a metric near a target", "Default choice; CPU, request count per target, custom backlog per instance"],
+        ["Step scaling", "Bigger adjustments for bigger alarm breaches", "You need explicit step sizes tied to CloudWatch alarm thresholds"],
+        ["Simple scaling", "One adjustment, then a cooldown (300 s default)", "Legacy; AWS recommends target tracking or step scaling instead"],
         ["Predictive scaling", "Launch ahead of a recurring pattern", "Same daily or weekly spike, slow-starting instances"],
         ["Scheduled actions", "Fixed, known times", "One-off events or strict calendars"],
         ["Warm pool", "Long instance initialization", "Unpredictable spikes plus minutes-long boot; keep instances Stopped to save cost"],
@@ -34,12 +37,14 @@
   ],
   "keywords": [
     { "cue": "single licensed instance must recover from AZ failure", "answer": "ASG min/max/desired 1 across multiple AZs" },
+    { "cue": "workers must scale with the number of messages waiting in SQS", "answer": "Target tracking on a custom backlog-per-instance metric" },
     { "cue": "hung app instance removed from ALB but never replaced", "answer": "Enable ELB health checks on the ASG" },
     { "cue": "new instances terminated in a loop during long bootstrap", "answer": "Longer health check grace period" },
     { "cue": "capacity ready before the 08:00 spike every weekday", "answer": "Predictive scaling (forecast and scale)" },
     { "cue": "12-minute startup, unpredictable spikes, low idle cost", "answer": "Warm pool with Stopped instances" },
     { "cue": "new instances overwhelmed while warming caches", "answer": "Target group slow start mode" },
     { "cue": "copy logs before scale-in terminates an instance", "answer": "Termination lifecycle hook" },
+    { "cue": "in-flight requests fail during scale-in", "answer": "Longer deregistration delay on the target group" },
     { "cue": "investigate one instance without it being replaced", "answer": "Put the instance in Standby" },
     { "cue": "users logged out when instances are replaced", "answer": "External session store (ElastiCache or DynamoDB), drop sticky sessions" },
     { "cue": "roll out a new AMI with no downtime", "answer": "New launch template version and instance refresh" },
@@ -49,13 +54,24 @@
     "Sticky sessions don't make a tier stateless. Users are still lost when their instance goes away, and load stays uneven.",
     "Scheduled scaling needs manual upkeep; when the pattern repeats but drifts, predictive scaling is the low-overhead answer.",
     "CPU-based scaling fails for I/O-bound apps. Scale on request count per target instead.",
+    "Cooldowns apply only to simple scaling. Target tracking and step scaling use instance warmup instead.",
+    "Scale-in protection doesn't let an instance finish its requests before it goes; use the deregistration delay and a termination lifecycle hook.",
+    "Deregistration delay only affects targets being removed. New instances that need warm-up want slow start mode.",
     "An ALB has no static IPs. Use an NLB with Elastic IPs (or Global Accelerator) when fixed addresses are required.",
     "A Spot fleet of one instance type in one AZ with lowest-price allocation maximizes interruptions; diversify and use price-capacity-optimized."
   ],
+  "sections": [
+    {
+      "heading": "ELB defaults the exam leans on",
+      "body": "- **Cross-zone load balancing:** always on at the ALB level (it can be turned off per target group); off by default for NLB and GWLB.\n- **Deregistration delay:** 300 seconds by default.\n- **ALB** needs subnets in at least two AZs; an **NLB** gets one static IP per AZ and can take an Elastic IP in each.\n- For the full ALB vs NLB vs GWLB comparison, see the load balancer selection note."
+    }
+  ],
   "relatedNotes": ["load-balancer-selection", "multi-az-resilience-patterns", "ec2-purchasing-options", "sqs-sns-decoupling", "elasticache-in-memory"],
   "sources": [
-    { "title": "Amazon EC2 Auto Scaling User Guide", "url": "https://docs.aws.amazon.com/autoscaling/ec2/userguide/what-is-amazon-ec2-auto-scaling.html" },
+    { "title": "Amazon EC2 Auto Scaling: Set the health check grace period", "url": "https://docs.aws.amazon.com/autoscaling/ec2/userguide/health-check-grace-period.html" },
     { "title": "Amazon EC2 Auto Scaling: Warm pools", "url": "https://docs.aws.amazon.com/autoscaling/ec2/userguide/ec2-auto-scaling-warm-pools.html" },
-    { "title": "Application Load Balancers: Target groups", "url": "https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html" }
+    { "title": "Amazon EC2 Auto Scaling: Scaling cooldowns", "url": "https://docs.aws.amazon.com/autoscaling/ec2/userguide/ec2-auto-scaling-scaling-cooldowns.html" },
+    { "title": "Edit target group attributes for your Application Load Balancer", "url": "https://docs.aws.amazon.com/elasticloadbalancing/latest/application/edit-target-group-attributes.html" },
+    { "title": "How Elastic Load Balancing works", "url": "https://docs.aws.amazon.com/elasticloadbalancing/latest/userguide/how-elastic-load-balancing-works.html" }
   ]
 }

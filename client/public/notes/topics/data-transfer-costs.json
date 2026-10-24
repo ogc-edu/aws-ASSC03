@@ -16,7 +16,7 @@
     { "value": "AZ IDs", "text": "AZ names (us-east-1a) map to different physical zones per account. Use AZ IDs (use1-az1) to co-locate resources across accounts." },
     { "value": "Price Class 100", "text": "CloudFront price classes exclude the most expensive edge locations. Viewers elsewhere are still served, just from a farther edge." },
     { "value": "Lower DX egress", "text": "Data transfer out over Direct Connect is billed at a lower per-GB rate than over the internet or a Site-to-Site VPN." },
-    { "value": "DataTransfer-Regional-Bytes", "text": "The CUR usage type for cross-AZ traffic in a Region. A big line here points to chatty services spread across AZs." }
+    { "value": "Regional-Bytes", "text": "`DataTransfer-Regional-Bytes` is the CUR usage type for cross-AZ traffic in a Region. A big line here points to chatty services spread across AZs." }
   ],
   "comparisons": [
     {
@@ -55,6 +55,6 @@
   "sources": [
     { "title": "Overview of data transfer costs for common architectures", "url": "https://aws.amazon.com/blogs/architecture/overview-of-data-transfer-costs-for-common-architectures/" },
     { "title": "Availability Zone IDs for your AWS resources", "url": "https://docs.aws.amazon.com/ram/latest/userguide/working-with-az-ids.html" },
-    { "title": "Choose the price class for a CloudFront distribution", "url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/PriceClass.html" }
+    { "title": "CloudFront distribution settings (price class)", "url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/DownloadDistValuesGeneral.html" }
   ]
 }

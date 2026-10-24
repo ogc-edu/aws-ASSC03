@@ -7,14 +7,18 @@
   "services": ["AWS KMS", "AWS CloudHSM", "KMS custom key store", "KMS external key store"],
   "tldr": [
     "**KMS** is the default answer for encryption keys: managed, integrated with S3, EBS, RDS and DynamoDB, and every use of a key is logged in CloudTrail.",
+    "Pick a **customer managed key** whenever you must control the key policy, share the key across accounts, set a rotation period or disable the key. AWS managed keys (`aws/s3`, `aws/ebs`) can't do any of that.",
     "**CloudHSM** gives you dedicated, single-tenant HSMs in your VPC. You manage the HSM users and keys, and AWS cannot reach your key material.",
     "Need both? A **KMS custom key store** backed by a CloudHSM cluster keeps native service integration while the key material stays in your HSMs."
   ],
   "keyFacts": [
-    { "value": "4 KB", "text": "Most data the KMS `Encrypt` API takes directly. Larger data uses envelope encryption with `GenerateDataKey`." },
+    { "value": "4 KB", "text": "Most data the KMS `Encrypt` API takes directly (4,096 bytes for symmetric keys). Larger data uses envelope encryption with `GenerateDataKey`." },
+    { "value": "90–2,560 days", "text": "Custom **automatic rotation** period for customer managed keys (default 365 days). The key ID and ARN don't change, and old ciphertext still decrypts." },
+    { "value": "Yearly", "text": "AWS managed keys are rotated by AWS every year and you can't change that. Automatic rotation doesn't cover imported key material or custom key stores." },
+    { "value": "7–30 days", "text": "Waiting period when you schedule deletion of a KMS key. Deleting **imported key material** instead makes the key unusable immediately." },
     { "value": "Regional", "text": "KMS keys stay in their Region. Use **multi-Region keys** when ciphertext must be decrypted in another Region." },
-    { "value": "≥ 2 HSMs", "text": "A CloudHSM cluster backing a custom key store needs active HSMs in at least two Availability Zones." },
-    { "value": "Up to 99%", "text": "Fewer KMS requests from SSE-KMS when **S3 Bucket Keys** are on, which cuts cost and throttling." }
+    { "value": "≥ 2 HSMs", "text": "A CloudHSM cluster backing a custom key store needs at least two active HSMs in different Availability Zones." },
+    { "value": "Up to 99%", "text": "Fewer KMS requests from SSE-KMS when **S3 Bucket Keys** are on, which cuts cost and throttling with no application change." }
   ],
   "comparisons": [
     {
@@ -22,19 +26,38 @@
       "columns": ["Option", "Key material", "Tenancy", "Pick it when…"],
       "rows": [
         ["KMS default key store", "Generated in AWS KMS HSMs", "Multi-tenant", "Least operational overhead, automatic rotation"],
-        ["Imported key material", "You generate it, then import it into KMS", "Multi-tenant", "You must create the keys yourself or set an expiry on them"],
+        ["Imported key material", "You generate it, then import it into KMS", "Multi-tenant", "You must create the keys yourself, set an expiry, or delete material instantly"],
         ["Custom key store (CloudHSM)", "Your CloudHSM cluster, in AWS", "Single-tenant", "Dedicated HSMs plus native KMS integration"],
         ["External key store (XKS)", "Your HSM outside AWS", "Yours", "Keys must never be stored in AWS"],
         ["CloudHSM directly", "Your CloudHSM cluster", "Single-tenant", "Apps call PKCS#11, JCE or CNG; SSL offload; Oracle TDE"]
+      ],
+      "highlightRow": 2
+    },
+    {
+      "title": "Compare: who owns the KMS key?",
+      "columns": ["Key type", "Key policy", "Rotation", "Pick it when…"],
+      "rows": [
+        ["AWS owned key", "Not visible to you", "Managed by the service", "Default encryption, nothing to manage or audit"],
+        ["AWS managed key (`aws/<service>`)", "Visible, can't be edited", "Every year, fixed", "Simple at-rest encryption in one account"],
+        ["Customer managed key", "You write it", "Optional: automatic (90–2,560 days) or on demand", "Cross-account use, separation of duties, disable on demand, audit"]
       ],
       "highlightRow": 2
     }
   ],
   "keywords": [
     { "cue": "single-tenant HSM", "answer": "CloudHSM" },
+    { "cue": "application must keep using PKCS#11", "answer": "CloudHSM cluster across two AZs" },
     { "cue": "single-tenant HSM + native S3/EBS integration", "answer": "KMS custom key store on CloudHSM" },
     { "cue": "key material must stay outside AWS", "answer": "KMS external key store (XKS)" },
-    { "cue": "audit every use of the key", "answer": "SSE-KMS (CloudTrail logs each call)" },
+    { "cue": "generate keys on premises, make the key unusable immediately", "answer": "KMS key with imported key material; delete the material" },
+    { "cue": "rotate key material every 180 days with no application changes", "answer": "Automatic rotation with a custom rotation period" },
+    { "cue": "control the key policy and be able to disable the key", "answer": "Customer managed KMS key" },
+    { "cue": "key admins must not decrypt, apps must not manage", "answer": "Key policy that splits management actions from cryptographic actions" },
+    { "cue": "key usable only when the request comes through S3", "answer": "Key policy condition kms:ViaService" },
+    { "cue": "temporary, programmatic permission to use a key", "answer": "KMS grant (CreateGrant, then retire or revoke)" },
+    { "cue": "tenant ID in CloudTrail and bound to each data key", "answer": "KMS encryption context" },
+    { "cue": "only verified enclave code may decrypt", "answer": "Nitro Enclaves with an attestation condition in the key policy" },
+    { "cue": "every new EBS volume encrypted without changing templates", "answer": "EBS encryption by default with a customer managed key" },
     { "cue": "millions of SSE-KMS requests, lower cost", "answer": "S3 Bucket Keys" },
     { "cue": "encrypt files larger than 4 KB", "answer": "Envelope encryption with GenerateDataKey" },
     { "cue": "decrypt in the DR Region without re-encrypting", "answer": "KMS multi-Region keys" },
@@ -43,7 +66,10 @@
   "traps": [
     "Imported key material is **not** single-tenant. It still sits in the shared KMS HSMs.",
     "Key policies control *who* can use a key. They don't change where the key is stored or who shares the hardware.",
-    "The key policy of an AWS managed key (`aws/s3`, `aws/ebs`) can't be edited, so it can't be shared across accounts. Use a customer managed key.",
+    "The key policy of an AWS managed key (`aws/s3`, `aws/ebs`) can't be edited, so it can't be shared across accounts. Re-encrypt with a customer managed key.",
+    "Cross-account key use is granted in the **key policy** plus the caller's IAM policy. KMS keys aren't shared through AWS RAM.",
+    "Creating a new key and re-encrypting everything to meet a rotation rule is the high-overhead answer. Automatic rotation keeps the same key ID.",
+    "Same alias or same imported material in two Regions doesn't make keys interchangeable. Only multi-Region keys decrypt each other's ciphertext.",
     "You can't encrypt an existing unencrypted EBS volume or RDS instance in place. Take a snapshot, copy it with encryption on, then restore."
   ],
   "sections": [
@@ -54,7 +80,9 @@
   ],
   "relatedNotes": ["s3-security-access-control", "secrets-parameter-store", "acm-tls-encryption-in-transit", "aws-backup"],
   "sources": [
-    { "title": "AWS KMS Developer Guide", "url": "https://docs.aws.amazon.com/kms/latest/developerguide/overview.html" },
-    { "title": "AWS CloudHSM User Guide", "url": "https://docs.aws.amazon.com/cloudhsm/latest/userguide/introduction.html" }
+    { "title": "AWS KMS Developer Guide: Rotate AWS KMS keys", "url": "https://docs.aws.amazon.com/kms/latest/developerguide/rotate-keys.html" },
+    { "title": "AWS KMS API Reference: Encrypt", "url": "https://docs.aws.amazon.com/kms/latest/APIReference/API_Encrypt.html" },
+    { "title": "AWS KMS Developer Guide: Create an AWS CloudHSM key store", "url": "https://docs.aws.amazon.com/kms/latest/developerguide/create-keystore.html" },
+    { "title": "Amazon S3 User Guide: S3 Bucket Keys", "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-key.html" }
   ]
 }

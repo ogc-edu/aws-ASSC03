@@ -11,8 +11,8 @@
     "Third-party SaaS access uses a role that trusts the vendor's account **plus an `sts:ExternalId` condition** to prevent the confused-deputy problem."
   ],
   "keyFacts": [
-    { "value": "1 h – 12 h", "text": "A role's maximum session duration can be set between 1 and 12 hours. Chained role sessions (role assuming a role) are capped at 1 hour." },
-    { "value": "External ID", "text": "A secret-ish value unique per customer in the trust policy. It stops another customer of the same vendor from tricking the vendor into using your role." },
+    { "value": "1 h – 12 h", "text": "A role's maximum session setting ranges from 1 to 12 hours (requests default to 1 hour). Role chaining, where one role assumes another, caps the session at 1 hour." },
+    { "value": "External ID", "text": "A value unique to each customer that the vendor must pass in `AssumeRole`. It isn't a secret, but it stops another customer from steering the vendor into your role." },
     { "value": "X.509", "text": "**IAM Roles Anywhere** exchanges a certificate from your trusted CA (trust anchor) for temporary STS credentials on servers outside AWS." },
     { "value": "IMDSv2", "text": "Session-token metadata requests (`HttpTokens=required`) block SSRF attacks that steal instance role credentials through IMDSv1." },
     { "value": "SourceArn", "text": "When a service principal (s3, sns, events) invokes your Lambda, add `aws:SourceArn` and `aws:SourceAccount` so only that exact resource can call it." }
@@ -41,7 +41,9 @@
     { "cue": "cross-account read of SSE-KMS objects fails", "answer": "Grant kms:Decrypt in the key policy and the caller's IAM policy" },
     { "cue": "only this SNS topic or S3 bucket may invoke the function", "answer": "Lambda resource policy with aws:SourceArn and aws:SourceAccount" },
     { "cue": "all accounts in the org, including future ones, may pull", "answer": "Resource policy with aws:PrincipalOrgID" },
-    { "cue": "role may be assumed only with MFA", "answer": "aws:MultiFactorAuthPresent true in the role trust policy" }
+    { "cue": "role may be assumed only with MFA", "answer": "aws:MultiFactorAuthPresent true in the role trust policy" },
+    { "cue": "one role in another account calls a Lambda over HTTPS, no API Gateway features", "answer": "Lambda function URL with AWS_IAM auth, resource policy for that role, SigV4 signing" },
+    { "cue": "IMDSv2 only, across the organization, including new instances", "answer": "Require tokens on existing instances, set the account IMDS default, SCP on ec2:MetadataHttpTokens" }
   ],
   "traps": [
     "Giving a vendor IAM user access keys, even encrypted or rotated, is never the secure answer.",
