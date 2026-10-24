@@ -1,0 +1,67 @@
+{
+  "slug": "ec2-instances-placement-hpc",
+  "title": "EC2 Instance Families, Placement Groups & HPC",
+  "domain": 3,
+  "task": "3.2",
+  "summary": "Match instance families to workloads and network them for low latency and high throughput.",
+  "services": ["Amazon EC2", "EC2 placement groups", "Elastic Fabric Adapter (EFA)", "AWS Batch", "AWS Outposts"],
+  "tldr": [
+    "Pick the family by the **bottleneck the question names**: CPU-bound → **C**, RAM-bound → **R/X**, local NVMe I/O → **I**, GPU/CUDA or ML → **P/G/Trn/Inf**, spiky light load → **T**.",
+    "Placement groups trade blast radius for latency: **cluster** packs instances close for the fastest network, **spread** puts each instance on separate hardware, **partition** gives rack-aware groups for HDFS, Kafka and Cassandra.",
+    "Tightly coupled MPI/HPC = **EFA-capable instances in a cluster placement group in one AZ**. Add **AWS Batch multi-node parallel jobs** when you also want a managed queue and scheduler."
+  ],
+  "keyFacts": [
+    { "value": "1 AZ", "text": "A **cluster** placement group lives in a single Availability Zone. It gives the lowest latency and highest per-flow throughput, but one AZ failure takes out the whole group." },
+    { "value": "7 per AZ", "text": "A **spread** placement group allows at most seven running instances per AZ, each on distinct hardware. Use it for a handful of critical nodes that must not fail together." },
+    { "value": "7 partitions", "text": "A **partition** placement group has up to seven partitions per AZ, each on its own racks. Instance metadata exposes the partition number, so rack-aware software can use it." },
+    { "value": "EFA", "text": "**Elastic Fabric Adapter** adds OS-bypass networking for MPI and NCCL, giving lower, more consistent latency than ENA alone. It needs a supported instance type." },
+    { "value": "MTU 9001", "text": "**Jumbo frames** are supported inside a VPC. Combined with current-generation **ENA** enhanced networking, they raise throughput and cut CPU spent on packet processing." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: placement group strategies",
+      "columns": ["Strategy", "Layout", "Failure isolation", "Pick it when…"],
+      "rows": [
+        ["Cluster", "Packed close together in one AZ", "Low: shared hardware and one AZ", "Tightly coupled HPC, MPI, low-latency node-to-node traffic"],
+        ["Partition", "Groups of instances on separate racks", "Per partition (rack)", "Large rack-aware clusters: HDFS, HBase, Kafka, Cassandra"],
+        ["Spread", "Every instance on distinct hardware", "Per instance; max 7 per AZ", "A few critical nodes that must never share a host"]
+      ],
+      "highlightRow": 0
+    },
+    {
+      "title": "Compare: where the EC2 instance runs",
+      "columns": ["Option", "Location", "Who runs the hardware", "Pick it when…"],
+      "rows": [
+        ["AWS Region", "AWS data centers", "AWS", "Default; no special latency or residency need"],
+        ["Local Zone", "AWS site in a metro area", "AWS", "Single-digit ms to users in that city, no hardware on site"],
+        ["Wavelength Zone", "Inside a carrier's 5G network", "AWS + carrier", "Mobile 5G devices; traffic must stay on the carrier network"],
+        ["Outposts", "Your own data center or factory", "AWS delivers and maintains racks", "Data must be processed on premises with AWS APIs and VPC constructs"]
+      ]
+    }
+  ],
+  "keywords": [
+    { "cue": "tightly coupled MPI, lowest inter-node latency", "answer": "EFA instances in a cluster placement group, single AZ" },
+    { "cue": "minimize chance one hardware failure hits several of a few instances", "answer": "Spread placement group" },
+    { "cue": "rack-aware HDFS / Kafka / Cassandra cluster", "answer": "Partition placement group" },
+    { "cue": "memory-bound, large dataset held in RAM", "answer": "Memory optimized (R or X family)" },
+    { "cue": "CPU near 100%, memory low", "answer": "Compute optimized (C family)" },
+    { "cue": "CUDA, deep learning training, massively parallel math", "answer": "Accelerated computing (P or G family)" },
+    { "cue": "managed job queue for batch jobs, no scheduler to run", "answer": "AWS Batch (Spot compute environment for cost)" },
+    { "cue": "MPI job across many nodes with a managed scheduler", "answer": "AWS Batch multi-node parallel jobs" },
+    { "cue": "low instance-to-instance throughput, high network CPU, old instance types", "answer": "Nitro instances with ENA plus jumbo frames (MTU 9001)" },
+    { "cue": "process data in the factory with AWS APIs, AWS maintains hardware", "answer": "AWS Outposts" }
+  ],
+  "traps": [
+    "A **spread** placement group spreads instances out, so it *adds* latency compared with a cluster group. It is for resilience, not speed.",
+    "Spreading HPC nodes across AZs or Regions for \"availability\" hurts a latency-bound MPI job. Rerunnable HPC belongs in one AZ.",
+    "A Batch **array job** runs independent child jobs. Nodes that must talk to each other during the run need a **multi-node parallel** job.",
+    "Adding more ENIs does not multiply an instance's bandwidth. Bandwidth is set by the instance type, so move to a larger or newer Nitro type.",
+    "**Outposts** is hardware in *your* building. If the requirement is \"no AWS hardware on site\" with metro latency, pick a **Local Zone**."
+  ],
+  "relatedNotes": ["ec2-purchasing-options", "compute-rightsizing-graviton", "global-accelerator-edge-locations", "efs-fsx-file-storage", "auto-scaling-elb"],
+  "sources": [
+    { "title": "Placement groups for your Amazon EC2 instances", "url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html" },
+    { "title": "Elastic Fabric Adapter for AI/ML and HPC workloads on Amazon EC2", "url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/efa.html" },
+    { "title": "Multi-node parallel jobs (AWS Batch)", "url": "https://docs.aws.amazon.com/batch/latest/userguide/multi-node-parallel-jobs.html" }
+  ]
+}

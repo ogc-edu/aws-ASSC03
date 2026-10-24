@@ -1,0 +1,57 @@
+{
+  "slug": "vpc-connectivity-tgw-lattice",
+  "title": "Transit Gateway, VPC Peering, RAM & VPC Lattice",
+  "domain": 3,
+  "task": "3.4",
+  "summary": "Connect many VPCs and accounts, share subnets, and wire up service-to-service traffic.",
+  "services": ["AWS Transit Gateway", "VPC peering", "AWS RAM", "Amazon VPC Lattice", "Amazon VPC"],
+  "tldr": [
+    "**VPC peering** is a direct, non-transitive link between two VPCs with no per-GB processing fee. Great for a few high-traffic pairs; a full mesh doesn't scale.",
+    "**Transit Gateway** is a Regional hub: VPCs, VPNs and DX attach once, routing is transitive, and route tables segment traffic. Share it across accounts with **AWS RAM**; connect Regions with **TGW peering**.",
+    "**VPC Lattice** connects *services*, not networks: HTTP/HTTPS/gRPC across VPCs and accounts with IAM auth policies, even with **overlapping CIDRs**, and no routes to manage."
+  ],
+  "keyFacts": [
+    { "value": "Non-transitive", "text": "Traffic can't pass through a peered VPC to a third VPC, VPN or internet gateway. CIDRs of peered VPCs must not overlap." },
+    { "value": "Per GB", "text": "Transit Gateway charges per attachment-hour **and** per GB processed. Moving one heavy VPC pair to peering removes that processing fee." },
+    { "value": "Static routes", "text": "**Inter-Region TGW peering** carries traffic on the AWS backbone, but you add static routes for the peer's CIDRs; routes don't propagate." },
+    { "value": "Secondary CIDR", "text": "Out of IPs? Associate a **secondary IPv4 CIDR** with the VPC and create new subnets. You can't resize an existing VPC primary CIDR or subnet." },
+    { "value": "5 reserved", "text": "AWS reserves five IP addresses in every subnet, so a /28 gives 11 usable addresses. Plan subnets for awsvpc tasks that each take an IP." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: connecting VPCs and services",
+      "columns": ["Option", "Scope", "Overlapping CIDRs", "Pick it when…"],
+      "rows": [
+        ["VPC peering", "Two VPCs, any account or Region", "Not allowed", "Few VPCs or one heavy pair; cheapest data path"],
+        ["Transit Gateway", "Hub for many VPCs, VPN, DX", "Not supported for routing", "Dozens of VPCs plus on premises, transitive routing, segmentation"],
+        ["PrivateLink", "One service to many consumers", "Allowed", "Expose one service one-way to many VPCs or customers"],
+        ["VPC Lattice", "Service network across VPCs and accounts", "Allowed", "Many microservices, IAM auth, path routing, no network plumbing"],
+        ["Shared VPC (RAM)", "Subnets shared to accounts", "N/A (one VPC)", "Central network team, many accounts deploy into shared subnets"]
+      ],
+      "highlightRow": 1
+    }
+  ],
+  "keywords": [
+    { "cue": "60+ VPCs across accounts plus on premises, least overhead", "answer": "Transit Gateway shared with AWS RAM, DX gateway with transit VIF" },
+    { "cue": "only two VPCs, heavy traffic, cut TGW cost", "answer": "VPC peering" },
+    { "cue": "DR VPCs in another Region on the AWS network", "answer": "Transit gateway peering between Regions" },
+    { "cue": "microservices across accounts, overlapping CIDRs, IAM authorization", "answer": "Amazon VPC Lattice service network shared with RAM" },
+    { "cue": "subnets out of IP addresses, keep the VPC", "answer": "Add a secondary CIDR block and new subnets" },
+    { "cue": "update partner CIDRs in one place for many accounts", "answer": "Customer-managed prefix list shared via AWS RAM" },
+    { "cue": "share interface endpoints across 40 VPCs to cut cost", "answer": "Central endpoints + Route 53 private hosted zones over TGW" },
+    { "cue": "central egress inspection for all VPCs", "answer": "Inspection VPC with Network Firewall on the transit gateway" }
+  ],
+  "traps": [
+    "VPC peering isn't transitive; VPC A can't reach VPC C through VPC B.",
+    "Transit Gateway doesn't solve overlapping CIDRs; use PrivateLink or VPC Lattice.",
+    "You can't attach a VPC in another Region directly to a transit gateway; peer two transit gateways.",
+    "Changing a VPC's primary CIDR or editing a subnet's CIDR isn't possible; add a secondary CIDR.",
+    "A full mesh of peering connections across dozens of VPCs is the high-overhead answer."
+  ],
+  "relatedNotes": ["hybrid-connectivity-dx-vpn", "vpc-endpoints-privatelink", "network-firewall-inspection", "data-transfer-costs", "organizations-scps-control-tower"],
+  "sources": [
+    { "title": "How transit gateways work", "url": "https://docs.aws.amazon.com/vpc/latest/tgw/how-transit-gateways-work.html" },
+    { "title": "What is VPC peering?", "url": "https://docs.aws.amazon.com/vpc/latest/peering/what-is-vpc-peering.html" },
+    { "title": "What is Amazon VPC Lattice?", "url": "https://docs.aws.amazon.com/vpc-lattice/latest/ug/what-is-vpc-lattice.html" }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "slug": "identity-center-federation",
+  "title": "IAM Identity Center & Workforce Federation",
+  "domain": 1,
+  "task": "1.1",
+  "summary": "Single sign-on for employees across many accounts using an existing identity provider.",
+  "services": ["AWS IAM Identity Center", "AWS Directory Service (AD Connector, AWS Managed Microsoft AD)", "AWS Organizations"],
+  "tldr": [
+    "Employees + many accounts + existing IdP = **IAM Identity Center**. It is the default answer for workforce SSO in an organization.",
+    "Access is given by assigning **groups** to **permission sets** in target accounts. Each permission set becomes a role in each account.",
+    "Identity source can be the built-in directory, **Active Directory** (via AD Connector or AWS Managed Microsoft AD), or an external SAML 2.0 IdP such as Okta or Entra ID with **SCIM** provisioning."
+  ],
+  "keyFacts": [
+    { "value": "SCIM", "text": "Automatically provisions and deprovisions users and groups from an external IdP, so joiners, movers and leavers are updated without manual steps." },
+    { "value": "AD Connector", "text": "A proxy to on-premises Active Directory. No directory data is cached in AWS; users sign in with existing AD credentials." },
+    { "value": "ABAC", "text": "**Attributes for access control** pass IdP attributes (department, project) as session tags, so one permission set can compare them with resource tags." },
+    { "value": "CLI", "text": "`aws configure sso` and `aws sso login` give developers short-lived CLI credentials, replacing IAM user access keys." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: who is signing in?",
+      "columns": ["Scenario", "Service", "Why"],
+      "rows": [
+        ["Employees, many AWS accounts", "IAM Identity Center", "Central SSO, permission sets, MFA"],
+        ["Customers of your web or mobile app", "Amazon Cognito", "Sign-up, social login, JWTs for millions of users"],
+        ["One account, legacy SAML federation", "IAM SAML identity provider + role", "Works, but more to manage than Identity Center"],
+        ["Servers or workloads outside AWS", "IAM Roles Anywhere", "Machine identity via certificates, no humans involved"]
+      ],
+      "highlightRow": 0
+    }
+  ],
+  "keywords": [
+    { "cue": "employees use existing AD credentials across many accounts", "answer": "IAM Identity Center with AD Connector" },
+    { "cue": "Okta groups drive AWS access automatically", "answer": "Identity Center with external IdP and SCIM" },
+    { "cue": "access level per account from group membership", "answer": "Assign groups to permission sets" },
+    { "cue": "IdP attribute decides which tagged resources a user can touch", "answer": "Identity Center attributes for access control (ABAC)" },
+    { "cue": "eliminate developers' long-term CLI keys", "answer": "aws sso login with Identity Center profiles" },
+    { "cue": "workforce SSO with least operational overhead", "answer": "IAM Identity Center" }
+  ],
+  "traps": [
+    "**Cognito** is for customer (app) identities, not employees signing in to AWS accounts.",
+    "Creating IAM users in each account and syncing passwords with scripts is never the answer for SSO.",
+    "One permission set per project defeats ABAC; use one permission set with tag conditions instead.",
+    "Simple AD is not Microsoft AD and can't connect to an on-premises domain."
+  ],
+  "relatedNotes": ["iam-policies-evaluation", "iam-roles-sts-cross-account", "organizations-scps-control-tower", "cognito-app-auth", "secure-remote-access"],
+  "sources": [
+    { "title": "What is IAM Identity Center?", "url": "https://docs.aws.amazon.com/singlesignon/latest/userguide/what-is.html" },
+    { "title": "Attributes for access control", "url": "https://docs.aws.amazon.com/singlesignon/latest/userguide/attributesforaccesscontrol.html" }
+  ]
+}

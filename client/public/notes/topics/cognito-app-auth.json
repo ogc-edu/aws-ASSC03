@@ -1,0 +1,56 @@
+{
+  "slug": "cognito-app-auth",
+  "title": "Amazon Cognito & Application Authorization",
+  "domain": 1,
+  "task": "1.1",
+  "summary": "Sign-up, sign-in and token-based authorization for web, mobile and API users.",
+  "services": ["Amazon Cognito user pools", "Amazon Cognito identity pools", "Amazon Verified Permissions", "Amazon API Gateway", "AWS AppSync"],
+  "tldr": [
+    "**User pool** = who you are: sign-up, sign-in, social/SAML federation, MFA, and JWTs. **Identity pool** = what AWS you can touch: swaps a token for temporary IAM credentials.",
+    "Mobile app writes straight to S3 or DynamoDB? User pool to sign in, identity pool for credentials, and a policy variable like `${cognito-identity.amazonaws.com:sub}` to fence each user to their own data.",
+    "Machine-to-machine API access uses the **OAuth 2.0 client credentials** grant with custom scopes on a user pool resource server.",
+    "Complex business rules (doctor sees only their clinic's patients) belong in **Amazon Verified Permissions** with Cedar policies."
+  ],
+  "keyFacts": [
+    { "value": "Guest access", "text": "Identity pools can issue credentials to **unauthenticated** users through a separate, tightly scoped IAM role, e.g. analytics events before sign-in." },
+    { "value": "LeadingKeys", "text": "`dynamodb:LeadingKeys` equal to the Cognito identity ID limits each user to items with their own partition key." },
+    { "value": "Plus plan", "text": "**Threat protection** (formerly advanced security) in the Plus feature plan blocks compromised credentials and adds adaptive, risk-based MFA." },
+    { "value": "Role from token", "text": "Map user pool **groups** to IAM roles and let the identity pool choose the role from the token, so the app can't pick its own permissions." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: API Gateway authorization options",
+      "columns": ["Option", "Caller proves identity with", "Pick it when…"],
+      "rows": [
+        ["Cognito user pool authorizer", "JWT from the user pool (with scopes)", "Signed-in app users or client-credentials partners"],
+        ["IAM (SigV4)", "AWS credentials", "Callers are AWS roles, including other accounts"],
+        ["Lambda authorizer", "Any token, validated by your code", "Third-party or opaque tokens, custom logic"],
+        ["API keys + usage plans", "A key string", "Throttling and quotas only, never authentication"]
+      ],
+      "highlightRow": 0
+    }
+  ],
+  "keywords": [
+    { "cue": "millions of consumers, social sign-in", "answer": "Cognito user pool with federation" },
+    { "cue": "mobile app uploads directly to S3, own folder only", "answer": "Identity pool role using cognito-identity sub in the resource ARN" },
+    { "cue": "anonymous users before sign-in", "answer": "Identity pool guest (unauthenticated) role" },
+    { "cue": "partner backends, no humans, revocable credentials", "answer": "Cognito app client per partner with client credentials grant" },
+    { "cue": "method requires a specific OAuth scope", "answer": "Cognito authorizer with authorization scopes on the method" },
+    { "cue": "credential stuffing, MFA only when risky", "answer": "Cognito threat protection with adaptive authentication" },
+    { "cue": "existing opaque tokens with introspection endpoint", "answer": "API Gateway Lambda authorizer with caching" },
+    { "cue": "fine-grained rules evaluated outside application code", "answer": "Amazon Verified Permissions (Cedar)" },
+    { "cue": "GraphQL API with per-group field access", "answer": "AppSync with Cognito user pool groups" }
+  ],
+  "traps": [
+    "A user pool token **cannot** call AWS services such as Kinesis or S3 directly; you need an identity pool for IAM credentials.",
+    "API keys identify a client for throttling; they are not an authentication mechanism.",
+    "GuardDuty doesn't detect or block compromised Cognito passwords; Cognito threat protection does.",
+    "Letting the app choose the identity pool or role by tier stored on the device is insecure; derive the role from the token."
+  ],
+  "relatedNotes": ["identity-center-federation", "api-gateway", "iam-policies-evaluation", "waf-shield-ddos"],
+  "sources": [
+    { "title": "What is Amazon Cognito?", "url": "https://docs.aws.amazon.com/cognito/latest/developerguide/what-is-amazon-cognito.html" },
+    { "title": "Advanced security with threat protection", "url": "https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pool-settings-threat-protection.html" },
+    { "title": "What is Amazon Verified Permissions?", "url": "https://docs.aws.amazon.com/verifiedpermissions/latest/userguide/what-is-avp.html" }
+  ]
+}

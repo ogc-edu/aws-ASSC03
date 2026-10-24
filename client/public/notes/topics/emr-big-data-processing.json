@@ -1,0 +1,56 @@
+{
+  "slug": "emr-big-data-processing",
+  "title": "EMR, Flink & OpenSearch for Big Data Compute",
+  "domain": 3,
+  "task": "3.2",
+  "summary": "Managed Spark, Hadoop, stream processing and log analytics clusters, serverless or provisioned.",
+  "services": ["Amazon EMR", "Amazon EMR Serverless", "Amazon Managed Service for Apache Flink", "Amazon OpenSearch Service", "Amazon OpenSearch Serverless"],
+  "tldr": [
+    "**Amazon EMR** runs open-source Spark, Hive, HBase, Presto/Trino and Hadoop with minimal code changes. It's the answer for \"lift our Hadoop cluster and keep the frameworks\".",
+    "**EMR Serverless** runs Spark and Hive jobs without choosing instances or managing clusters; you pay per job. Use it for irregular jobs with nothing running in between.",
+    "**Managed Service for Apache Flink** does stateful stream processing (sliding windows, per-key state, exactly-once) on Kinesis or MSK. **OpenSearch** is for full-text search and log analytics."
+  ],
+  "keyFacts": [
+    { "value": "Primary / core / task", "text": "EMR node types. Core nodes store HDFS data; **task nodes** only compute, so they are the safe place for **Spot Instances**." },
+    { "value": "EMRFS", "text": "EMR clusters can read and write Amazon S3 directly, so data outlives the cluster. That makes **transient clusters** per job a common cost pattern." },
+    { "value": "Hot → UltraWarm → cold", "text": "OpenSearch Service storage tiers. An **Index State Management** policy moves aging indexes down the tiers automatically to cut cost." },
+    { "value": "Collections", "text": "**OpenSearch Serverless** uses collections (search, time series, vector search) and scales capacity itself: no instance types, shards or capacity planning." },
+    { "value": "Zero-ETL", "text": "The **DynamoDB zero-ETL integration with OpenSearch Service** keeps a search index in sync without Streams-plus-Lambda code." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: big data compute options",
+      "columns": ["Option", "Model", "Best for", "Pick it when…"],
+      "rows": [
+        ["EMR on EC2", "Clusters you size", "Spark, Hive, HBase, Trino, custom JARs and configs", "Migrating Hadoop with minimal change, long-running or tuned clusters"],
+        ["EMR Serverless", "Per-job, no cluster", "Spark and Hive batch jobs", "Irregular jobs, no instance choice or cluster lifecycle wanted"],
+        ["AWS Glue ETL", "Serverless Spark jobs", "ETL into a data lake with the Glue Data Catalog", "Managed ETL pipelines rather than a general Hadoop stack"],
+        ["Managed Service for Apache Flink", "Serverless streaming app", "Stateful windows over Kinesis or MSK", "Rolling or sliding aggregates with alerts in seconds"],
+        ["OpenSearch Service / Serverless", "Domain or serverless collection", "Full-text search, log analytics, dashboards", "Relevance ranking, fuzzy search, log search with OpenSearch Dashboards"]
+      ],
+      "highlightRow": 1
+    }
+  ],
+  "keywords": [
+    { "cue": "keep Spark, Hive, HBase, Trino with minimal changes", "answer": "Amazon EMR" },
+    { "cue": "Spark jobs at irregular times, don't size clusters, pay per job", "answer": "EMR Serverless" },
+    { "cue": "cheap interruptible capacity on an EMR cluster", "answer": "Spot Instances on task nodes" },
+    { "cue": "sliding windows with per-key state over a Kinesis stream", "answer": "Amazon Managed Service for Apache Flink" },
+    { "cue": "log search, unpredictable load, no shard or capacity planning", "answer": "OpenSearch Serverless time series collection" },
+    { "cue": "full-text search over DynamoDB data, no sync code", "answer": "DynamoDB zero-ETL integration with OpenSearch Service" },
+    { "cue": "keep older logs searchable at lower cost", "answer": "OpenSearch UltraWarm and cold storage with an ISM policy" }
+  ],
+  "traps": [
+    "Running Flink yourself on EMR works but is never the \"least operational overhead\" answer when Managed Service for Apache Flink fits.",
+    "Lambda tumbling windows can't do sliding windows or hold large per-key state reliably.",
+    "Athena is serverless SQL over S3, not a replacement for HBase low-latency lookups or Spark jobs with custom JARs.",
+    "Putting HDFS data on Spot core nodes risks data loss; keep Spot to task nodes.",
+    "A long-lived EMR cluster sized for the biggest job wastes money when jobs are occasional; use EMR Serverless or transient clusters."
+  ],
+  "relatedNotes": ["athena-glue-data-lake", "kinesis-streaming-ingestion", "msk-kafka", "redshift-data-warehouse", "ec2-purchasing-options"],
+  "sources": [
+    { "title": "What is Amazon EMR Serverless?", "url": "https://docs.aws.amazon.com/emr/latest/EMR-Serverless-UserGuide/emr-serverless.html" },
+    { "title": "What is Amazon Managed Service for Apache Flink?", "url": "https://docs.aws.amazon.com/managed-flink/latest/java/what-is.html" },
+    { "title": "Amazon OpenSearch Serverless", "url": "https://docs.aws.amazon.com/opensearch-service/latest/developerguide/serverless.html" }
+  ]
+}

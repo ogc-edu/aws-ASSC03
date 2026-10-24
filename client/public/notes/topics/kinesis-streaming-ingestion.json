@@ -1,0 +1,66 @@
+{
+  "slug": "kinesis-streaming-ingestion",
+  "title": "Kinesis Data Streams & Amazon Data Firehose",
+  "domain": 3,
+  "task": "3.5",
+  "summary": "Real-time stream ingestion, fan-out to consumers, and managed delivery into S3, Redshift and more.",
+  "services": ["Amazon Kinesis Data Streams", "Amazon Data Firehose", "Amazon Managed Service for Apache Flink", "Kinesis Producer Library (KPL)"],
+  "tldr": [
+    "**Kinesis Data Streams (KDS)** is a durable, replayable stream: many consumers each read every record, in order per partition key, with sub-second latency and retention up to 365 days.",
+    "**Amazon Data Firehose** (formerly Kinesis Data Firehose) is zero-administration *delivery*: it buffers, converts (JSON to Parquet/ORC), partitions and loads data into S3, Redshift, OpenSearch, Splunk, Iceberg tables or HTTP endpoints. Near real-time, no replay, no custom consumers.",
+    "Throttling (`ProvisionedThroughputExceededException`) means a **hot shard** or too little capacity: fix the partition key, add shards, or switch to **on-demand** mode.",
+    "Need windowed analytics or stateful processing on the stream? Use **Amazon Managed Service for Apache Flink**."
+  ],
+  "keyFacts": [
+    { "value": "1 MB/s · 1,000 rec/s", "text": "Write limit **per shard** in provisioned mode. Shared read is 2 MB/s per shard across all standard (polling) consumers." },
+    { "value": "2 MB/s per consumer", "text": "**Enhanced fan-out** gives each registered consumer its own 2 MB/s per shard, pushed over HTTP/2 (`SubscribeToShard`) with lower latency." },
+    { "value": "24 h → 365 days", "text": "Default KDS retention is 24 hours and can be extended up to 365 days, so consumers can **reprocess** history after a bug fix." },
+    { "value": "Parallelization factor 1–10", "text": "Lets a Lambda event source mapping process up to 10 batches per shard at once while keeping order **per partition key**." },
+    { "value": "On-demand mode", "text": "KDS scales shard capacity automatically for unpredictable traffic; no shard planning. Consumers keep using the same APIs unchanged." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: which streaming service?",
+      "columns": ["Option", "Latency", "Replay / multiple readers", "Pick it when…"],
+      "rows": [
+        ["Kinesis Data Streams", "Sub-second (~70 ms with enhanced fan-out)", "Yes, retention up to 365 days", "Several custom apps read every record in order, or must reprocess"],
+        ["Amazon Data Firehose", "Near real-time (buffered)", "No, it delivers then forgets", "Load into S3/Redshift/OpenSearch with format conversion and no code"],
+        ["Amazon MSK", "Sub-second", "Yes, Kafka offsets", "Existing Kafka clients, no code change"],
+        ["SQS", "Low", "No, a message is consumed once", "Decoupled work queue with one consumer group"],
+        ["Managed Service for Apache Flink", "Seconds", "Reads from KDS/MSK", "Sliding/tumbling windows, joins, stateful stream analytics"]
+      ],
+      "highlightRow": 0
+    }
+  ],
+  "keywords": [
+    { "cue": "multiple applications read every event in order and can replay 7 days", "answer": "Kinesis Data Streams with retention extended" },
+    { "cue": "ProvisionedThroughputExceededException with a few hot shards", "answer": "High-cardinality partition key (device or user ID)" },
+    { "cue": "unpredictable spikes, no shard management", "answer": "Kinesis Data Streams on-demand capacity mode" },
+    { "cue": "many small records throttled though bytes are under the limit", "answer": "KPL record aggregation" },
+    { "cue": "each consumer needs dedicated read throughput and lowest latency", "answer": "Enhanced fan-out (SubscribeToShard)" },
+    { "cue": "convert JSON to Parquet on delivery to S3", "answer": "Firehose record format conversion with a Glue Data Catalog schema" },
+    { "cue": "S3 prefixes per tenant or customer_id with no post-processing", "answer": "Firehose dynamic partitioning" },
+    { "cue": "Lambda consumer lags, IteratorAge growing, read limits not reached", "answer": "Increase the event source mapping parallelization factor" },
+    { "cue": "query Kinesis data in Redshift within seconds without S3 staging", "answer": "Redshift streaming ingestion (materialized view)" },
+    { "cue": "rolling or sliding window averages per device", "answer": "Amazon Managed Service for Apache Flink" }
+  ],
+  "traps": [
+    "Enhanced fan-out fixes **read** contention only. It does nothing for producer write throttling.",
+    "Increasing retention never fixes throttling; it only lets consumers go further back in time.",
+    "Adding shards does not help if the partition key is low-cardinality (country, region); all hot traffic still hashes to one shard.",
+    "Firehose cannot be read by several custom consumers or replayed, so it is wrong when apps need every record with sub-second latency.",
+    "A bad record on a Lambda stream consumer blocks the shard; use `BisectBatchOnFunctionError`, `MaximumRetryAttempts` and an on-failure destination, not an async DLQ."
+  ],
+  "sections": [
+    {
+      "heading": "Fixing producer throttling, in order",
+      "body": "1. **Check the partition key.** Low cardinality creates hot shards; switch to device, user or session ID.\n2. **Batch tiny records.** Use the KPL to aggregate many small records into one Kinesis record, which avoids the 1,000 records/s limit.\n3. **Add capacity.** `UpdateShardCount` (or split hot shards) in provisioned mode, or move to **on-demand** mode when traffic is spiky and you don't want to plan shards."
+    }
+  ],
+  "relatedNotes": ["msk-kafka", "athena-glue-data-lake", "lambda-event-processing", "redshift-data-warehouse", "sqs-sns-decoupling"],
+  "sources": [
+    { "title": "Amazon Kinesis Data Streams quotas and limits", "url": "https://docs.aws.amazon.com/streams/latest/dev/service-sizes-and-limits.html" },
+    { "title": "What is Amazon Data Firehose?", "url": "https://docs.aws.amazon.com/firehose/latest/dev/what-is-this-service.html" },
+    { "title": "Using Lambda with Kinesis Data Streams", "url": "https://docs.aws.amazon.com/lambda/latest/dg/with-kinesis.html" }
+  ]
+}

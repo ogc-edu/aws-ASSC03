@@ -1,0 +1,64 @@
+{
+  "slug": "dynamodb-design-performance",
+  "title": "DynamoDB Data Modeling & Performance",
+  "domain": 3,
+  "task": "3.3",
+  "summary": "Keys, indexes, capacity modes, DAX, Streams and global tables for single-digit-millisecond access.",
+  "services": ["Amazon DynamoDB", "DynamoDB Accelerator (DAX)", "DynamoDB Streams", "DynamoDB global tables"],
+  "tldr": [
+    "Design keys from **access patterns**: a high-cardinality **partition key** spreads load; a **sort key** lets one `Query` fetch a range (for example vehicle ID + timestamp).",
+    "A new query on a non-key attribute → **global secondary index**, then `Query` it. A `Scan` with a filter still reads (and bills) the whole table.",
+    "One hot key throttling while the table is under capacity → **write sharding** (random suffix). Microsecond reads with the same API → **DAX**. Multi-Region active-active → **global tables**."
+  ],
+  "keyFacts": [
+    { "value": "4 KB / 1 KB", "text": "One **RCU** = one strongly consistent read/s of up to 4 KB (or two eventually consistent). One **WCU** = one write/s of up to 1 KB. Round item size up." },
+    { "value": "3,000 / 1,000", "text": "Per-partition ceiling of RCU and WCU. **Adaptive capacity** shifts throughput to busy partitions but can't lift one key past this limit." },
+    { "value": "300 s", "text": "**Burst capacity** keeps up to five minutes of unused throughput to absorb short spikes. Auto scaling reacts in minutes, too slow for 30-second bursts." },
+    { "value": "400 KB", "text": "Maximum item size. Store big objects in S3 and keep a pointer in the item." },
+    { "value": "24 h", "text": "**DynamoDB Streams** retention. Streams feed Lambda, EventBridge Pipes and global table replication." },
+    { "value": "MREC / MRSC", "text": "**Global tables** default to multi-Region eventual consistency (last writer wins). Multi-Region strong consistency is an option chosen at creation." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: secondary indexes",
+      "columns": ["Index", "Key", "When created", "Pick it when…"],
+      "rows": [
+        ["Global secondary index (GSI)", "Any partition key and sort key", "Any time", "New access pattern on other attributes; eventually consistent is fine"],
+        ["Local secondary index (LSI)", "Same partition key, different sort key", "Only at table creation", "Alternate sort order within a partition, strongly consistent reads needed"]
+      ],
+      "highlightRow": 0
+    },
+    {
+      "title": "Compare: capacity modes",
+      "columns": ["Mode", "Billing", "Pick it when…"],
+      "rows": [
+        ["On-demand", "Per request", "New or unpredictable traffic, spiky, no capacity planning"],
+        ["Provisioned + auto scaling", "Per RCU/WCU-hour", "Steady, predictable traffic; add reserved capacity for the baseline"]
+      ]
+    }
+  ],
+  "keywords": [
+    { "cue": "all readings for one vehicle in a time range", "answer": "Partition key vehicle ID, sort key timestamp, Query with BETWEEN" },
+    { "cue": "Scan with filter is slow and costly for a new lookup", "answer": "GSI on that attribute, then Query" },
+    { "cue": "one key throttled while table capacity mostly unused", "answer": "Hot partition: write sharding with a random suffix" },
+    { "cue": "microsecond reads, same DynamoDB API, no cache invalidation code", "answer": "DynamoDB Accelerator (DAX)" },
+    { "cue": "absorb 20–30 second spikes over provisioned capacity", "answer": "Burst capacity" },
+    { "cue": "skewed traffic but total under provisioned capacity", "answer": "Adaptive capacity" },
+    { "cue": "multi-Region writes, survive a Region failure, no promotion", "answer": "DynamoDB global tables" },
+    { "cue": "react to item changes, filter without Lambda", "answer": "DynamoDB Streams to EventBridge Pipes" },
+    { "cue": "600 strongly consistent reads/s of 6 KB items", "answer": "1,200 RCU (2 RCU per read)" }
+  ],
+  "traps": [
+    "DAX speeds up **reads**; it doesn't fix a hot partition for writes or add write capacity.",
+    "Raising table capacity or switching to on-demand doesn't fix one hot key, because the per-partition limit still applies.",
+    "An LSI can't be added to an existing table and shares the base table's partition key, so it can't serve a lookup by a different attribute.",
+    "A GSI on the same hot attribute just moves the hot partition into the index.",
+    "DAX serves eventually consistent reads; strongly consistent reads pass through to the table."
+  ],
+  "relatedNotes": ["dynamodb-cost", "elasticache-in-memory", "database-engine-selection", "lambda-event-processing", "eventbridge-event-driven"],
+  "sources": [
+    { "title": "Best practices for designing and using partition keys effectively", "url": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-design.html" },
+    { "title": "DynamoDB read/write capacity mode", "url": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/capacity-mode.html" },
+    { "title": "Global tables - multi-active, multi-Region replication", "url": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GlobalTables.html" }
+  ]
+}

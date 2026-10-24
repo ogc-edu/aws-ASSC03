@@ -1,0 +1,2022 @@
+{
+  "version": 1,
+  "examCode": "SAA-C03",
+  "generatedOn": "2026-10-24",
+  "domains": [
+    {
+      "id": 1,
+      "name": "Design Secure Architectures",
+      "weight": 30,
+      "tasks": [
+        {
+          "id": "1.1",
+          "name": "Design secure access to AWS resources",
+          "topics": [
+            "iam-policies-evaluation",
+            "iam-roles-sts-cross-account",
+            "organizations-scps-control-tower",
+            "identity-center-federation",
+            "cognito-app-auth"
+          ]
+        },
+        {
+          "id": "1.2",
+          "name": "Design secure workloads and applications",
+          "topics": [
+            "vpc-security-groups-nacls",
+            "vpc-endpoints-privatelink",
+            "waf-shield-ddos",
+            "network-firewall-inspection",
+            "threat-detection-security-hub",
+            "secrets-parameter-store",
+            "secure-remote-access",
+            "cloudfront-origin-security"
+          ]
+        },
+        {
+          "id": "1.3",
+          "name": "Determine appropriate data security controls",
+          "topics": [
+            "kms-cloudhsm",
+            "s3-security-access-control",
+            "acm-tls-encryption-in-transit",
+            "macie-config-compliance",
+            "cloudtrail-logging-audit"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Design Resilient Architectures",
+      "weight": 26,
+      "tasks": [
+        {
+          "id": "2.1",
+          "name": "Design scalable and loosely coupled architectures",
+          "topics": [
+            "sqs-sns-decoupling",
+            "sqs-fifo-ordering",
+            "eventbridge-event-driven",
+            "step-functions-orchestration",
+            "lambda-event-processing",
+            "api-gateway",
+            "containers-ecs-eks-fargate",
+            "auto-scaling-elb"
+          ]
+        },
+        {
+          "id": "2.2",
+          "name": "Design highly available and/or fault-tolerant architectures",
+          "topics": [
+            "disaster-recovery-strategies",
+            "route53-routing-failover",
+            "rds-aurora-ha",
+            "s3-replication",
+            "aws-backup",
+            "multi-az-resilience-patterns",
+            "cloudwatch-observability"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Design High-Performing Architectures",
+      "weight": 24,
+      "tasks": [
+        {
+          "id": "3.1",
+          "name": "Determine high-performing and/or scalable storage solutions",
+          "topics": [
+            "ebs-volumes-performance",
+            "efs-fsx-file-storage",
+            "s3-performance",
+            "storage-gateway-hybrid"
+          ]
+        },
+        {
+          "id": "3.2",
+          "name": "Design high-performing and elastic compute solutions",
+          "topics": [
+            "ec2-instances-placement-hpc",
+            "lambda-performance",
+            "emr-big-data-processing"
+          ]
+        },
+        {
+          "id": "3.3",
+          "name": "Determine high-performing database solutions",
+          "topics": [
+            "dynamodb-design-performance",
+            "elasticache-in-memory",
+            "database-engine-selection",
+            "redshift-data-warehouse"
+          ]
+        },
+        {
+          "id": "3.4",
+          "name": "Determine high-performing and/or scalable network architectures",
+          "topics": [
+            "cloudfront-caching-edge",
+            "global-accelerator-edge-locations",
+            "load-balancer-selection",
+            "hybrid-connectivity-dx-vpn",
+            "vpc-connectivity-tgw-lattice"
+          ]
+        },
+        {
+          "id": "3.5",
+          "name": "Determine high-performing data ingestion and transformation solutions",
+          "topics": [
+            "kinesis-streaming-ingestion",
+            "msk-kafka",
+            "athena-glue-data-lake",
+            "data-migration-transfer"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Design Cost-Optimized Architectures",
+      "weight": 20,
+      "tasks": [
+        {
+          "id": "4.1",
+          "name": "Design cost-optimized storage solutions",
+          "topics": [
+            "s3-storage-classes-lifecycle",
+            "block-file-storage-cost",
+            "cost-management-tools"
+          ]
+        },
+        {
+          "id": "4.2",
+          "name": "Design cost-optimized compute solutions",
+          "topics": [
+            "ec2-purchasing-options",
+            "compute-rightsizing-graviton"
+          ]
+        },
+        {
+          "id": "4.3",
+          "name": "Design cost-optimized database solutions",
+          "topics": [
+            "database-cost-optimization",
+            "dynamodb-cost"
+          ]
+        },
+        {
+          "id": "4.4",
+          "name": "Design cost-optimized network architectures",
+          "topics": [
+            "data-transfer-costs",
+            "nat-ipv4-ipv6-costs"
+          ]
+        }
+      ]
+    }
+  ],
+  "topics": {
+    "iam-policies-evaluation": {
+      "title": "IAM Policies & Policy Evaluation",
+      "domain": 1,
+      "task": "1.1",
+      "summary": "How IAM decides allow or deny, and the tools that keep permissions at least privilege.",
+      "keywords": [
+        "least privilege",
+        "explicit deny",
+        "permissions boundary",
+        "condition keys",
+        "ABAC",
+        "IAM Access Analyzer",
+        "root user",
+        "MFA",
+        "session policy"
+      ],
+      "questionTopics": [
+        "IAM",
+        "Policy evaluation",
+        "Least privilege",
+        "Permissions boundaries",
+        "Condition keys",
+        "Session policies",
+        "Privilege escalation",
+        "ABAC",
+        "Tag-based access control",
+        "Role-based access control",
+        "IAM Access Analyzer",
+        "Custom policy checks",
+        "CI/CD",
+        "Root user",
+        "MFA",
+        "Shared responsibility model",
+        "IAM roles",
+        "AWS CLI",
+        "Multi-tenancy"
+      ]
+    },
+    "iam-roles-sts-cross-account": {
+      "title": "IAM Roles, STS & Cross-Account Access",
+      "domain": 1,
+      "task": "1.1",
+      "summary": "Temporary credentials for workloads, other accounts, third parties and on-premises servers.",
+      "keywords": [
+        "AssumeRole",
+        "external ID",
+        "confused deputy",
+        "temporary credentials",
+        "instance profile",
+        "IMDSv2",
+        "IAM Roles Anywhere",
+        "EKS Pod Identity",
+        "resource-based policy"
+      ],
+      "questionTopics": [
+        "AWS STS",
+        "Cross-account access",
+        "Resource-based policies",
+        "External ID",
+        "SaaS integration",
+        "Temporary credentials",
+        "Multi-account access",
+        "IAM Roles Anywhere",
+        "Hybrid cloud",
+        "PKI",
+        "EKS Pod Identity",
+        "IMDSv2",
+        "Lambda function URLs"
+      ]
+    },
+    "organizations-scps-control-tower": {
+      "title": "AWS Organizations, SCPs & Control Tower",
+      "domain": 1,
+      "task": "1.1",
+      "summary": "Multi-account governance: guardrails with SCPs and RCPs, landing zones with Control Tower.",
+      "keywords": [
+        "SCP",
+        "RCP",
+        "service control policy",
+        "resource control policy",
+        "declarative policies",
+        "landing zone",
+        "guardrails",
+        "Account Factory",
+        "delegated administrator",
+        "OU"
+      ],
+      "questionTopics": [
+        "AWS Organizations",
+        "SCPs",
+        "Service Control Policies",
+        "Resource control policies (RCPs)",
+        "Resource Control Policies",
+        "Declarative policies",
+        "AWS Control Tower",
+        "Account Factory",
+        "Account Factory for Terraform (AFT)",
+        "Proactive controls",
+        "Management account",
+        "Delegated administrator",
+        "Security tooling account",
+        "AWS Resource Access Manager (AWS RAM)"
+      ]
+    },
+    "identity-center-federation": {
+      "title": "IAM Identity Center & Workforce Federation",
+      "domain": 1,
+      "task": "1.1",
+      "summary": "Single sign-on for employees across many accounts using an existing identity provider.",
+      "keywords": [
+        "SSO",
+        "single sign-on",
+        "SAML 2.0",
+        "SCIM",
+        "permission sets",
+        "Active Directory",
+        "AD Connector",
+        "workforce identity"
+      ],
+      "questionTopics": [
+        "AWS IAM Identity Center",
+        "SAML 2.0",
+        "SCIM",
+        "AWS Directory Service"
+      ]
+    },
+    "cognito-app-auth": {
+      "title": "Amazon Cognito & Application Authorization",
+      "domain": 1,
+      "task": "1.1",
+      "summary": "Sign-up, sign-in and token-based authorization for web, mobile and API users.",
+      "keywords": [
+        "user pool",
+        "identity pool",
+        "JWT",
+        "OAuth 2.0",
+        "client credentials",
+        "social sign-in",
+        "adaptive authentication",
+        "Verified Permissions",
+        "Cedar",
+        "customer identity"
+      ],
+      "questionTopics": [
+        "Amazon Cognito",
+        "OAuth 2.0 client credentials",
+        "OAuth 2.0 scopes",
+        "Mobile authentication",
+        "Adaptive authentication",
+        "Threat protection",
+        "Amazon Verified Permissions",
+        "Fine-grained authorization",
+        "Fine-grained access control",
+        "Lambda authorizer",
+        "API security",
+        "AWS AppSync"
+      ]
+    },
+    "vpc-security-groups-nacls": {
+      "title": "VPC Security: Security Groups, NACLs & Flow Logs",
+      "domain": 1,
+      "task": "1.2",
+      "summary": "Stateful and stateless traffic filtering, subnet design and network visibility inside a VPC.",
+      "keywords": [
+        "security group",
+        "network ACL",
+        "stateful",
+        "stateless",
+        "ephemeral ports",
+        "private subnet",
+        "prefix list",
+        "VPC Flow Logs",
+        "security group referencing"
+      ],
+      "questionTopics": [
+        "Amazon VPC",
+        "Security groups",
+        "Network ACLs",
+        "Network segmentation",
+        "Managed prefix lists",
+        "VPC Flow Logs",
+        "Network security"
+      ]
+    },
+    "vpc-endpoints-privatelink": {
+      "title": "VPC Endpoints & AWS PrivateLink",
+      "domain": 1,
+      "task": "1.2",
+      "summary": "Reach AWS services and partner services privately, without internet, NAT or public IPs.",
+      "keywords": [
+        "gateway endpoint",
+        "interface endpoint",
+        "endpoint policy",
+        "PrivateLink",
+        "endpoint service",
+        "aws:SourceVpce",
+        "no internet access",
+        "data exfiltration"
+      ],
+      "questionTopics": [
+        "VPC endpoints",
+        "VPC Endpoints",
+        "Endpoint Policies",
+        "Endpoint policies",
+        "AWS PrivateLink",
+        "VPC endpoint services",
+        "Data exfiltration"
+      ]
+    },
+    "waf-shield-ddos": {
+      "title": "AWS WAF, Shield & Firewall Manager",
+      "domain": 1,
+      "task": "1.2",
+      "summary": "Layer 7 filtering, DDoS protection and central firewall policy across accounts.",
+      "keywords": [
+        "web ACL",
+        "rate-based rule",
+        "SQL injection",
+        "XSS",
+        "Bot Control",
+        "account takeover",
+        "geo match",
+        "Shield Advanced",
+        "DDoS",
+        "Firewall Manager"
+      ],
+      "questionTopics": [
+        "AWS WAF",
+        "AWS Shield Advanced",
+        "DDoS",
+        "Rate limiting",
+        "Rate-based rules",
+        "Bot Control",
+        "Account takeover prevention",
+        "AWS Firewall Manager"
+      ]
+    },
+    "network-firewall-inspection": {
+      "title": "AWS Network Firewall & Traffic Inspection",
+      "domain": 1,
+      "task": "1.2",
+      "summary": "Stateful VPC firewalls, centralized inspection VPCs and DNS-layer filtering.",
+      "keywords": [
+        "Network Firewall",
+        "inspection VPC",
+        "Gateway Load Balancer",
+        "ingress routing",
+        "domain filtering",
+        "IDS/IPS",
+        "DNS Firewall",
+        "east-west traffic"
+      ],
+      "questionTopics": [
+        "AWS Network Firewall",
+        "Inspection VPC",
+        "Ingress routing",
+        "Transit Gateway",
+        "Gateway Load Balancer",
+        "Amazon Route 53 Resolver DNS Firewall"
+      ]
+    },
+    "threat-detection-security-hub": {
+      "title": "GuardDuty, Inspector, Security Hub & Detective",
+      "domain": 1,
+      "task": "1.2",
+      "summary": "Managed threat detection, vulnerability scanning and finding aggregation, with automated response.",
+      "keywords": [
+        "GuardDuty",
+        "Inspector",
+        "CVE",
+        "Security Hub",
+        "Detective",
+        "Security Lake",
+        "OCSF",
+        "malware scan",
+        "automated remediation",
+        "findings"
+      ],
+      "questionTopics": [
+        "Amazon GuardDuty",
+        "Amazon Inspector",
+        "Vulnerability management",
+        "AWS Security Hub",
+        "Amazon Detective",
+        "Runtime Monitoring",
+        "Malware Protection for S3",
+        "S3 Protection",
+        "Amazon Security Lake",
+        "OCSF",
+        "Automated remediation",
+        "EventBridge"
+      ]
+    },
+    "secrets-parameter-store": {
+      "title": "Secrets Manager, Parameter Store & Credential Hygiene",
+      "domain": 1,
+      "task": "1.2",
+      "summary": "Store and rotate database passwords and API keys instead of hard-coding them.",
+      "keywords": [
+        "Secrets Manager",
+        "automatic rotation",
+        "Parameter Store",
+        "SecureString",
+        "hard-coded credentials",
+        "IAM database authentication",
+        "multi-Region secrets",
+        "Nitro Enclaves"
+      ],
+      "questionTopics": [
+        "AWS Secrets Manager",
+        "Credential rotation",
+        "Multi-Region secrets",
+        "AWS Systems Manager",
+        "IAM database authentication",
+        "AWS Nitro Enclaves"
+      ]
+    },
+    "secure-remote-access": {
+      "title": "Secure Remote Access: Session Manager, Client VPN & Verified Access",
+      "domain": 1,
+      "task": "1.2",
+      "summary": "Admin and user access to private resources without bastion hosts or open SSH ports.",
+      "keywords": [
+        "Session Manager",
+        "bastion host",
+        "no inbound SSH",
+        "EC2 Instance Connect Endpoint",
+        "Client VPN",
+        "Verified Access",
+        "zero trust",
+        "VPN-less"
+      ],
+      "questionTopics": [
+        "Session Manager",
+        "EC2 Instance Connect Endpoint",
+        "AWS Client VPN",
+        "Remote access",
+        "AWS Verified Access",
+        "Zero trust"
+      ]
+    },
+    "cloudfront-origin-security": {
+      "title": "CloudFront Origin Security & Private Content",
+      "domain": 1,
+      "task": "1.2",
+      "summary": "Lock origins behind CloudFront and serve private content with signed URLs, cookies and OAC.",
+      "keywords": [
+        "origin access control",
+        "OAC",
+        "OAI",
+        "signed URL",
+        "signed cookies",
+        "presigned URL",
+        "field-level encryption",
+        "geo restriction",
+        "VPC origins"
+      ],
+      "questionTopics": [
+        "Origin access control",
+        "Origin access control (OAC)",
+        "Signed cookies",
+        "Presigned URLs",
+        "Field-level encryption",
+        "Geo restriction",
+        "VPC origins"
+      ]
+    },
+    "kms-cloudhsm": {
+      "title": "AWS KMS & CloudHSM",
+      "domain": 1,
+      "task": "1.3",
+      "summary": "Managed encryption keys, dedicated HSMs, and how to choose between the key stores.",
+      "keywords": [
+        "single-tenant HSM",
+        "custom key store",
+        "XKS",
+        "envelope encryption",
+        "S3 Bucket Keys",
+        "multi-Region keys",
+        "key policy"
+      ],
+      "questionTopics": [
+        "AWS KMS",
+        "AWS CloudHSM",
+        "AWS KMS custom key store",
+        "External key store (XKS)",
+        "Imported key material",
+        "Envelope encryption",
+        "Cryptography",
+        "Key policies",
+        "Key Policy",
+        "Key rotation",
+        "KMS grants",
+        "Encryption context",
+        "Multi-Region keys",
+        "S3 Bucket Keys",
+        "IAM delegation",
+        "Encryption at rest",
+        "Encryption",
+        "AMI sharing",
+        "Separation of duties"
+      ]
+    },
+    "s3-security-access-control": {
+      "title": "S3 Security: Access Control, Encryption & Object Lock",
+      "domain": 1,
+      "task": "1.3",
+      "summary": "Bucket policies, Block Public Access, Object Ownership, encryption options and WORM retention for S3.",
+      "keywords": [
+        "bucket policy",
+        "Block Public Access",
+        "Object Ownership",
+        "ACLs disabled",
+        "access points",
+        "SSE-S3",
+        "SSE-KMS",
+        "Object Lock",
+        "WORM",
+        "compliance mode",
+        "governance mode"
+      ],
+      "questionTopics": [
+        "Amazon S3",
+        "Bucket policies",
+        "S3 Block Public Access",
+        "S3 Object Ownership",
+        "S3 Access Points",
+        "S3 Object Lock",
+        "Immutability",
+        "Data retention"
+      ]
+    },
+    "acm-tls-encryption-in-transit": {
+      "title": "ACM, TLS & Encryption in Transit",
+      "domain": 1,
+      "task": "1.3",
+      "summary": "Public and private certificates, TLS termination points and end-to-end encryption choices.",
+      "keywords": [
+        "ACM",
+        "TLS",
+        "HTTPS",
+        "certificate renewal",
+        "us-east-1 for CloudFront",
+        "Private CA",
+        "end-to-end encryption",
+        "SSL offload"
+      ],
+      "questionTopics": [
+        "AWS Certificate Manager",
+        "AWS Certificate Manager (ACM)",
+        "TLS",
+        "Encryption in transit",
+        "Certificate renewal",
+        "AWS Private CA"
+      ]
+    },
+    "macie-config-compliance": {
+      "title": "Macie, Config & Compliance Evidence",
+      "domain": 1,
+      "task": "1.3",
+      "summary": "Find sensitive data, track configuration compliance and collect audit evidence.",
+      "keywords": [
+        "Macie",
+        "PII",
+        "sensitive data discovery",
+        "AWS Config",
+        "conformance packs",
+        "Audit Manager",
+        "AWS Artifact",
+        "PCI DSS",
+        "HIPAA",
+        "data protection policy"
+      ],
+      "questionTopics": [
+        "Amazon Macie",
+        "Data classification",
+        "Sensitive data",
+        "Data protection policies",
+        "AWS Config",
+        "Conformance packs",
+        "AWS Audit Manager",
+        "PCI DSS",
+        "AWS Artifact",
+        "HIPAA",
+        "Compliance"
+      ]
+    },
+    "cloudtrail-logging-audit": {
+      "title": "CloudTrail & Audit Logging",
+      "domain": 1,
+      "task": "1.3",
+      "summary": "Record every API call, prove logs weren't tampered with, and centralize logs across accounts.",
+      "keywords": [
+        "CloudTrail",
+        "organization trail",
+        "log file validation",
+        "data events",
+        "management events",
+        "CloudTrail Lake",
+        "log archive account",
+        "separation of duties"
+      ],
+      "questionTopics": [
+        "AWS CloudTrail",
+        "Log integrity",
+        "Data events",
+        "CloudTrail Insights"
+      ]
+    },
+    "sqs-sns-decoupling": {
+      "title": "SQS & SNS: Queues, Fan-out and Decoupling",
+      "domain": 2,
+      "task": "2.1",
+      "summary": "Buffer work with SQS, broadcast with SNS, and combine them for fan-out.",
+      "keywords": [
+        "SQS",
+        "SNS",
+        "decouple",
+        "fan-out",
+        "visibility timeout",
+        "long polling",
+        "dead-letter queue",
+        "message filtering",
+        "delay queue",
+        "Amazon MQ"
+      ],
+      "questionTopics": [
+        "Amazon SQS",
+        "Amazon SNS",
+        "Decoupling",
+        "Decoupled architecture",
+        "Visibility timeout",
+        "Long polling",
+        "Dead-letter queues",
+        "Dead-Letter Queue",
+        "Dead-letter queue",
+        "Redrive Allow Policy",
+        "Delay queues",
+        "Message timers",
+        "SQS Extended Client Library",
+        "Message filtering",
+        "Fanout pattern",
+        "Fan-out",
+        "Priority processing",
+        "Amazon MQ",
+        "Apache ActiveMQ",
+        "RabbitMQ"
+      ]
+    },
+    "sqs-fifo-ordering": {
+      "title": "FIFO Queues, Ordering & Exactly-Once Processing",
+      "domain": 2,
+      "task": "2.1",
+      "summary": "When order and deduplication matter: SQS FIFO, SNS FIFO, message groups and idempotency.",
+      "keywords": [
+        "FIFO",
+        "exactly-once",
+        "message group ID",
+        "deduplication ID",
+        "ordering",
+        "high throughput mode",
+        "idempotency"
+      ],
+      "questionTopics": [
+        "Amazon SQS FIFO",
+        "Amazon SNS FIFO",
+        "Message deduplication",
+        "Ordering",
+        "Message groups",
+        "High throughput mode",
+        "Idempotency"
+      ]
+    },
+    "eventbridge-event-driven": {
+      "title": "Amazon EventBridge: Event Buses, Pipes & Scheduler",
+      "domain": 2,
+      "task": "2.1",
+      "summary": "Route events between services and SaaS apps, connect sources to targets, and run schedules.",
+      "keywords": [
+        "event bus",
+        "event pattern",
+        "rule",
+        "EventBridge Pipes",
+        "EventBridge Scheduler",
+        "cron",
+        "archive and replay",
+        "SaaS partner events"
+      ],
+      "questionTopics": [
+        "Amazon EventBridge",
+        "Amazon EventBridge Scheduler",
+        "Amazon EventBridge Pipes",
+        "Archive and replay",
+        "One-time schedules",
+        "Delayed processing",
+        "Event-driven architecture",
+        "S3 event notifications"
+      ]
+    },
+    "step-functions-orchestration": {
+      "title": "AWS Step Functions Orchestration",
+      "domain": 2,
+      "task": "2.1",
+      "summary": "Coordinate multi-step workflows with retries, error handling, waits and massive parallelism.",
+      "keywords": [
+        "state machine",
+        "Standard workflow",
+        "Express workflow",
+        "Distributed Map",
+        "Retry",
+        "Catch",
+        "wait for callback",
+        "orchestration"
+      ],
+      "questionTopics": [
+        "AWS Step Functions",
+        "Distributed Map",
+        "Express workflows",
+        "Error handling",
+        "Retry policy",
+        "Wait state",
+        "Large-scale data processing"
+      ]
+    },
+    "lambda-event-processing": {
+      "title": "AWS Lambda: Invocation, Concurrency & Event Sources",
+      "domain": 2,
+      "task": "2.1",
+      "summary": "How Lambda is triggered, scales and fails, and the controls that keep it reliable.",
+      "keywords": [
+        "event source mapping",
+        "asynchronous invocation",
+        "destinations",
+        "reserved concurrency",
+        "maximum concurrency",
+        "aliases",
+        "versions",
+        "15 minutes",
+        "serverless"
+      ],
+      "questionTopics": [
+        "AWS Lambda",
+        "Event source mapping",
+        "Asynchronous invocation",
+        "Lambda destinations",
+        "Reserved concurrency",
+        "Maximum concurrency",
+        "Aliases",
+        "Versions",
+        "Weighted traffic shifting"
+      ]
+    },
+    "api-gateway": {
+      "title": "Amazon API Gateway",
+      "domain": 2,
+      "task": "2.1",
+      "summary": "REST, HTTP and WebSocket front doors for serverless and container backends.",
+      "keywords": [
+        "REST API",
+        "HTTP API",
+        "WebSocket API",
+        "usage plans",
+        "API keys",
+        "throttling",
+        "caching",
+        "VPC link",
+        "private API"
+      ],
+      "questionTopics": [
+        "Amazon API Gateway",
+        "WebSocket API",
+        "Real-time notifications",
+        "API caching",
+        "VPC link",
+        "Usage plans",
+        "Throttling"
+      ]
+    },
+    "containers-ecs-eks-fargate": {
+      "title": "Containers: ECS, EKS, Fargate & App Runner",
+      "domain": 2,
+      "task": "2.1",
+      "summary": "Run containers with the right orchestrator and launch type, and scale them.",
+      "keywords": [
+        "ECS",
+        "EKS",
+        "Fargate",
+        "Fargate Spot",
+        "capacity providers",
+        "Kubernetes",
+        "Karpenter",
+        "ECR",
+        "App Runner",
+        "Cloud Map",
+        "service discovery"
+      ],
+      "questionTopics": [
+        "Amazon ECS",
+        "Amazon EKS",
+        "AWS Fargate",
+        "Capacity providers",
+        "Fargate Spot",
+        "Fargate profiles",
+        "Kubernetes autoscaling",
+        "Cluster auto scaling",
+        "Managed node groups",
+        "Amazon ECR",
+        "AWS Cloud Map",
+        "Service discovery",
+        "AWS App Runner",
+        "Container deployment",
+        "PaaS",
+        "Service Auto Scaling"
+      ]
+    },
+    "auto-scaling-elb": {
+      "title": "EC2 Auto Scaling & Elastic Load Balancing",
+      "domain": 2,
+      "task": "2.1",
+      "summary": "Scale EC2 fleets on demand and spread traffic across healthy instances.",
+      "keywords": [
+        "Auto Scaling group",
+        "target tracking",
+        "predictive scaling",
+        "warm pools",
+        "lifecycle hooks",
+        "launch template",
+        "stateless",
+        "sticky sessions",
+        "health check grace period"
+      ],
+      "questionTopics": [
+        "Amazon EC2 Auto Scaling",
+        "EC2 Auto Scaling",
+        "Elastic Load Balancing",
+        "Predictive scaling",
+        "Warm pools",
+        "Lifecycle hooks",
+        "Slow start mode",
+        "Stateless architecture",
+        "Session management",
+        "Launch templates",
+        "Health check grace period",
+        "Standby state",
+        "Instance refresh"
+      ]
+    },
+    "disaster-recovery-strategies": {
+      "title": "Disaster Recovery Strategies: RPO & RTO",
+      "domain": 2,
+      "task": "2.2",
+      "summary": "Backup and restore, pilot light, warm standby and active-active, and how to pick one.",
+      "keywords": [
+        "RPO",
+        "RTO",
+        "backup and restore",
+        "pilot light",
+        "warm standby",
+        "multi-site active-active",
+        "Elastic Disaster Recovery",
+        "DRS"
+      ],
+      "questionTopics": [
+        "Disaster recovery",
+        "Backup and restore",
+        "Warm standby",
+        "RPO",
+        "RTO",
+        "Multi-Region DR",
+        "Cross-Region DR",
+        "Cross-region disaster recovery",
+        "Multi-Region active-active",
+        "Multi-Region",
+        "Multi-Region failover",
+        "AWS Elastic Disaster Recovery",
+        "Resilient architecture",
+        "AWS CloudFormation"
+      ]
+    },
+    "route53-routing-failover": {
+      "title": "Route 53 Routing Policies & Health Checks",
+      "domain": 2,
+      "task": "2.2",
+      "summary": "DNS-based failover, weighting and latency routing for multi-AZ and multi-Region designs.",
+      "keywords": [
+        "failover routing",
+        "weighted routing",
+        "latency-based routing",
+        "geolocation",
+        "geoproximity",
+        "multivalue answer",
+        "health check",
+        "alias record",
+        "private hosted zone"
+      ],
+      "questionTopics": [
+        "Amazon Route 53",
+        "Health checks",
+        "Failover routing",
+        "Weighted routing",
+        "Latency-based routing",
+        "Geoproximity routing",
+        "Bias",
+        "Multivalue answer routing",
+        "Calculated health checks",
+        "Private hosted zones",
+        "Alias records",
+        "DNS",
+        "Failover",
+        "Migration"
+      ]
+    },
+    "rds-aurora-ha": {
+      "title": "RDS & Aurora High Availability",
+      "domain": 2,
+      "task": "2.2",
+      "summary": "Multi-AZ, read replicas, Aurora replicas and Global Database for resilient relational data.",
+      "keywords": [
+        "Multi-AZ",
+        "standby",
+        "read replica",
+        "Aurora Replica",
+        "Global Database",
+        "failover",
+        "RDS Proxy",
+        "point-in-time recovery",
+        "Backtrack"
+      ],
+      "questionTopics": [
+        "Amazon RDS",
+        "Amazon Aurora",
+        "Multi-AZ",
+        "Amazon RDS Multi-AZ",
+        "Multi-AZ DB Cluster",
+        "Multi-AZ DB cluster",
+        "Read replicas",
+        "Aurora Replicas",
+        "Aurora Global Database",
+        "Amazon Aurora Global Database",
+        "Failover time",
+        "Failover priority tiers",
+        "Aurora custom endpoints",
+        "Amazon RDS Proxy",
+        "Aurora Backtrack",
+        "Data recovery",
+        "Point-in-time recovery",
+        "Cross-Region automated backups",
+        "Cross-Region snapshot copy",
+        "Deletion protection",
+        "Switchover",
+        "Cross-Region read replicas",
+        "Aurora Auto Scaling",
+        "Cluster deployment"
+      ]
+    },
+    "s3-replication": {
+      "title": "S3 Versioning & Replication",
+      "domain": 2,
+      "task": "2.2",
+      "summary": "Copy objects across Regions or accounts, with predictable timing and multi-Region endpoints.",
+      "keywords": [
+        "CRR",
+        "SRR",
+        "Replication Time Control",
+        "15 minutes",
+        "Batch Replication",
+        "versioning",
+        "Multi-Region Access Points",
+        "existing objects"
+      ],
+      "questionTopics": [
+        "S3 Cross-Region Replication",
+        "S3 Replication",
+        "S3 Replication Time Control",
+        "Replication Time Control",
+        "S3 Batch Replication",
+        "S3 Multi-Region Access Points",
+        "S3 Versioning"
+      ]
+    },
+    "aws-backup": {
+      "title": "AWS Backup & Snapshot Management",
+      "domain": 2,
+      "task": "2.2",
+      "summary": "Centralized, policy-driven backups with cross-Region, cross-account and immutable vaults.",
+      "keywords": [
+        "backup plan",
+        "backup vault",
+        "Vault Lock",
+        "logically air-gapped vault",
+        "cross-account backup",
+        "restore testing",
+        "Data Lifecycle Manager",
+        "snapshots"
+      ],
+      "questionTopics": [
+        "AWS Backup",
+        "Vault Lock",
+        "Logically air-gapped vault",
+        "Cross-account backup",
+        "Cross-Region backup",
+        "Restore testing",
+        "Amazon Data Lifecycle Manager",
+        "Cross-Region DR"
+      ]
+    },
+    "multi-az-resilience-patterns": {
+      "title": "Multi-AZ Resilience, Deployments & Recovery Controls",
+      "domain": 2,
+      "task": "2.2",
+      "summary": "Static stability, zonal shift, safe deployments and fault injection for highly available workloads.",
+      "keywords": [
+        "Availability Zones",
+        "static stability",
+        "zonal shift",
+        "Application Recovery Controller",
+        "cross-zone load balancing",
+        "blue/green",
+        "circuit breaker",
+        "Fault Injection Service",
+        "chaos engineering"
+      ],
+      "questionTopics": [
+        "Availability Zones",
+        "High availability",
+        "Static stability",
+        "Cross-zone load balancing",
+        "Legacy applications",
+        "Zonal shift",
+        "Amazon Application Recovery Controller (ARC)",
+        "Application Recovery Controller",
+        "Traffic dials",
+        "Simplified automatic recovery",
+        "Immutable infrastructure",
+        "Blue/green deployments",
+        "Deployment circuit breaker",
+        "Rolling updates",
+        "AWS Fault Injection Service",
+        "Resilience testing",
+        "Chaos engineering",
+        "Service Quotas",
+        "AWS Regions"
+      ]
+    },
+    "cloudwatch-observability": {
+      "title": "CloudWatch & X-Ray Observability",
+      "domain": 2,
+      "task": "2.2",
+      "summary": "Metrics, alarms, logs and traces that drive scaling, failover and troubleshooting.",
+      "keywords": [
+        "CloudWatch alarm",
+        "custom metrics",
+        "CloudWatch agent",
+        "Logs Insights",
+        "X-Ray",
+        "tracing",
+        "composite alarm",
+        "Container Insights"
+      ],
+      "questionTopics": [
+        "Amazon CloudWatch",
+        "AWS X-Ray",
+        "Workload visibility",
+        "Workload metrics",
+        "Troubleshooting",
+        "Amazon CloudWatch Logs"
+      ]
+    },
+    "ebs-volumes-performance": {
+      "title": "EBS Volume Types & Instance Store",
+      "domain": 3,
+      "task": "3.1",
+      "summary": "Pick the right block storage for IOPS, throughput, latency and shared access.",
+      "keywords": [
+        "gp3",
+        "io2 Block Express",
+        "st1",
+        "sc1",
+        "IOPS",
+        "throughput",
+        "Multi-Attach",
+        "Elastic Volumes",
+        "instance store",
+        "fast snapshot restore"
+      ],
+      "questionTopics": [
+        "Amazon EBS",
+        "gp3",
+        "io2",
+        "io2 Block Express",
+        "High IOPS storage",
+        "EBS Multi-Attach",
+        "EBS-optimized bandwidth",
+        "Elastic Volumes",
+        "EBS fast snapshot restore",
+        "Amazon EC2 instance store",
+        "Instance store"
+      ]
+    },
+    "efs-fsx-file-storage": {
+      "title": "EFS & FSx File Storage",
+      "domain": 3,
+      "task": "3.1",
+      "summary": "Shared file systems for Linux, Windows, HPC and multiprotocol workloads.",
+      "keywords": [
+        "EFS",
+        "NFS",
+        "SMB",
+        "FSx for Windows",
+        "FSx for Lustre",
+        "FSx for NetApp ONTAP",
+        "FSx for OpenZFS",
+        "Elastic Throughput",
+        "scratch",
+        "persistent"
+      ],
+      "questionTopics": [
+        "Amazon EFS",
+        "EFS throughput modes",
+        "Elastic Throughput",
+        "Throughput modes",
+        "Amazon FSx for Windows File Server",
+        "Amazon FSx for Lustre",
+        "Amazon FSx for NetApp ONTAP",
+        "Amazon FSx for OpenZFS",
+        "Multiprotocol file storage",
+        "Scratch file systems",
+        "Multi-AZ file systems",
+        "Enterprise storage",
+        "File storage migration",
+        "Storage types",
+        "Shared file storage",
+        "EFS replication"
+      ]
+    },
+    "s3-performance": {
+      "title": "S3 Performance & Low-Latency Access",
+      "domain": 3,
+      "task": "3.1",
+      "summary": "Request rates, multipart upload, Transfer Acceleration, byte-range fetches and S3 Express One Zone.",
+      "keywords": [
+        "prefixes",
+        "3,500 PUT",
+        "5,500 GET",
+        "multipart upload",
+        "Transfer Acceleration",
+        "byte-range fetch",
+        "S3 Express One Zone",
+        "directory bucket",
+        "Mountpoint"
+      ],
+      "questionTopics": [
+        "S3 Transfer Acceleration",
+        "S3 multipart upload",
+        "Multipart upload",
+        "Byte-range fetches",
+        "S3 prefixes",
+        "S3 request rate performance",
+        "Amazon S3 Express One Zone",
+        "Mountpoint for Amazon S3",
+        "Low latency storage",
+        "Machine learning"
+      ]
+    },
+    "storage-gateway-hybrid": {
+      "title": "Storage Gateway & Hybrid Storage",
+      "domain": 3,
+      "task": "3.1",
+      "summary": "Give on-premises apps local access to cloud storage with File, Volume and Tape Gateway.",
+      "keywords": [
+        "Storage Gateway",
+        "S3 File Gateway",
+        "Volume Gateway",
+        "cached volumes",
+        "stored volumes",
+        "Tape Gateway",
+        "VTL",
+        "hybrid storage"
+      ],
+      "questionTopics": [
+        "AWS Storage Gateway",
+        "Amazon S3 File Gateway",
+        "Volume Gateway",
+        "Tape Gateway",
+        "Hybrid storage"
+      ]
+    },
+    "ec2-instances-placement-hpc": {
+      "title": "EC2 Instance Families, Placement Groups & HPC",
+      "domain": 3,
+      "task": "3.2",
+      "summary": "Match instance families to workloads and network them for low latency and high throughput.",
+      "keywords": [
+        "compute optimized",
+        "memory optimized",
+        "accelerated computing",
+        "cluster placement group",
+        "spread",
+        "partition",
+        "EFA",
+        "ENA",
+        "HPC",
+        "AWS Batch"
+      ],
+      "questionTopics": [
+        "Amazon EC2",
+        "Instance types",
+        "Memory optimized instances",
+        "Compute optimized instances",
+        "Accelerated computing instances",
+        "Cluster placement groups",
+        "Cluster placement group",
+        "Spread placement groups",
+        "Partition placement groups",
+        "Elastic Fabric Adapter (EFA)",
+        "Elastic Fabric Adapter",
+        "HPC",
+        "Enhanced networking (ENA)",
+        "Jumbo frames",
+        "AWS Batch",
+        "Multi-node parallel jobs",
+        "AWS Outposts",
+        "Hybrid compute",
+        "Low latency"
+      ]
+    },
+    "lambda-performance": {
+      "title": "Lambda Performance: Cold Starts, Concurrency & Memory",
+      "domain": 3,
+      "task": "3.2",
+      "summary": "Make Lambda fast and predictable: SnapStart, provisioned concurrency, memory sizing and streaming.",
+      "keywords": [
+        "cold start",
+        "SnapStart",
+        "provisioned concurrency",
+        "memory and CPU",
+        "10 GB",
+        "response streaming",
+        "ephemeral storage",
+        "function URL",
+        "Application Auto Scaling"
+      ],
+      "questionTopics": [
+        "Lambda SnapStart",
+        "Provisioned concurrency",
+        "Cold start latency",
+        "Lambda response streaming",
+        "Application Auto Scaling",
+        "Lambda@Edge",
+        "Lambda ephemeral storage"
+      ]
+    },
+    "emr-big-data-processing": {
+      "title": "EMR, Flink & OpenSearch for Big Data Compute",
+      "domain": 3,
+      "task": "3.2",
+      "summary": "Managed Spark, Hadoop, stream processing and log analytics clusters, serverless or provisioned.",
+      "keywords": [
+        "EMR",
+        "EMR Serverless",
+        "Spark",
+        "Hive",
+        "HBase",
+        "Flink",
+        "stream processing",
+        "OpenSearch",
+        "log analytics"
+      ],
+      "questionTopics": [
+        "Amazon EMR",
+        "Amazon EMR Serverless",
+        "Apache Spark",
+        "Apache Hive",
+        "Apache HBase",
+        "Amazon Managed Service for Apache Flink",
+        "Stream processing",
+        "Amazon OpenSearch Serverless",
+        "Amazon OpenSearch Service",
+        "Log analytics",
+        "Serverless scaling"
+      ]
+    },
+    "dynamodb-design-performance": {
+      "title": "DynamoDB Data Modeling & Performance",
+      "domain": 3,
+      "task": "3.3",
+      "summary": "Keys, indexes, capacity modes, DAX, Streams and global tables for single-digit-millisecond access.",
+      "keywords": [
+        "partition key",
+        "sort key",
+        "GSI",
+        "LSI",
+        "hot partition",
+        "write sharding",
+        "RCU",
+        "WCU",
+        "on-demand",
+        "DAX",
+        "global tables",
+        "Streams"
+      ],
+      "questionTopics": [
+        "Amazon DynamoDB",
+        "Partition keys",
+        "Partition key design",
+        "Write sharding",
+        "Hot partitions",
+        "Global Secondary Index",
+        "Global secondary indexes",
+        "Access patterns",
+        "Composite primary key",
+        "Query",
+        "Read and write capacity units",
+        "Burst capacity",
+        "Adaptive capacity",
+        "Provisioned capacity",
+        "Capacity modes",
+        "DynamoDB Accelerator (DAX)",
+        "Amazon DynamoDB global tables",
+        "DynamoDB Streams",
+        "Amazon DynamoDB Streams"
+      ]
+    },
+    "elasticache-in-memory": {
+      "title": "ElastiCache, MemoryDB & Caching Strategies",
+      "domain": 3,
+      "task": "3.3",
+      "summary": "Cache hot reads, store sessions and run leaderboards in memory, and choose the caching pattern.",
+      "keywords": [
+        "ElastiCache",
+        "Valkey",
+        "Redis OSS",
+        "Memcached",
+        "lazy loading",
+        "write-through",
+        "TTL",
+        "session store",
+        "sorted sets",
+        "MemoryDB",
+        "ElastiCache Serverless"
+      ],
+      "questionTopics": [
+        "Amazon ElastiCache",
+        "Amazon ElastiCache Serverless",
+        "Caching strategies",
+        "Lazy loading",
+        "Write-through",
+        "TTL",
+        "In-memory caching",
+        "Valkey sorted sets",
+        "Amazon MemoryDB for Redis",
+        "In-memory database",
+        "Durability",
+        "Auto-scaling"
+      ]
+    },
+    "database-engine-selection": {
+      "title": "Choosing a Database Engine",
+      "domain": 3,
+      "task": "3.3",
+      "summary": "Relational, key-value, document, graph, wide-column and ledger: which purpose-built database fits.",
+      "keywords": [
+        "purpose-built database",
+        "DocumentDB",
+        "MongoDB",
+        "Neptune",
+        "graph",
+        "Keyspaces",
+        "Cassandra",
+        "PostGIS",
+        "Aurora PostgreSQL",
+        "RDS Optimized Reads"
+      ],
+      "questionTopics": [
+        "Database engine selection",
+        "Database types",
+        "Amazon DocumentDB",
+        "Amazon Keyspaces",
+        "Amazon Neptune",
+        "PostGIS",
+        "Amazon RDS for PostgreSQL",
+        "Amazon RDS for MySQL",
+        "Amazon Aurora PostgreSQL",
+        "Database migration",
+        "RDS Optimized Reads"
+      ]
+    },
+    "redshift-data-warehouse": {
+      "title": "Amazon Redshift Data Warehousing",
+      "domain": 3,
+      "task": "3.3",
+      "summary": "Columnar analytics at scale: distribution and sort keys, concurrency scaling, Spectrum and zero-ETL.",
+      "keywords": [
+        "data warehouse",
+        "OLAP",
+        "distribution style",
+        "sort key",
+        "concurrency scaling",
+        "materialized views",
+        "data sharing",
+        "Spectrum",
+        "zero-ETL",
+        "Redshift Serverless"
+      ],
+      "questionTopics": [
+        "Amazon Redshift",
+        "Amazon Redshift Serverless",
+        "Distribution styles",
+        "Sort keys",
+        "Concurrency scaling",
+        "Materialized views",
+        "Data sharing",
+        "Zero-ETL integration",
+        "Amazon Redshift Spectrum"
+      ]
+    },
+    "cloudfront-caching-edge": {
+      "title": "CloudFront Caching & Edge Compute",
+      "domain": 3,
+      "task": "3.4",
+      "summary": "Cache content close to users and run code at the edge with CloudFront Functions or Lambda@Edge.",
+      "keywords": [
+        "CDN",
+        "edge location",
+        "cache hit ratio",
+        "cache policy",
+        "origin request policy",
+        "Origin Shield",
+        "CloudFront Functions",
+        "Lambda@Edge",
+        "origin failover"
+      ],
+      "questionTopics": [
+        "Amazon CloudFront",
+        "Cache policies",
+        "Origin request policies",
+        "Origin Shield",
+        "CloudFront Functions",
+        "Edge computing",
+        "Origin failover",
+        "Lambda@Edge"
+      ]
+    },
+    "global-accelerator-edge-locations": {
+      "title": "Global Accelerator, Local Zones & Wavelength",
+      "domain": 3,
+      "task": "3.4",
+      "summary": "Improve global TCP/UDP performance with anycast IPs, and push compute closer to users.",
+      "keywords": [
+        "Global Accelerator",
+        "anycast",
+        "static IP",
+        "TCP/UDP",
+        "custom routing accelerator",
+        "Local Zones",
+        "Wavelength",
+        "5G",
+        "single-digit millisecond"
+      ],
+      "questionTopics": [
+        "AWS Global Accelerator",
+        "Anycast IP",
+        "TCP performance",
+        "Custom routing accelerators",
+        "AWS Local Zones",
+        "AWS Wavelength",
+        "5G",
+        "Edge placement"
+      ]
+    },
+    "load-balancer-selection": {
+      "title": "Choosing ALB, NLB or GWLB",
+      "domain": 3,
+      "task": "3.4",
+      "summary": "Layer 7 routing, layer 4 performance and appliance insertion: picking the load balancer.",
+      "keywords": [
+        "ALB",
+        "NLB",
+        "GWLB",
+        "path-based routing",
+        "host-based routing",
+        "static IP",
+        "TLS passthrough",
+        "layer 4",
+        "layer 7",
+        "least outstanding requests"
+      ],
+      "questionTopics": [
+        "Application Load Balancer",
+        "Network Load Balancer",
+        "Elastic Load Balancing",
+        "Routing algorithms"
+      ]
+    },
+    "hybrid-connectivity-dx-vpn": {
+      "title": "Direct Connect & Site-to-Site VPN",
+      "domain": 3,
+      "task": "3.4",
+      "summary": "Private, consistent links to on-premises networks and how to make them resilient and encrypted.",
+      "keywords": [
+        "Direct Connect",
+        "DX gateway",
+        "VIF",
+        "hosted connection",
+        "Site-to-Site VPN",
+        "VPN over DX",
+        "MACsec",
+        "ECMP",
+        "SiteLink",
+        "BGP"
+      ],
+      "questionTopics": [
+        "AWS Direct Connect",
+        "Direct Connect gateway",
+        "Hosted connections",
+        "AWS Site-to-Site VPN",
+        "MACsec",
+        "Hybrid networking",
+        "SiteLink",
+        "ECMP",
+        "Hybrid network cost"
+      ]
+    },
+    "vpc-connectivity-tgw-lattice": {
+      "title": "Transit Gateway, VPC Peering, RAM & VPC Lattice",
+      "domain": 3,
+      "task": "3.4",
+      "summary": "Connect many VPCs and accounts, share subnets, and wire up service-to-service traffic.",
+      "keywords": [
+        "Transit Gateway",
+        "hub and spoke",
+        "VPC peering",
+        "non-transitive",
+        "RAM",
+        "shared subnets",
+        "VPC Lattice",
+        "service network",
+        "inter-Region peering",
+        "CIDR"
+      ],
+      "questionTopics": [
+        "AWS Transit Gateway",
+        "VPC peering",
+        "AWS RAM",
+        "Amazon VPC Lattice",
+        "Service-to-service networking",
+        "Microservices",
+        "Inter-Region peering",
+        "IP addressing",
+        "Subnets"
+      ]
+    },
+    "kinesis-streaming-ingestion": {
+      "title": "Kinesis Data Streams & Amazon Data Firehose",
+      "domain": 3,
+      "task": "3.5",
+      "summary": "Real-time stream ingestion, fan-out to consumers, and managed delivery into S3, Redshift and more.",
+      "keywords": [
+        "Kinesis Data Streams",
+        "shard",
+        "on-demand mode",
+        "enhanced fan-out",
+        "KPL",
+        "Firehose",
+        "near real-time",
+        "dynamic partitioning",
+        "buffering"
+      ],
+      "questionTopics": [
+        "Amazon Kinesis Data Streams",
+        "Amazon Data Firehose",
+        "Enhanced fan-out",
+        "Kinesis Producer Library (KPL)",
+        "Record aggregation",
+        "Resharding",
+        "Partition keys",
+        "Parallelization factor",
+        "Dynamic Partitioning",
+        "Dynamic partitioning",
+        "Streaming ingestion",
+        "Streaming architecture"
+      ]
+    },
+    "msk-kafka": {
+      "title": "Amazon MSK & Apache Kafka",
+      "domain": 3,
+      "task": "3.5",
+      "summary": "Managed Kafka for teams that already use Kafka APIs, provisioned or serverless.",
+      "keywords": [
+        "MSK",
+        "Kafka",
+        "MSK Serverless",
+        "MSK Connect",
+        "tiered storage",
+        "replication factor",
+        "topics",
+        "brokers"
+      ],
+      "questionTopics": [
+        "Amazon MSK",
+        "Apache Kafka",
+        "Amazon MSK Serverless",
+        "MSK tiered storage",
+        "Replication factor"
+      ]
+    },
+    "athena-glue-data-lake": {
+      "title": "Athena, Glue & Lake Formation Data Lakes",
+      "domain": 3,
+      "task": "3.5",
+      "summary": "Query S3 with SQL, catalog and transform data with Glue, and govern it with Lake Formation.",
+      "keywords": [
+        "Athena",
+        "serverless SQL",
+        "Glue crawler",
+        "Data Catalog",
+        "job bookmarks",
+        "Parquet",
+        "partition projection",
+        "federated query",
+        "Lake Formation",
+        "Iceberg"
+      ],
+      "questionTopics": [
+        "Amazon Athena",
+        "AWS Glue",
+        "AWS Glue Data Catalog",
+        "Job bookmarks",
+        "Partition projection",
+        "Athena federated query",
+        "Data source connectors",
+        "Apache Parquet",
+        "Data lake ingestion",
+        "AWS Lake Formation",
+        "Apache Iceberg",
+        "Data lakehouse ETL",
+        "Amazon Quick Sight",
+        "SPICE"
+      ]
+    },
+    "data-migration-transfer": {
+      "title": "DMS, DataSync, Transfer Family & AppFlow",
+      "domain": 3,
+      "task": "3.5",
+      "summary": "Move databases, files and SaaS data into AWS, once or continuously.",
+      "keywords": [
+        "DMS",
+        "CDC",
+        "Schema Conversion",
+        "DataSync",
+        "Transfer Family",
+        "SFTP",
+        "AppFlow",
+        "Snowball",
+        "online transfer"
+      ],
+      "questionTopics": [
+        "AWS DMS",
+        "DMS Schema Conversion",
+        "Change data capture (CDC)",
+        "AWS DataSync",
+        "AWS Transfer Family",
+        "SFTP",
+        "Amazon AppFlow",
+        "Data ingestion"
+      ]
+    },
+    "s3-storage-classes-lifecycle": {
+      "title": "S3 Storage Classes & Lifecycle",
+      "domain": 4,
+      "task": "4.1",
+      "summary": "Match access patterns to S3 storage classes and automate transitions and expiration.",
+      "keywords": [
+        "Standard-IA",
+        "One Zone-IA",
+        "Intelligent-Tiering",
+        "Glacier Instant Retrieval",
+        "Glacier Flexible Retrieval",
+        "Deep Archive",
+        "lifecycle rule",
+        "minimum storage duration",
+        "retrieval time"
+      ],
+      "questionTopics": [
+        "S3 Lifecycle",
+        "S3 Intelligent-Tiering",
+        "S3 Glacier Deep Archive",
+        "Amazon S3 Glacier Deep Archive",
+        "S3 Glacier Instant Retrieval",
+        "Amazon S3 Glacier Flexible Retrieval",
+        "S3 Glacier tiers",
+        "Retrieval options",
+        "Archive Access tier",
+        "Deep Archive Access tier",
+        "S3 One Zone-IA",
+        "Small object overhead",
+        "Request costs",
+        "Requester Pays",
+        "Cold storage",
+        "S3 Storage Lens",
+        "S3 Batch Operations",
+        "Automated cost optimization",
+        "Lifecycle management"
+      ]
+    },
+    "block-file-storage-cost": {
+      "title": "Cutting EBS, EFS, FSx & Log Storage Costs",
+      "domain": 4,
+      "task": "4.1",
+      "summary": "Cheaper volume types, snapshot archiving, file system tiering and log retention.",
+      "keywords": [
+        "gp2 to gp3",
+        "sc1",
+        "st1",
+        "EBS Snapshots Archive",
+        "EFS Infrequent Access",
+        "EFS Archive",
+        "FSx ONTAP capacity pool",
+        "deduplication",
+        "log retention",
+        "UltraWarm"
+      ],
+      "questionTopics": [
+        "gp3",
+        "st1",
+        "Cold HDD (sc1)",
+        "EBS volume types",
+        "HDD storage",
+        "EBS snapshots",
+        "EBS Snapshot Archive",
+        "EBS Snapshots Archive",
+        "EFS lifecycle management",
+        "EFS Archive storage class",
+        "Capacity pool storage",
+        "Tiering policy",
+        "Data deduplication",
+        "Log classes",
+        "Log retention",
+        "UltraWarm",
+        "Index State Management",
+        "RDS storage autoscaling",
+        "Backup cold storage"
+      ]
+    },
+    "cost-management-tools": {
+      "title": "Cost Visibility: Cost Explorer, Budgets & Tags",
+      "domain": 4,
+      "task": "4.1",
+      "summary": "See, allocate and alert on spend with Cost Explorer, Budgets, CUR/Data Exports and cost allocation tags.",
+      "keywords": [
+        "Cost Explorer",
+        "Budgets",
+        "budget actions",
+        "cost allocation tags",
+        "Cost and Usage Report",
+        "Data Exports",
+        "Cost Anomaly Detection",
+        "Trusted Advisor",
+        "consolidated billing"
+      ],
+      "questionTopics": [
+        "AWS Cost Explorer",
+        "AWS Budgets",
+        "Budget actions",
+        "Cost allocation tags",
+        "Tag policies",
+        "AWS Cost and Usage Report",
+        "AWS Data Exports",
+        "AWS Trusted Advisor",
+        "AWS Cost Anomaly Detection",
+        "Consolidated billing",
+        "Cost optimization"
+      ]
+    },
+    "ec2-purchasing-options": {
+      "title": "EC2 Purchasing Options: Savings Plans, RIs & Spot",
+      "domain": 4,
+      "task": "4.2",
+      "summary": "On-Demand, Savings Plans, Reserved Instances, Spot, Capacity Reservations and Dedicated Hosts.",
+      "keywords": [
+        "Compute Savings Plans",
+        "EC2 Instance Savings Plans",
+        "Reserved Instances",
+        "Spot",
+        "interruption",
+        "allocation strategy",
+        "Capacity Reservation",
+        "Dedicated Hosts",
+        "BYOL"
+      ],
+      "questionTopics": [
+        "Savings Plans",
+        "EC2 Instance Savings Plans",
+        "Commitment discounts",
+        "Spot Instances",
+        "Amazon EC2 Spot Instances",
+        "Allocation strategies",
+        "Mixed Instances Policies",
+        "On-Demand Capacity Reservations",
+        "Amazon EC2 Dedicated Hosts",
+        "AWS License Manager",
+        "BYOL"
+      ]
+    },
+    "compute-rightsizing-graviton": {
+      "title": "Rightsizing, Graviton & Serverless Cost Tuning",
+      "domain": 4,
+      "task": "4.2",
+      "summary": "Find over-provisioned compute, move to Graviton, and tune Lambda and containers for cost.",
+      "keywords": [
+        "Compute Optimizer",
+        "rightsizing",
+        "Graviton",
+        "Arm",
+        "price performance",
+        "Lambda Power Tuning",
+        "burstable",
+        "T instances",
+        "hibernation",
+        "Container Insights"
+      ],
+      "questionTopics": [
+        "AWS Compute Optimizer",
+        "Rightsizing",
+        "AWS Graviton",
+        "Amazon CloudWatch agent",
+        "CloudWatch Container Insights",
+        "AWS Lambda Power Tuning",
+        "Lambda Power Tuning",
+        "Serverless cost optimization",
+        "Burstable performance instances",
+        "EC2 hibernation"
+      ]
+    },
+    "database-cost-optimization": {
+      "title": "Database Cost: Reserved Instances, Aurora Options & Serverless",
+      "domain": 4,
+      "task": "4.3",
+      "summary": "Reserved DB instances, Aurora I/O-Optimized vs Standard, Serverless v2 and cheaper dev databases.",
+      "keywords": [
+        "Reserved DB instances",
+        "reserved nodes",
+        "Aurora I/O-Optimized",
+        "Aurora Standard",
+        "Aurora Serverless v2",
+        "ACU",
+        "Aurora cloning",
+        "Redshift Serverless usage limits",
+        "dev/test"
+      ],
+      "questionTopics": [
+        "Reserved DB instances",
+        "Reserved nodes",
+        "Aurora I/O-Optimized",
+        "Aurora Standard",
+        "Aurora Serverless v2",
+        "Amazon Aurora Serverless v2",
+        "Aurora cloning",
+        "Development environments",
+        "Database cost",
+        "Usage limits",
+        "Cost control",
+        "Backup retention",
+        "Aurora backups",
+        "Provisioned IOPS SSD (io2)",
+        "Valkey"
+      ]
+    },
+    "dynamodb-cost": {
+      "title": "DynamoDB Cost: Capacity Modes, Table Classes & TTL",
+      "domain": 4,
+      "task": "4.3",
+      "summary": "On-demand vs provisioned capacity, reserved capacity, Standard-IA tables and TTL deletes.",
+      "keywords": [
+        "on-demand",
+        "provisioned",
+        "auto scaling",
+        "reserved capacity",
+        "Standard-IA table class",
+        "TTL",
+        "unpredictable traffic"
+      ],
+      "questionTopics": [
+        "On-demand capacity mode",
+        "Reserved capacity",
+        "Table classes",
+        "Standard-IA table class",
+        "DynamoDB Standard-IA table class",
+        "DynamoDB TTL"
+      ]
+    },
+    "data-transfer-costs": {
+      "title": "Data Transfer Costs",
+      "domain": 4,
+      "task": "4.4",
+      "summary": "Where AWS charges for moving bytes, and the designs that avoid those charges.",
+      "keywords": [
+        "data transfer out",
+        "cross-AZ",
+        "inter-Region",
+        "AZ ID",
+        "CloudFront price class",
+        "gateway endpoint",
+        "Direct Connect cost",
+        "same-AZ"
+      ],
+      "questionTopics": [
+        "Data transfer",
+        "Data transfer cost",
+        "Cross-AZ traffic",
+        "Availability Zone IDs",
+        "Price classes",
+        "Placement groups"
+      ]
+    },
+    "nat-ipv4-ipv6-costs": {
+      "title": "NAT Gateways, Public IPv4 & IPv6 Costs",
+      "domain": 4,
+      "task": "4.4",
+      "summary": "Outbound internet access patterns and the hourly and per-GB charges behind them.",
+      "keywords": [
+        "NAT gateway",
+        "per-GB processing",
+        "NAT instance",
+        "public IPv4 charge",
+        "Elastic IP",
+        "IPv6",
+        "egress-only internet gateway",
+        "one NAT per AZ"
+      ],
+      "questionTopics": [
+        "NAT gateway",
+        "Public IPv4 addresses",
+        "Public IPv4 charges",
+        "IPv6",
+        "Egress-only internet gateway",
+        "Elastic IP addresses"
+      ]
+    }
+  }
+}

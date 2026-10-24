@@ -1,0 +1,60 @@
+{
+  "slug": "ec2-purchasing-options",
+  "title": "EC2 Purchasing Options: Savings Plans, RIs & Spot",
+  "domain": 4,
+  "task": "4.2",
+  "summary": "On-Demand, Savings Plans, Reserved Instances, Spot, Capacity Reservations and Dedicated Hosts.",
+  "services": ["Compute Savings Plans", "EC2 Instance Savings Plans", "Reserved Instances", "Spot Instances", "On-Demand Capacity Reservations", "Dedicated Hosts", "AWS License Manager"],
+  "tldr": [
+    "Steady baseline → **commit** (Savings Plans or RIs, 1 or 3 years). Interruptible or fault-tolerant → **Spot**. Short, spiky or unknown → **On-Demand**. Typical answer mixes them: Savings Plan for the baseline, Spot above it.",
+    "**Compute Savings Plans** follow you across instance family, size, OS, Region, and into **Fargate and Lambda**. **EC2 Instance Savings Plans** give a deeper discount but lock the family and Region (size, OS and AZ can still change).",
+    "Discounts don't guarantee capacity. **On-Demand Capacity Reservations** guarantee capacity in one AZ with no term; pair them with a Savings Plan for the discount.",
+    "Per-core or per-socket licenses that can't use shared tenancy → **Dedicated Hosts** with **License Manager**."
+  ],
+  "keyFacts": [
+    { "value": "Up to 90% off", "text": "Spot discount versus On-Demand. AWS can reclaim capacity with a **2-minute** interruption notice, so the workload must checkpoint or be stateless." },
+    { "value": "Up to 72% / 66%", "text": "Maximum discount of EC2 Instance Savings Plans / Compute Savings Plans versus On-Demand, for a $/hour commitment over 1 or 3 years." },
+    { "value": "price-capacity-optimized", "text": "Recommended Spot allocation strategy: picks pools with the most spare capacity at a low price, so interruptions drop. Diversify instance types and AZs." },
+    { "value": "No term, no discount", "text": "On-Demand Capacity Reservations reserve capacity in a specific AZ and bill whether used or not; Savings Plans or regional RIs can discount them." },
+    { "value": "Org-wide sharing", "text": "With consolidated billing, Savings Plans and RI discounts apply to matching usage in any account of the organization unless sharing is turned off." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: purchasing options",
+      "columns": ["Option", "Flexibility", "Capacity guarantee", "Pick it when…"],
+      "rows": [
+        ["On-Demand", "Total", "No", "Short-term, spiky or unknown workloads"],
+        ["Compute Savings Plans", "Any family, size, OS, Region; Fargate and Lambda too", "No", "Steady spend but the architecture will change (Graviton, Fargate, new Region)"],
+        ["EC2 Instance Savings Plans", "One family in one Region; any size, OS, AZ", "No", "Standardized family and Region for the term, biggest SP discount"],
+        ["Standard Reserved Instances", "Fixed instance attributes; zonal RIs reserve capacity", "Zonal only", "Legacy choice; Savings Plans usually preferred"],
+        ["Spot Instances", "Any type with spare capacity", "No, can be interrupted", "Batch, CI, rendering, stateless scale-out above a baseline"],
+        ["On-Demand Capacity Reservation", "Specific type in one AZ, cancel anytime", "Yes", "Must be sure capacity exists (events, DR, AZ pinning)"],
+        ["Dedicated Hosts", "Whole physical server, visible sockets/cores", "Yes (the host)", "BYOL licenses bound to physical cores, compliance"]
+      ],
+      "highlightRow": 1
+    }
+  ],
+  "keywords": [
+    { "cue": "moving to Graviton, Fargate and a new Region, keep the discount", "answer": "Compute Savings Plans" },
+    { "cue": "same instance family and Region for 3 years, lowest cost", "answer": "EC2 Instance Savings Plans" },
+    { "cue": "batch job checkpoints and can resume on any instance", "answer": "Spot Instances across many types and AZs" },
+    { "cue": "steady baseline plus unpredictable spikes that tolerate instance loss", "answer": "Savings Plan for baseline, Spot above On-Demand base capacity" },
+    { "cue": "frequent Spot interruptions with lowest-price strategy", "answer": "price-capacity-optimized and more instance types and AZs" },
+    { "cue": "capacity must be guaranteed in a specific AZ", "answer": "On-Demand Capacity Reservation" },
+    { "cue": "licenses bound to physical cores, no License Mobility", "answer": "Dedicated Hosts with AWS License Manager" },
+    { "cue": "dev instances idle nights and weekends", "answer": "Schedule stop/start with EventBridge Scheduler" }
+  ],
+  "traps": [
+    "Raising the Spot maximum price does not stop interruptions; capacity reclaim is driven by supply, not your bid.",
+    "Dedicated Instances give single-tenant hardware but no visibility of sockets and cores, so they don't satisfy per-core BYOL terms.",
+    "Savings Plans and regional RIs give a discount but no capacity guarantee; only zonal RIs or Capacity Reservations reserve capacity.",
+    "Buying RIs or Savings Plans for instances that sit idle most of the day locks in waste; stop, schedule or rightsize first.",
+    "Savings Plans cannot be shared through AWS RAM or sold on the Reserved Instance Marketplace."
+  ],
+  "relatedNotes": ["compute-rightsizing-graviton", "cost-management-tools", "auto-scaling-elb", "database-cost-optimization"],
+  "sources": [
+    { "title": "What are Savings Plans?", "url": "https://docs.aws.amazon.com/savingsplans/latest/userguide/what-is-savings-plans.html" },
+    { "title": "Allocation strategies for Spot Instances", "url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-fleet-allocation-strategy.html" },
+    { "title": "On-Demand Capacity Reservations", "url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-capacity-reservations.html" }
+  ]
+}

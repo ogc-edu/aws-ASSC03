@@ -1,0 +1,56 @@
+{
+  "slug": "step-functions-orchestration",
+  "title": "AWS Step Functions Orchestration",
+  "domain": 2,
+  "task": "2.1",
+  "summary": "Coordinate multi-step workflows with retries, error handling, waits and massive parallelism.",
+  "services": ["AWS Step Functions", "AWS Lambda", "Amazon S3"],
+  "tldr": [
+    "**Step Functions** runs a state machine: sequence, branch (`Choice`), wait, run in parallel and handle errors, with a visual history of every execution.",
+    "**Standard** workflows are long-running (up to a year) and exactly-once, billed per state transition. **Express** workflows are short (up to 5 minutes), high-volume and billed per request and duration.",
+    "**Distributed Map** fans out over millions of S3 objects with thousands of child executions and a tolerated failure percentage."
+  ],
+  "keyFacts": [
+    { "value": "1 year", "text": "Maximum duration of a **Standard** execution, which makes human approval steps and long waits possible. Express workflows stop at 5 minutes." },
+    { "value": "Task token", "text": "The `.waitForTaskToken` pattern pauses the workflow until an external system (an approval portal, a partner) returns the token with `SendTaskSuccess`." },
+    { "value": "Retry / Catch", "text": "`Retry` sets `IntervalSeconds`, `MaxAttempts` and `BackoffRate` per error name. `Catch` routes remaining errors to a fallback state, such as a compensation step." },
+    { "value": "10,000", "text": "Child executions a **Distributed Map** can run in parallel. It reads items straight from an S3 prefix, CSV or JSON file instead of the execution input." },
+    { "value": "Wait state", "text": "A `Wait` state in a Standard workflow costs nothing while it waits, unlike a Lambda function that sleeps and is billed for idle time." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: Standard vs Express workflows",
+      "columns": ["Feature", "Standard", "Express"],
+      "rows": [
+        ["Maximum duration", "1 year", "5 minutes"],
+        ["Execution semantics", "Exactly-once", "At-least-once (async) or at-most-once (sync)"],
+        ["Pricing", "Per state transition", "Per request and duration"],
+        ["Callbacks (.waitForTaskToken)", "Supported", "Not supported"],
+        ["Pick it when…", "Long-running, auditable, human steps", "High-volume, short, idempotent event processing"]
+      ]
+    }
+  ],
+  "keywords": [
+    { "cue": "pause until a human approves, up to days", "answer": "Standard workflow with .waitForTaskToken" },
+    { "cue": "process millions of S3 files in parallel, job succeeds if under 1% fail", "answer": "Distributed Map with tolerated failure percentage" },
+    { "cue": "tens of thousands of short workflows per second, duplicates OK", "answer": "Express workflows" },
+    { "cue": "retry a specific error with exponential backoff", "answer": "Retry field with BackoffRate greater than 1" },
+    { "cue": "run a refund step if anything else fails", "answer": "Catch on States.ALL to a compensation task" },
+    { "cue": "Lambda polls a job for 15 minutes, mostly idle", "answer": "Standard workflow with Wait state and short Lambda calls" },
+    { "cue": "visual tracking of each workflow's progress", "answer": "AWS Step Functions" },
+    { "cue": "orchestrate several Lambda functions with branching", "answer": "Step Functions state machine with Choice states" }
+  ],
+  "traps": [
+    "Express workflows can't wait for days and don't support the task-token callback pattern.",
+    "Chaining Lambda functions that invoke each other, or one Lambda that sleeps, is costly and fragile compared with a state machine.",
+    "An **inline** Map gets its items from the execution input, which is capped by the state payload size. Huge item lists need Distributed Map.",
+    "Switching from Standard to Express does not add automatic retries. Retries come from the `Retry` field.",
+    "Moving a polling loop to Express doesn't help when jobs take longer than 5 minutes."
+  ],
+  "relatedNotes": ["lambda-event-processing", "eventbridge-event-driven", "sqs-sns-decoupling", "lambda-performance"],
+  "sources": [
+    { "title": "AWS Step Functions Developer Guide: Choosing workflow type", "url": "https://docs.aws.amazon.com/step-functions/latest/dg/choosing-workflow-type.html" },
+    { "title": "AWS Step Functions Developer Guide: Distributed Map state", "url": "https://docs.aws.amazon.com/step-functions/latest/dg/state-map-distributed.html" },
+    { "title": "AWS Step Functions Developer Guide: Handling errors", "url": "https://docs.aws.amazon.com/step-functions/latest/dg/concepts-error-handling.html" }
+  ]
+}

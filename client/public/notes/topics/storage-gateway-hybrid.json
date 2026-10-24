@@ -1,0 +1,136 @@
+{
+  "slug": "storage-gateway-hybrid",
+  "title": "Storage Gateway & Hybrid Storage",
+  "domain": 3,
+  "task": "3.1",
+  "summary": "Give on-premises apps local access to cloud storage with File, Volume and Tape Gateway.",
+  "services": [
+    "AWS Storage Gateway",
+    "Amazon S3 File Gateway",
+    "Volume Gateway",
+    "Tape Gateway"
+  ],
+  "tldr": [
+    "**Storage Gateway** runs on premises (VM or hardware) and gives existing apps local protocols (NFS, SMB, iSCSI, VTL) backed by AWS storage, with a local cache for hot data.",
+    "Files → **S3 File Gateway** (each file becomes an S3 object). Block → **Volume Gateway**. Tape backups → **Tape Gateway**.",
+    "Volume Gateway **cached** keeps the full data set in AWS and only hot data locally; **stored** keeps everything on premises and backs up asynchronously to AWS."
+  ],
+  "keyFacts": [
+    {
+      "value": "NFS / SMB → S3",
+      "text": "**S3 File Gateway** stores files as native S3 objects, so cloud analytics can use the same data while on-prem apps keep their mount."
+    },
+    {
+      "value": "Cached",
+      "text": "**Cached volumes**: primary data in AWS, frequently accessed data cached locally. Use it when on-prem capacity can't hold the full data set."
+    },
+    {
+      "value": "Stored",
+      "text": "**Stored volumes**: full data set on premises for low latency to everything, with point-in-time snapshots sent to AWS as EBS snapshots."
+    },
+    {
+      "value": "VTL",
+      "text": "**Tape Gateway** presents a virtual tape library to existing backup software; archived tapes go to S3 Glacier Flexible Retrieval or Deep Archive."
+    },
+    {
+      "value": "Closed",
+      "text": "**Amazon FSx File Gateway** no longer accepts new customers (since October 2024). New designs reach FSx for Windows directly."
+    }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: gateway types",
+      "columns": [
+        "Gateway",
+        "Protocol",
+        "Data lands in",
+        "Pick it when…"
+      ],
+      "rows": [
+        [
+          "S3 File Gateway",
+          "NFS, SMB",
+          "S3 objects",
+          "On-prem apps keep a file share; cloud tools read the objects"
+        ],
+        [
+          "Volume Gateway – cached",
+          "iSCSI",
+          "S3 (as volumes) + EBS snapshots",
+          "Data set too big for on-prem storage; hot subset local"
+        ],
+        [
+          "Volume Gateway – stored",
+          "iSCSI",
+          "On premises, backed up as EBS snapshots",
+          "All data needs local latency; AWS used for backup/DR"
+        ],
+        [
+          "Tape Gateway",
+          "iSCSI VTL",
+          "S3, then Glacier Flexible Retrieval or Deep Archive",
+          "Replace physical tapes without changing backup software"
+        ]
+      ],
+      "highlightRow": 0
+    }
+  ],
+  "keywords": [
+    {
+      "cue": "on-prem NFS access to files stored in S3",
+      "answer": "S3 File Gateway"
+    },
+    {
+      "cue": "limited on-prem capacity, low latency to recent files",
+      "answer": "S3 File Gateway or Volume Gateway cached volumes"
+    },
+    {
+      "cue": "iSCSI block storage, data set keeps growing",
+      "answer": "Volume Gateway cached volumes"
+    },
+    {
+      "cue": "all data must stay local, backup to AWS",
+      "answer": "Volume Gateway stored volumes"
+    },
+    {
+      "cue": "replace tape library without changing backup app",
+      "answer": "Tape Gateway"
+    },
+    {
+      "cue": "7-year tape retention at lowest cost",
+      "answer": "Tape Gateway archive to S3 Glacier Deep Archive"
+    },
+    {
+      "cue": "one-time or scheduled bulk copy to AWS",
+      "answer": "AWS DataSync (not Storage Gateway)"
+    }
+  ],
+  "traps": [
+    "Stored volumes keep the full data set on premises, so they don't solve \"we can't buy more local storage\".",
+    "DataSync copies data; it doesn't give apps an ongoing local mount with caching.",
+    "Mounting EFS from on premises over VPN works but gives no local cache and isn't for limited-bandwidth sites.",
+    "Changing backup jobs to write to an NFS share breaks the \"don't change backup procedures\" requirement. Tape Gateway keeps them.",
+    "S3 File Gateway is not a block device; iSCSI requirements point to Volume Gateway."
+  ],
+  "relatedNotes": [
+    "efs-fsx-file-storage",
+    "data-migration-transfer",
+    "s3-storage-classes-lifecycle",
+    "hybrid-connectivity-dx-vpn",
+    "aws-backup"
+  ],
+  "sources": [
+    {
+      "title": "What is AWS Storage Gateway?",
+      "url": "https://docs.aws.amazon.com/storagegateway/latest/vgw/WhatIsStorageGateway.html"
+    },
+    {
+      "title": "What is Amazon S3 File Gateway?",
+      "url": "https://docs.aws.amazon.com/filegateway/latest/files3/what-is-file-s3.html"
+    },
+    {
+      "title": "Amazon FSx File Gateway availability notice",
+      "url": "https://docs.aws.amazon.com/filegateway/latest/filefsxw/AboutAWSStorageGatewaySoftware.html"
+    }
+  ]
+}

@@ -1,0 +1,151 @@
+{
+  "slug": "athena-glue-data-lake",
+  "title": "Athena, Glue & Lake Formation Data Lakes",
+  "domain": 3,
+  "task": "3.5",
+  "summary": "Query S3 with SQL, catalog and transform data with Glue, and govern it with Lake Formation.",
+  "services": [
+    "Amazon Athena",
+    "AWS Glue",
+    "AWS Glue Data Catalog",
+    "AWS Lake Formation",
+    "Amazon Quick Sight",
+    "Apache Iceberg"
+  ],
+  "tldr": [
+    "**Athena** is serverless SQL on S3: no cluster, pay per data scanned. Cut cost and time by storing **columnar, compressed, partitioned** data (Parquet or ORC).",
+    "**AWS Glue** is serverless ETL plus the **Data Catalog** (the shared metastore for Athena, Redshift Spectrum and EMR). Crawlers discover schemas; **job bookmarks** process only new data.",
+    "**Lake Formation** adds central, database-style grants on the catalog: column-, row- and cell-level security through data filters and LF-Tags, instead of S3 bucket policies.",
+    "Need updates, deletes and ACID on S3? Use **Apache Iceberg** tables. Need fast dashboards for many users? **Amazon Quick Sight** with **SPICE**."
+  ],
+  "keyFacts": [
+    {
+      "value": "Pay per TB scanned",
+      "text": "Athena bills by data scanned, so converting CSV to Parquet and partitioning by date often cuts cost and runtime by an order of magnitude."
+    },
+    {
+      "value": "Partition projection",
+      "text": "Athena computes partition locations from table properties instead of calling the Glue catalog, which removes planning delay on tables with huge partition counts."
+    },
+    {
+      "value": "Job bookmarks",
+      "text": "Glue remembers what each run already processed, so hourly jobs read only new S3 files. One setting, no custom tracking code."
+    },
+    {
+      "value": "Federated query",
+      "text": "Athena connectors (running on Lambda) query DynamoDB, RDS/Aurora, Redshift and others in place, joined with S3, with no ETL."
+    },
+    {
+      "value": "SPICE",
+      "text": "Quick Sight's in-memory engine. Import once on a schedule and dashboards stay fast without running a query per filter click."
+    }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: querying data in S3",
+      "columns": [
+        "Option",
+        "Infrastructure",
+        "Best for",
+        "Pick it when…"
+      ],
+      "rows": [
+        [
+          "Amazon Athena",
+          "Serverless",
+          "Ad hoc and periodic SQL on S3",
+          "Occasional queries, pay only when they run"
+        ],
+        [
+          "Athena federated query",
+          "Serverless + Lambda connectors",
+          "Joining S3 with DynamoDB, Aurora and others",
+          "No ETL and no copies of the data"
+        ],
+        [
+          "Redshift Spectrum",
+          "Needs a Redshift cluster or Serverless workgroup",
+          "Joining warehouse tables with S3",
+          "Data already lives partly in Redshift"
+        ],
+        [
+          "Amazon EMR",
+          "Clusters (or EMR Serverless)",
+          "Large Spark/Hadoop jobs",
+          "Custom big-data frameworks"
+        ]
+      ],
+      "highlightRow": 0
+    }
+  ],
+  "keywords": [
+    {
+      "cue": "serverless SQL on data in S3, pay per query",
+      "answer": "Amazon Athena"
+    },
+    {
+      "cue": "queries scan too much, filter on date, use few columns",
+      "answer": "Convert to Parquet and partition by date"
+    },
+    {
+      "cue": "hourly Glue job reprocesses all historical files",
+      "answer": "Enable Glue job bookmarks"
+    },
+    {
+      "cue": "slow query planning with hundreds of thousands of partitions",
+      "answer": "Athena partition projection"
+    },
+    {
+      "cue": "thousands of tiny files per partition",
+      "answer": "Compact into larger Parquet files"
+    },
+    {
+      "cue": "column-level and row-level permissions with database-style grants",
+      "answer": "AWS Lake Formation data filters"
+    },
+    {
+      "cue": "join DynamoDB, Aurora and S3 ad hoc without ETL",
+      "answer": "Athena federated query"
+    },
+    {
+      "cue": "ACID updates, deletes and schema evolution in the data lake",
+      "answer": "Apache Iceberg tables"
+    },
+    {
+      "cue": "dashboards for hundreds of users without querying Athena on every filter",
+      "answer": "Amazon Quick Sight with SPICE"
+    },
+    {
+      "cue": "Redshift cluster runs 24/7 for one monthly report on S3 data",
+      "answer": "Parquet in S3 queried by Athena"
+    }
+  ],
+  "traps": [
+    "Moving data to a colder S3 class or turning on Transfer Acceleration does nothing for Athena scan cost; file format and partitioning do.",
+    "Running a crawler or `MSCK REPAIR TABLE` more often does not stop a Glue job from reprocessing old files; job bookmarks do.",
+    "Athena workgroups control query settings and cost limits, not row- or column-level access; that is Lake Formation.",
+    "Converting Parquet back to CSV makes queries slower and costlier; columnar formats are always the answer for analytics.",
+    "Redshift Spectrum needs a Redshift cluster or workgroup; for occasional queries with nothing in Redshift, Athena is cheaper."
+  ],
+  "relatedNotes": [
+    "kinesis-streaming-ingestion",
+    "data-migration-transfer",
+    "redshift-data-warehouse",
+    "emr-big-data-processing",
+    "s3-security-access-control"
+  ],
+  "sources": [
+    {
+      "title": "Performance tuning in Athena",
+      "url": "https://docs.aws.amazon.com/athena/latest/ug/performance-tuning.html"
+    },
+    {
+      "title": "Tracking processed data using job bookmarks",
+      "url": "https://docs.aws.amazon.com/glue/latest/dg/monitor-continuations.html"
+    },
+    {
+      "title": "What is AWS Lake Formation?",
+      "url": "https://docs.aws.amazon.com/lake-formation/latest/dg/what-is-lake-formation.html"
+    }
+  ]
+}

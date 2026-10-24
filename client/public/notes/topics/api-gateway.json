@@ -1,0 +1,58 @@
+{
+  "slug": "api-gateway",
+  "title": "Amazon API Gateway",
+  "domain": 2,
+  "task": "2.1",
+  "summary": "REST, HTTP and WebSocket front doors for serverless and container backends.",
+  "services": ["Amazon API Gateway", "AWS Lambda", "Amazon Cognito", "Amazon SQS"],
+  "tldr": [
+    "**REST APIs** have the full feature set: API keys and **usage plans**, caching, request validation, WAF, private endpoints. **HTTP APIs** are cheaper and simpler, with native JWT authorizers.",
+    "**WebSocket APIs** keep persistent connections so the backend can **push** to clients through the `@connections` callback URL. That's the answer whenever clients poll every second.",
+    "API Gateway can integrate **directly** with AWS services (SQS, Step Functions, DynamoDB) and reach private backends through a **VPC link**."
+  ],
+  "keyFacts": [
+    { "value": "10,000 rps", "text": "Default account throttle per Region (burst bucket 5,000), shared by all APIs. Stage and **method-level** limits narrow it for specific routes." },
+    { "value": "29 seconds", "text": "Default REST integration timeout. Regional and private REST APIs can request more, but long jobs should be queued and acknowledged instead." },
+    { "value": "300 s / 3,600 s", "text": "API cache TTL default and maximum. Caching is per stage, and the cache key can include path, query or header parameters." },
+    { "value": "Usage plans", "text": "API keys plus **usage plans** set a rate, burst and monthly quota **per client**. API keys identify callers; they are not an authentication method." },
+    { "value": "Private API", "text": "A **private** REST API is reachable only through an `execute-api` interface VPC endpoint, locked down with a resource policy on `aws:SourceVpce`." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: REST vs HTTP vs WebSocket APIs",
+      "columns": ["API type", "Strengths", "Not available", "Pick it when…"],
+      "rows": [
+        ["REST API", "Usage plans, API keys, caching, WAF, private endpoint, request validation", "Persistent push connections", "Per-partner quotas, caching or a private-only API"],
+        ["HTTP API", "Lower cost and latency, JWT authorizer, VPC link to ALB/NLB/Cloud Map", "Usage plans, API keys, caching", "Simple proxy to Lambda or private services with OIDC/JWT"],
+        ["WebSocket API", "Two-way persistent connections, server push via @connections", "Request/response caching", "Chat, live dashboards, auctions, real-time notifications"]
+      ],
+      "highlightRow": 0
+    }
+  ],
+  "keywords": [
+    { "cue": "per-partner rate limit and monthly quota", "answer": "API keys with usage plans (REST API)" },
+    { "cue": "limit only one expensive method across all clients", "answer": "Method-level throttling override on the stage" },
+    { "cue": "push updates to browsers, stop polling", "answer": "WebSocket API with connection IDs in DynamoDB" },
+    { "cue": "same GET requests overload the backend", "answer": "API Gateway stage caching with a TTL" },
+    { "cue": "acknowledge immediately, process long jobs later, don't lose them", "answer": "Direct SQS service integration plus a consumer" },
+    { "cue": "expose internal ALB services without making the ALB public", "answer": "Private integration through a VPC link" },
+    { "cue": "API reachable only from one VPC", "answer": "Private REST API, execute-api interface endpoint, aws:SourceVpce resource policy" },
+    { "cue": "Cognito users only, require an OAuth scope", "answer": "Cognito user pool authorizer with authorization scopes" },
+    { "cue": "validate opaque tokens against our own auth server", "answer": "Lambda authorizer with caching" },
+    { "cue": "cross-account role must call the API, no shared secrets", "answer": "AWS_IAM authorization, SigV4 and a resource policy" }
+  ],
+  "traps": [
+    "Usage plans and API keys exist only on **REST** APIs, not HTTP APIs.",
+    "Lowering the account-level throttle limits every API and route, not just the noisy client or method.",
+    "A WAF rate-based rule limits by IP or header, not by contractual monthly quota per partner.",
+    "Lambda reserved concurrency caps all callers together and returns errors to everyone; it is not a per-client limit.",
+    "Provisioned concurrency removes cold starts but doesn't reduce load on the database behind the API.",
+    "Older material says REST APIs need an NLB for private integrations. VPC links v2 now connect REST APIs to ALBs too."
+  ],
+  "relatedNotes": ["lambda-event-processing", "cognito-app-auth", "vpc-endpoints-privatelink", "waf-shield-ddos"],
+  "sources": [
+    { "title": "Amazon API Gateway quotas", "url": "https://docs.aws.amazon.com/apigateway/latest/developerguide/limits.html" },
+    { "title": "Choose between REST APIs and HTTP APIs", "url": "https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-vs-rest.html" },
+    { "title": "Private integrations for REST APIs in API Gateway", "url": "https://docs.aws.amazon.com/apigateway/latest/developerguide/private-integration.html" }
+  ]
+}

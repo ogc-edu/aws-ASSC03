@@ -1,0 +1,65 @@
+{
+  "slug": "elasticache-in-memory",
+  "title": "ElastiCache, MemoryDB & Caching Strategies",
+  "domain": 3,
+  "task": "3.3",
+  "summary": "Cache hot reads, store sessions and run leaderboards in memory, and choose the caching pattern.",
+  "services": ["Amazon ElastiCache", "Amazon ElastiCache Serverless", "Amazon MemoryDB"],
+  "tldr": [
+    "**ElastiCache** (Valkey, Redis OSS or Memcached) offloads repeated reads from RDS or Aurora, holds shared session state, and runs leaderboards with **sorted sets**.",
+    "**Lazy loading** caches only what's requested (stale until TTL). **Write-through** updates the cache on every write (always fresh, can fill with unread data). Combine write-through **with a TTL** for fresh, lean caches.",
+    "Need the in-memory store to be the **durable primary database** (no data loss)? Pick **MemoryDB**, which commits writes to a Multi-AZ transaction log. ElastiCache is a cache."
+  ],
+  "keyFacts": [
+    { "value": "Sub-ms", "text": "Typical ElastiCache read latency. Repeated SELECTs served from cache cut database CPU and let you avoid scaling the DB up." },
+    { "value": "Serverless", "text": "**ElastiCache Serverless** scales memory and compute automatically with no node sizing, for Valkey, Redis OSS and Memcached. Good fit for unpredictable traffic." },
+    { "value": "Sorted sets", "text": "Valkey/Redis OSS **sorted sets** keep members ranked by score, so \"top 100\" and \"my rank\" are single fast commands." },
+    { "value": "Multi-AZ log", "text": "**MemoryDB** persists every write to a distributed transaction log across AZs before acknowledging, giving durability with microsecond reads." },
+    { "value": "Memcached", "text": "Simple, multithreaded cache with no replication, persistence or Multi-AZ failover. Choose Valkey/Redis OSS when you need any of those." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: caching strategies",
+      "columns": ["Strategy", "How it works", "Weakness", "Pick it when…"],
+      "rows": [
+        ["Lazy loading (cache-aside)", "Read cache; on miss read DB and populate", "Stale data until TTL; first read is a miss", "Read-heavy, some staleness is OK, cache only what's used"],
+        ["Write-through", "Every DB write also updates the cache", "Caches data that may never be read", "Reads must reflect the latest write without a miss"],
+        ["Write-through + TTL", "Fresh on write, unread entries expire", "More write work", "Fresh data and a cache that doesn't bloat"]
+      ],
+      "highlightRow": 2
+    },
+    {
+      "title": "Compare: in-memory services",
+      "columns": ["Service", "Role", "Pick it when…"],
+      "rows": [
+        ["ElastiCache (Valkey / Redis OSS)", "Cache, sessions, leaderboards, pub/sub", "Speed up an existing DB; replicas and Multi-AZ failover"],
+        ["ElastiCache Serverless", "Same, auto-scaled", "Spiky or unknown load, no capacity planning"],
+        ["MemoryDB", "Durable primary database", "In-memory speed with zero data loss"],
+        ["DAX", "Cache for DynamoDB only", "Microsecond DynamoDB reads with the same API"]
+      ]
+    }
+  ],
+  "keywords": [
+    { "cue": "same few SELECT queries cause most DB load", "answer": "ElastiCache in front of the database" },
+    { "cue": "real-time leaderboard, rank and top 100", "answer": "ElastiCache for Valkey sorted sets" },
+    { "cue": "Redis data structures but zero data loss, primary database", "answer": "Amazon MemoryDB" },
+    { "cue": "cache scales automatically, no node sizing, spiky traffic", "answer": "ElastiCache Serverless" },
+    { "cue": "cache only requested data, up to 5 minutes stale", "answer": "Lazy loading with a 5-minute TTL" },
+    { "cue": "reads must reflect latest write, no cache miss", "answer": "Write-through (plus TTL)" },
+    { "cue": "make web tier stateless, share sessions", "answer": "Session store in ElastiCache or DynamoDB" },
+    { "cue": "single cache node failure lost all sessions", "answer": "Replica in another AZ with Multi-AZ automatic failover" }
+  ],
+  "traps": [
+    "ElastiCache is not a durable system of record; replication and snapshots can still lose recent writes. Use MemoryDB for that.",
+    "DAX works only with DynamoDB, so it can't cache an RDS or Aurora database.",
+    "Raising the TTL to 24 hours increases hits but makes stale data worse.",
+    "A `noeviction` policy makes writes fail when memory is full; it doesn't keep the cache fresh.",
+    "Adding read replicas spreads read load but doesn't fix stale data from lazy loading."
+  ],
+  "relatedNotes": ["dynamodb-design-performance", "rds-aurora-ha", "database-engine-selection", "database-cost-optimization", "auto-scaling-elb"],
+  "sources": [
+    { "title": "Caching strategies for Amazon ElastiCache", "url": "https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/Strategies.html" },
+    { "title": "What is Amazon ElastiCache?", "url": "https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/WhatIs.html" },
+    { "title": "What is MemoryDB?", "url": "https://docs.aws.amazon.com/memorydb/latest/devguide/what-is-memorydb.html" }
+  ]
+}

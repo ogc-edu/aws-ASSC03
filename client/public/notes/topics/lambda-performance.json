@@ -1,0 +1,57 @@
+{
+  "slug": "lambda-performance",
+  "title": "Lambda Performance: Cold Starts, Concurrency & Memory",
+  "domain": 3,
+  "task": "3.2",
+  "summary": "Make Lambda fast and predictable: SnapStart, provisioned concurrency, memory sizing and streaming.",
+  "services": ["AWS Lambda", "Lambda SnapStart", "Provisioned concurrency", "Lambda response streaming", "Application Auto Scaling", "Lambda@Edge"],
+  "tldr": [
+    "**Memory is the only CPU knob.** Raising memory adds vCPU and network share proportionally, so a CPU-bound function gets faster (and often no more expensive) with more memory.",
+    "Slow init on Java, Python or .NET → **SnapStart** (cheap, no code change). Strict, always-warm latency → **provisioned concurrency**, scheduled with **Application Auto Scaling** when traffic is predictable.",
+    "**Reserved concurrency** caps or guarantees a share of concurrency; it does **not** pre-warm anything. Long responses that should appear progressively → **response streaming**."
+  ],
+  "keyFacts": [
+    { "value": "128 MB–10,240 MB", "text": "Memory range for a function. CPU scales with memory; at about **1,769 MB** a function gets the equivalent of one full vCPU." },
+    { "value": "15 min", "text": "Maximum timeout. Raising the timeout never makes code run faster; it only lets slow code keep running (and billing)." },
+    { "value": "512 MB–10,240 MB", "text": "Configurable **ephemeral storage** (`/tmp`). Raise it for large scratch files instead of mounting EFS when you don't need shared or persistent storage." },
+    { "value": "Java, Python, .NET", "text": "**SnapStart** runtimes (Java 11+, Python 3.12+, .NET 8+). It works only on **published versions** or aliases, not `$LATEST`, and can't be combined with provisioned concurrency." },
+    { "value": "1,000", "text": "Default concurrent executions per account per Region (a soft quota shared by all functions). Reserved concurrency carves a fixed slice out of it." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: cold-start and concurrency controls",
+      "columns": ["Option", "What it does", "Cost", "Pick it when…"],
+      "rows": [
+        ["SnapStart", "Restores new environments from a snapshot of an initialized one", "Low (free for Java)", "Long framework init on Java/Python/.NET, unpredictable traffic, no code change"],
+        ["Provisioned concurrency", "Keeps N environments initialized at all times", "Pay for every hour they're kept warm", "Strict low latency; schedule it with Application Auto Scaling for business hours"],
+        ["Reserved concurrency", "Caps the function and guarantees it that many slots", "No extra charge", "Protect a downstream API or DB, or stop one function starving others"],
+        ["More memory", "Adds CPU and network share", "Higher per-ms price, often shorter duration", "CPU-bound work runs too long"],
+        ["Response streaming", "Sends bytes as they're produced", "Normal pricing", "Long responses; cut time to first byte via function URL `RESPONSE_STREAM`"]
+      ],
+      "highlightRow": 0
+    }
+  ],
+  "keywords": [
+    { "cue": "Java Spring Boot cold start, cost-effective, no code change", "answer": "Lambda SnapStart on a published version" },
+    { "cue": "consistently low latency during business hours only", "answer": "Provisioned concurrency scheduled with Application Auto Scaling" },
+    { "cue": "CPU-bound function takes too long", "answer": "Increase memory (adds CPU)" },
+    { "cue": "No space left on device, large file in /tmp", "answer": "Increase ephemeral storage up to 10,240 MB" },
+    { "cue": "show output progressively, shorter time to first byte", "answer": "Lambda response streaming (function URL RESPONSE_STREAM)" },
+    { "cue": "limit calls to a third-party API to 20 at a time", "answer": "Reserved concurrency (or SQS maximum concurrency)" },
+    { "cue": "Kinesis IteratorAge growing, don't reshard, keep per-key order", "answer": "Raise the event source mapping parallelization factor" },
+    { "cue": "route to origin by data lookup at the edge", "answer": "Lambda@Edge origin request function" }
+  ],
+  "traps": [
+    "**Reserved concurrency** does not pre-initialize environments, so it does nothing for cold starts.",
+    "\"Keep-warm\" pings from EventBridge or a canary are a hack: they warm one environment, not the burst you actually get.",
+    "Provisioned concurrency sized for peak and left on 24/7 is the expensive answer when the question says \"most cost-effective\".",
+    "SnapStart and provisioned concurrency can't be used on the same function version; pick one.",
+    "Lambda@Edge supports only x86_64 and Node.js/Python, with no VPC access, so \"switch the edge function to arm64\" is not a valid cost fix."
+  ],
+  "relatedNotes": ["lambda-event-processing", "api-gateway", "cloudfront-caching-edge", "compute-rightsizing-graviton", "step-functions-orchestration"],
+  "sources": [
+    { "title": "Improving startup performance with Lambda SnapStart", "url": "https://docs.aws.amazon.com/lambda/latest/dg/snapstart.html" },
+    { "title": "Configuring provisioned concurrency for a function", "url": "https://docs.aws.amazon.com/lambda/latest/dg/provisioned-concurrency.html" },
+    { "title": "Configure Lambda function memory", "url": "https://docs.aws.amazon.com/lambda/latest/dg/configuration-memory.html" }
+  ]
+}

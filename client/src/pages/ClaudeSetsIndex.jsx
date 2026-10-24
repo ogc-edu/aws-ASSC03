@@ -15,7 +15,11 @@ export default function ClaudeSetsIndex() {
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col">
-      <ClaudeHeader title="Claude Practice Sets" subtitle="Freshly generated SAA-C03 mock exams aligned to the current exam guide" />
+      <ClaudeHeader title="Claude Practice Sets" subtitle="Freshly generated SAA-C03 mock exams aligned to the current exam guide">
+        <a href="/notes" className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-teal-300 hover:text-teal-200 transition">
+          Notes
+        </a>
+      </ClaudeHeader>
 
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {error && (

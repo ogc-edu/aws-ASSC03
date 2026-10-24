@@ -1,0 +1,64 @@
+{
+  "slug": "nat-ipv4-ipv6-costs",
+  "title": "NAT Gateways, Public IPv4 & IPv6 Costs",
+  "domain": 4,
+  "task": "4.4",
+  "summary": "Outbound internet access patterns and the hourly and per-GB charges behind them.",
+  "services": ["NAT gateway", "Gateway VPC endpoints", "Interface VPC endpoints", "Public IPv4 addresses", "Elastic IP addresses", "Egress-only internet gateway"],
+  "tldr": [
+    "A **NAT gateway** bills per hour **and per GB processed**. The biggest saving is to keep AWS-service traffic off it: **gateway endpoints** for S3 and DynamoDB (free), interface endpoints for other services such as ECR.",
+    "Every **public IPv4 address** is billed hourly since February 2024, whether attached, idle or auto-assigned. Put servers in private subnets behind a load balancer and release unused Elastic IPs.",
+    "For IPv6, an **egress-only internet gateway** gives outbound-only access with no hourly charge and no public IPv4 address.",
+    "One NAT gateway per AZ is the high-availability design. For dev or test that accepts losing egress when one AZ fails, a single NAT gateway is the cheapest."
+  ],
+  "keyFacts": [
+    { "value": "$0.005 / IP-hour", "text": "Charge for each public IPv4 address, in use or idle (about $3.60 a month each). Applies to EC2, load balancers, NAT gateways and unattached Elastic IPs." },
+    { "value": "Free gateway endpoints", "text": "S3 and DynamoDB gateway endpoints have no hourly or per-GB charge. Same-Region S3 traffic through them skips NAT processing fees." },
+    { "value": "ECR = 2 + S3", "text": "Private image pulls need `ecr.api` and `ecr.dkr` interface endpoints, plus the S3 **gateway** endpoint because image layers are stored in S3." },
+    { "value": "Free EIGW", "text": "An egress-only internet gateway has no hourly charge; you pay normal data transfer out. It works for IPv6 only." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: outbound access options",
+      "columns": ["Option", "Cost model", "Inbound blocked?", "Pick it when…"],
+      "rows": [
+        ["NAT gateway per AZ", "Hourly + per-GB, per gateway", "Yes", "Production IPv4 egress that must survive an AZ failure"],
+        ["Single NAT gateway", "One hourly charge + per-GB (+ cross-AZ)", "Yes", "Dev/test where losing egress in an AZ failure is OK"],
+        ["NAT instance", "EC2 instance cost", "Yes (you manage it)", "Rarely: you patch, scale and fail it over yourself"],
+        ["Gateway endpoint (S3, DynamoDB)", "Free", "Private, no internet", "Large same-Region S3 or DynamoDB traffic"],
+        ["Interface endpoint", "Hourly per AZ + per-GB, lower than NAT", "Private", "Heavy traffic to other AWS services (ECR, STS, SQS)"],
+        ["Egress-only internet gateway", "No hourly charge", "Yes, IPv6 only", "IPv6 outbound without public IPv4 cost"],
+        ["Public IP on each instance", "$0.005/hour per address", "No, SG rules only", "Avoid; it costs and exposes instances"]
+      ],
+      "highlightRow": 3
+    }
+  ],
+  "keywords": [
+    { "cue": "NAT gateway processing charges for S3 traffic", "answer": "S3 gateway VPC endpoint" },
+    { "cue": "NAT charges for pulling container images from ECR", "answer": "ECR api and dkr interface endpoints plus S3 gateway endpoint" },
+    { "cue": "rising public IPv4 charges, traffic arrives through an ALB", "answer": "Move instances to private subnets, release unused Elastic IPs" },
+    { "cue": "outbound-only internet without IPv4 charges", "answer": "IPv6 dual-stack with an egress-only internet gateway" },
+    { "cue": "outbound IPv4 must survive an AZ failure", "answer": "One NAT gateway per AZ, AZ-specific route tables" },
+    { "cue": "dev VPC with three NAT gateways and little traffic", "answer": "Keep one NAT gateway for all private subnets" },
+    { "cue": "never reachable from the internet but needs updates", "answer": "Private subnet with NAT gateway" }
+  ],
+  "traps": [
+    "An S3 **interface** endpoint charges hourly and per GB; for in-VPC S3 traffic the free **gateway** endpoint is cheaper.",
+    "An egress-only internet gateway handles IPv6 only; it cannot replace a NAT gateway for IPv4 traffic.",
+    "Swapping auto-assigned public IPs for Elastic IPs doesn't cut cost; both are public IPv4 addresses billed hourly.",
+    "Unattached Elastic IPs still cost money; release them.",
+    "A Graviton NAT instance saves little and adds operational work; endpoints remove the per-GB charge instead."
+  ],
+  "sections": [
+    {
+      "heading": "Regional NAT gateway (new in late 2025)",
+      "body": "AWS added a **regional availability mode** for NAT gateways (November 2025). One regional NAT gateway spans the AZs where your workloads run and doesn't need a public subnet, so you no longer manage one gateway and route table per AZ. Exam questions written before then still expect the classic answer: **one zonal NAT gateway per AZ** for resilience."
+    }
+  ],
+  "relatedNotes": ["vpc-endpoints-privatelink", "data-transfer-costs", "vpc-security-groups-nacls", "multi-az-resilience-patterns"],
+  "sources": [
+    { "title": "NAT gateways (Amazon VPC User Guide)", "url": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-gateway.html" },
+    { "title": "New – AWS Public IPv4 Address Charge", "url": "https://aws.amazon.com/blogs/aws/new-aws-public-ipv4-address-charge-public-ip-insights/" },
+    { "title": "AWS NAT Gateway now supports regional availability", "url": "https://aws.amazon.com/about-aws/whats-new/2025/11/aws-nat-gateway-regional-availability" }
+  ]
+}

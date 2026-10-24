@@ -1,0 +1,61 @@
+{
+  "slug": "database-cost-optimization",
+  "title": "Database Cost: Reserved Instances, Aurora Options & Serverless",
+  "domain": 4,
+  "task": "4.3",
+  "summary": "Reserved DB instances, Aurora I/O-Optimized vs Standard, Serverless v2 and cheaper dev databases.",
+  "services": ["Reserved DB instances", "ElastiCache reserved nodes", "Database Savings Plans", "Aurora I/O-Optimized", "Aurora Serverless v2", "Aurora cloning", "Redshift Serverless usage limits", "AWS Backup"],
+  "tldr": [
+    "Steady 24/7 databases → **Reserved DB instances** (RDS, Aurora), **reserved nodes** (ElastiCache, Redshift, OpenSearch). Compute Savings Plans do **not** cover managed databases.",
+    "Aurora storage choice: **Aurora Standard** pays per I/O (cheap when I/O is low); **Aurora I/O-Optimized** has no I/O charges but higher instance and storage prices (cheaper when I/O is a large share of the bill). Choose per cluster.",
+    "Idle or spiky databases → **Aurora Serverless v2** (scales in fine-grained ACUs; minimum 0 ACU auto-pauses). Dev/test → stop on a schedule, use **Aurora clones** instead of full restores.",
+    "Backups: keep **automated backups / PITR** for the short window and an **AWS Backup** rule for long monthly retention, instead of keeping every daily or hourly snapshot."
+  ],
+  "keyFacts": [
+    { "value": "≈ 25% of spend", "text": "AWS guidance: when I/O charges exceed about a quarter of Aurora cost, I/O-Optimized is usually cheaper. Low-I/O clusters should stay on Standard." },
+    { "value": "0 ACU", "text": "Aurora Serverless v2 can scale to zero and pause when idle, then resume on the first connection after a short delay. Billed per ACU-hour." },
+    { "value": "7 days", "text": "A stopped RDS or Aurora DB restarts automatically after seven days, so dev databases need a recurring stop schedule, not a one-time stop." },
+    { "value": "Copy-on-write", "text": "Aurora clones share storage pages with the source and only pay for pages that change, so daily QA copies of a large database are cheap and fast." },
+    { "value": "Up to 35%", "text": "Database Savings Plans (Dec 2025): 1-year spend commitment across Aurora, RDS, DynamoDB and more. Flexible but shallower discount than 3-year reserved instances." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: database cost levers",
+      "columns": ["Lever", "Saves on", "Trade-off", "Pick it when…"],
+      "rows": [
+        ["Reserved DB instances / reserved nodes", "Instance hours", "1- or 3-year commitment to family, engine and Region", "Steady size for years"],
+        ["Aurora I/O-Optimized", "I/O charges", "Higher instance and storage price", "I/O is a large, unpredictable share of cost"],
+        ["Aurora Serverless v2", "Idle capacity", "Per-ACU price higher than an equal busy instance", "Spiky, unpredictable or mostly idle load"],
+        ["Aurora clone", "Duplicate storage", "Separate cluster with its own instance cost; delete it after use", "Frequent writable copies for test"],
+        ["gp3 instead of io2", "Provisioned IOPS charges", "No sub-millisecond guarantee", "IOPS and throughput fit gp3 limits"],
+        ["Redshift Serverless usage limits", "Runaway RPU-hours", "Queries stop or alert at the limit", "Cap daily or monthly warehouse spend"]
+      ],
+      "highlightRow": 1
+    }
+  ],
+  "keywords": [
+    { "cue": "I/O charges are 60% of Aurora cost and unpredictable", "answer": "Aurora I/O-Optimized" },
+    { "cue": "low-I/O Aurora clusters on I/O-Optimized", "answer": "Switch those clusters back to Aurora Standard" },
+    { "cue": "database idle for days, short delay on first connection OK", "answer": "Aurora Serverless v2 with 0 ACU minimum" },
+    { "cue": "read replicas sized for short peaks, idle most of the day", "answer": "Aurora Serverless v2 readers" },
+    { "cue": "steady production RDS for 3 more years", "answer": "3-year Reserved DB instances" },
+    { "cue": "steady ElastiCache for Valkey cluster", "answer": "ElastiCache reserved nodes" },
+    { "cue": "fresh writable copy of a 12 TB Aurora DB each morning", "answer": "Aurora cloning" },
+    { "cue": "dev databases used only in business hours", "answer": "EventBridge Scheduler stop/start or Serverless v2" },
+    { "cue": "cap Redshift Serverless daily spend", "answer": "Redshift Serverless usage limits on RPU-hours" },
+    { "cue": "PITR 30 days plus monthly backup for 7 years", "answer": "AWS Backup plan with continuous and monthly rules" }
+  ],
+  "traps": [
+    "Compute Savings Plans don't apply to RDS, Aurora or ElastiCache; databases use reserved instances/nodes or Database Savings Plans.",
+    "Buy reservations **after** moving to the target instance class (for example Graviton r7g); reserving the old class doesn't transfer across families.",
+    "Setting automated backup retention to years is impossible (maximum 35 days); long retention needs AWS Backup or manual snapshots.",
+    "Stopping an RDS instance once isn't enough; it restarts after 7 days.",
+    "Aurora Backtrack rewinds the cluster in place; it doesn't replace PITR or long-term backups."
+  ],
+  "relatedNotes": ["rds-aurora-ha", "dynamodb-cost", "aws-backup", "ec2-purchasing-options", "redshift-data-warehouse", "elasticache-in-memory"],
+  "sources": [
+    { "title": "Aurora storage configurations", "url": "https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Aurora.Overview.StorageReliability.html#aurora-storage-type" },
+    { "title": "Using Aurora Serverless v2", "url": "https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-serverless-v2.html" },
+    { "title": "Announcing Database Savings Plans", "url": "https://aws.amazon.com/about-aws/whats-new/2025/12/database-savings-plans-savings" }
+  ]
+}

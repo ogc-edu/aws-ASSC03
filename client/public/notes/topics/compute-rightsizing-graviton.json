@@ -1,0 +1,59 @@
+{
+  "slug": "compute-rightsizing-graviton",
+  "title": "Rightsizing, Graviton & Serverless Cost Tuning",
+  "domain": 4,
+  "task": "4.2",
+  "summary": "Find over-provisioned compute, move to Graviton, and tune Lambda and containers for cost.",
+  "services": ["AWS Compute Optimizer", "AWS Graviton", "Amazon CloudWatch agent", "CloudWatch Container Insights", "AWS Lambda Power Tuning", "Amazon EventBridge Scheduler"],
+  "tldr": [
+    "Order of operations: **turn off** what isn't used (schedules, hibernation), **rightsize** what's left (Compute Optimizer), **switch to Graviton**, and only then **commit** with Savings Plans or Reserved Instances.",
+    "**Compute Optimizer** uses utilization history to recommend sizes for EC2, Auto Scaling groups, EBS, Lambda, ECS on Fargate and RDS. It sees **memory** only if the **CloudWatch agent** publishes it.",
+    "**Graviton (Arm64)** gives better price performance on EC2, Fargate, Lambda, RDS/Aurora and ElastiCache. Interpreted languages usually move with little or no code change; native binaries need arm64 builds.",
+    "**Lambda** cost is memory × duration; use **Lambda Power Tuning** (or Compute Optimizer) to find the cheapest memory setting, and arm64 for a lower per-GB-second price."
+  ],
+  "keyFacts": [
+    { "value": "Memory needs the agent", "text": "EC2 doesn't report memory to CloudWatch by default. Install the CloudWatch agent so Compute Optimizer can rightsize memory-heavy fleets." },
+    { "value": "Up to 34% better", "text": "Price performance AWS quotes for Lambda functions on arm64 (Graviton2) versus x86. Test first; dependencies must ship arm64 builds." },
+    { "value": "< 150 GB RAM", "text": "Hibernation saves RAM to an **encrypted** EBS root volume, so long warm-ups survive a nightly stop and you pay only for storage overnight." },
+    { "value": "Surplus credits", "text": "A T instance in unlimited mode with high CPU all day pays extra credit charges. A fixed-performance instance (for example m7g) is cheaper." },
+    { "value": "50 of 168 hours", "text": "A dev box used 10 hours on weekdays runs about 30% of the week. Scheduling stop/start cuts its On-Demand compute bill by roughly 70%." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: cost levers for compute",
+      "columns": ["Lever", "Saves on", "Effort", "Pick it when…"],
+      "rows": [
+        ["Stop/start schedule", "Idle hours", "Low (EventBridge Scheduler or Instance Scheduler)", "Non-production used only in working hours"],
+        ["Hibernation", "Idle hours with long warm-up", "Low; needs encrypted root, supported type", "In-memory state takes too long to rebuild"],
+        ["Rightsize (Compute Optimizer)", "Over-provisioned CPU and memory", "Low to medium", "Utilization stays low, even at peak"],
+        ["Move to Graviton", "Price per unit of performance", "Medium: arm64 builds and testing", "Code runs on arm64; before buying commitments"],
+        ["Lambda memory tuning", "GB-seconds", "Low (Power Tuning state machine)", "Memory chosen arbitrarily"],
+        ["Fargate task resizing", "Unused vCPU and memory per task", "Low: new task definition revision", "Container Insights shows low task utilization"]
+      ],
+      "highlightRow": 2
+    }
+  ],
+  "keywords": [
+    { "cue": "average CPU below 10%, over-provisioned instances", "answer": "Apply AWS Compute Optimizer recommendations" },
+    { "cue": "rightsizing must account for memory", "answer": "Install the CloudWatch agent so Compute Optimizer sees memory" },
+    { "cue": "test Lambda at different memory sizes for cost vs duration", "answer": "AWS Lambda Power Tuning" },
+    { "cue": "reduce Fargate cost, no interruptions, no commitments", "answer": "ARM64 (Graviton) task definitions" },
+    { "cue": "Fargate tasks use 15% CPU at peak", "answer": "Smaller task CPU and memory via Compute Optimizer" },
+    { "cue": "t3 unlimited at 85% CPU constantly with surplus credit charges", "answer": "Fixed-performance Graviton instance such as m7g" },
+    { "cue": "long warm-up, instances only needed in working hours", "answer": "EC2 hibernation on a schedule" },
+    { "cue": "migrate Auto Scaling group to Graviton without downtime", "answer": "arm64 AMI, new launch template version, instance refresh" }
+  ],
+  "traps": [
+    "Buying Savings Plans or RIs before rightsizing or moving to Graviton locks in the old, larger footprint.",
+    "Fargate Spot and EC2 Spot are wrong when the question says the service cannot tolerate interruption.",
+    "Switching a busy T instance to standard mode throttles it to baseline CPU, which degrades performance.",
+    "Changing an x86 instance to a Graviton type with the same AMI fails; Graviton needs an arm64 AMI.",
+    "Trusted Advisor's low-utilization check is CPU-based and coarse; Compute Optimizer gives specific, ML-based recommendations."
+  ],
+  "relatedNotes": ["ec2-purchasing-options", "lambda-performance", "containers-ecs-eks-fargate", "cost-management-tools", "auto-scaling-elb"],
+  "sources": [
+    { "title": "What is AWS Compute Optimizer?", "url": "https://docs.aws.amazon.com/compute-optimizer/latest/ug/what-is-compute-optimizer.html" },
+    { "title": "Lambda instruction set architectures", "url": "https://docs.aws.amazon.com/lambda/latest/dg/foundation-arch.html" },
+    { "title": "Hibernate your Amazon EC2 instance", "url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Hibernate.html" }
+  ]
+}

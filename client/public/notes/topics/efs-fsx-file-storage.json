@@ -1,0 +1,158 @@
+{
+  "slug": "efs-fsx-file-storage",
+  "title": "EFS & FSx File Storage",
+  "domain": 3,
+  "task": "3.1",
+  "summary": "Shared file systems for Linux, Windows, HPC and multiprotocol workloads.",
+  "services": [
+    "Amazon EFS",
+    "Amazon FSx for Windows File Server",
+    "Amazon FSx for Lustre",
+    "Amazon FSx for NetApp ONTAP",
+    "Amazon FSx for OpenZFS"
+  ],
+  "tldr": [
+    "**EFS**: managed NFS for Linux, elastic capacity, shared by EC2, ECS/Fargate, EKS and Lambda across AZs. Regional EFS survives an AZ loss.",
+    "**FSx for Windows File Server**: SMB with Active Directory and Windows ACLs. **FSx for Lustre**: HPC/ML scratch or persistent file system linked to S3.",
+    "**FSx for NetApp ONTAP**: NFS *and* SMB (and iSCSI) on the same data, snapshots, SnapMirror, dedup, tiering. **FSx for OpenZFS**: ZFS snapshots and clones over NFS.",
+    "Spiky, unpredictable EFS throughput → **Elastic Throughput**; rarely read files → lifecycle to **EFS IA** and **EFS Archive**."
+  ],
+  "keyFacts": [
+    {
+      "value": "Elastic",
+      "text": "**Elastic Throughput** scales up and down with the workload and bills per use. **Bursting** ties throughput to stored size, so small file systems run out of credits."
+    },
+    {
+      "value": "3 classes",
+      "text": "EFS **Standard**, **Infrequent Access** and **Archive**. Lifecycle policies move files by last access and can move them back on first access."
+    },
+    {
+      "value": "Scratch",
+      "text": "**FSx for Lustre scratch** keeps no replicated copy and is cheapest for short jobs whose source data lives in S3. **Persistent** replicates data within its AZ for long-running work."
+    },
+    {
+      "value": "Multi-AZ",
+      "text": "FSx for Windows, ONTAP and OpenZFS offer **Multi-AZ** deployments with automatic failover. EFS One Zone and FSx Single-AZ do not survive an AZ loss."
+    },
+    {
+      "value": "15 min RPO",
+      "text": "**EFS replication** keeps a read-only copy in another Region or AZ with a 15-minute RPO for most file systems."
+    }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: managed file systems",
+      "columns": [
+        "Service",
+        "Protocols / clients",
+        "Signature features",
+        "Pick it when…"
+      ],
+      "rows": [
+        [
+          "Amazon EFS",
+          "NFS, Linux",
+          "Elastic size, Regional or One Zone, IA/Archive tiers",
+          "Shared Linux files for EC2, containers or Lambda"
+        ],
+        [
+          "FSx for Windows File Server",
+          "SMB, Windows, AD",
+          "Windows ACLs, DFS, dedup, SSD/HDD",
+          "Windows apps or home directories with AD"
+        ],
+        [
+          "FSx for Lustre",
+          "Lustre POSIX client, Linux",
+          "Hundreds of GB/s, S3 data repository link",
+          "HPC, genomics, ML training on S3 data"
+        ],
+        [
+          "FSx for NetApp ONTAP",
+          "NFS + SMB + iSCSI",
+          "SnapMirror, snapshots, thin provisioning, auto-tiering",
+          "Multiprotocol access or lift-and-shift from NetApp"
+        ],
+        [
+          "FSx for OpenZFS",
+          "NFS, Linux",
+          "Instant snapshots and writable clones, low latency",
+          "Migrating a ZFS file server, build farms"
+        ]
+      ],
+      "highlightRow": 3
+    }
+  ],
+  "keywords": [
+    {
+      "cue": "shared POSIX storage for Fargate tasks across AZs",
+      "answer": "Amazon EFS (Regional) with mount targets in each AZ"
+    },
+    {
+      "cue": "small EFS runs out of burst credits",
+      "answer": "EFS Elastic Throughput"
+    },
+    {
+      "cue": "files rarely read after 30 days, still any time",
+      "answer": "EFS lifecycle to IA (and Archive)"
+    },
+    {
+      "cue": "SMB share with Active Directory and Windows ACLs",
+      "answer": "FSx for Windows File Server Multi-AZ"
+    },
+    {
+      "cue": "NFS and SMB on the same data",
+      "answer": "FSx for NetApp ONTAP"
+    },
+    {
+      "cue": "currently using NetApp SnapMirror",
+      "answer": "FSx for NetApp ONTAP"
+    },
+    {
+      "cue": "ZFS snapshots and writable clones",
+      "answer": "FSx for OpenZFS"
+    },
+    {
+      "cue": "hundreds of GB/s over S3 dataset for HPC",
+      "answer": "FSx for Lustre with S3 data repository association"
+    },
+    {
+      "cue": "temporary file system for an 8-hour job",
+      "answer": "FSx for Lustre scratch"
+    },
+    {
+      "cue": "migrate NFS files to EFS with metadata and verification",
+      "answer": "AWS DataSync"
+    }
+  ],
+  "traps": [
+    "EFS is NFS for Linux. Windows instances needing SMB and AD want FSx for Windows File Server.",
+    "FSx for Windows File Server speaks SMB only. Linux NFS and Windows SMB clients on the same data need ONTAP.",
+    "Adding dummy files to earn EFS burst credits is a hack; the answer is Elastic Throughput.",
+    "Provisioned Throughput sized for the peak pays for that peak 24/7. Choose Elastic for unpredictable spikes.",
+    "FSx for Lustre is not the answer for Windows or general office shares; it's for compute-heavy Linux workloads.",
+    "Two Single-AZ FSx file systems synced with DFS Replication is more work than one Multi-AZ file system."
+  ],
+  "relatedNotes": [
+    "ebs-volumes-performance",
+    "storage-gateway-hybrid",
+    "block-file-storage-cost",
+    "data-migration-transfer",
+    "multi-az-resilience-patterns",
+    "s3-performance"
+  ],
+  "sources": [
+    {
+      "title": "Amazon EFS throughput modes",
+      "url": "https://docs.aws.amazon.com/efs/latest/ug/performance.html"
+    },
+    {
+      "title": "Amazon EFS storage classes",
+      "url": "https://docs.aws.amazon.com/efs/latest/ug/storage-classes.html"
+    },
+    {
+      "title": "What is Amazon FSx for NetApp ONTAP?",
+      "url": "https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/what-is-fsx-ontap.html"
+    }
+  ]
+}

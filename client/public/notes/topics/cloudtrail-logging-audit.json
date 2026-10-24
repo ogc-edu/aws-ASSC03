@@ -1,0 +1,58 @@
+{
+  "slug": "cloudtrail-logging-audit",
+  "title": "CloudTrail & Audit Logging",
+  "domain": 1,
+  "task": "1.3",
+  "summary": "Record every API call, prove logs weren't tampered with, and centralize logs across accounts.",
+  "services": ["AWS CloudTrail", "CloudTrail Insights", "CloudTrail Lake", "Amazon CloudWatch Logs", "Amazon S3"],
+  "tldr": [
+    "**CloudTrail** records *who did what, when and from where* for AWS API calls. Management events are on by default; **data events** (S3 object reads, Lambda invokes) must be added to a trail.",
+    "For many accounts, create one **organization trail** delivering to an S3 bucket in a separate **log archive account**. Member-account admins can't stop or delete it.",
+    "Turn on **log file integrity validation** to prove log files weren't changed or deleted after delivery."
+  ],
+  "keyFacts": [
+    { "value": "90 days", "text": "**Event history** keeps the last 90 days of management events per Region for free, with no trail. Longer retention needs a trail to S3 or CloudTrail Lake." },
+    { "value": "Digest files", "text": "Integrity validation writes hourly **digest files** signed with SHA-256 hashes, so you can detect any modified, deleted or missing log file." },
+    { "value": "Data events", "text": "High-volume operations such as S3 `GetObject` or Lambda `Invoke` are **not logged by default**. Add them with advanced event selectors, scoped to specific ARNs." },
+    { "value": "Insights", "text": "**CloudTrail Insights** learns the normal rate of write API calls (or error rate) and raises an event when activity deviates, with no thresholds to set." },
+    { "value": "Not network", "text": "CloudTrail logs API calls, not packets. Accepted or rejected connections between IPs come from **VPC Flow Logs**." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: which log answers the question?",
+      "columns": ["Source", "Records", "Pick it when…"],
+      "rows": [
+        ["CloudTrail management events", "Control-plane API calls (create, delete, modify)", "Who changed or deleted a resource"],
+        ["CloudTrail data events", "Object-level and function-level calls", "Who downloaded an S3 object, who invoked a function"],
+        ["CloudTrail Insights", "Unusual API call rate or error rate", "Alert on abnormal activity without fixed thresholds"],
+        ["VPC Flow Logs", "IP traffic metadata, ACCEPT or REJECT", "Troubleshoot security groups and NACLs"],
+        ["AWS Config", "Resource configuration over time", "What did this resource look like last Tuesday?"]
+      ],
+      "highlightRow": 0
+    }
+  ],
+  "keywords": [
+    { "cue": "record API activity from all current and future accounts", "answer": "CloudTrail organization trail" },
+    { "cue": "prove log files were not modified or deleted", "answer": "CloudTrail log file integrity validation" },
+    { "cue": "workload admins must not be able to stop logging", "answer": "Organization trail in a separate log archive account (plus SCP)" },
+    { "cue": "which principals downloaded objects from a bucket", "answer": "CloudTrail S3 data events" },
+    { "cue": "record every invocation of specific Lambda functions", "answer": "CloudTrail Lambda data events via advanced event selectors" },
+    { "cue": "alert when API call volume deviates from baseline", "answer": "CloudTrail Insights to EventBridge" },
+    { "cue": "least-privilege policy from what the role actually used", "answer": "IAM Access Analyzer policy generation from CloudTrail" },
+    { "cue": "show which tenant each KMS Decrypt call was for", "answer": "KMS encryption context (appears in CloudTrail)" },
+    { "cue": "separation of duties for a KMS key", "answer": "Key policy splitting admin actions from cryptographic actions" }
+  ],
+  "traps": [
+    "S3 Versioning on per-account buckets doesn't stop a local admin from deleting the trail itself.",
+    "Exporting event history with a scheduled Lambda is more work and misses events older than 90 days.",
+    "An AWS Config aggregator collects configuration items, not API activity. It is not a substitute for CloudTrail.",
+    "GuardDuty and AWS Config don't record each Lambda invocation. Use CloudTrail data events.",
+    "Allowing `kms:*` to everyone and alerting afterwards is detection, not separation of duties."
+  ],
+  "relatedNotes": ["cloudwatch-observability", "organizations-scps-control-tower", "macie-config-compliance", "kms-cloudhsm"],
+  "sources": [
+    { "title": "AWS CloudTrail User Guide: Creating a trail for an organization", "url": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/creating-trail-organization.html" },
+    { "title": "AWS CloudTrail User Guide: Validating log file integrity", "url": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-log-file-validation-intro.html" },
+    { "title": "AWS CloudTrail User Guide: Logging data events", "url": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/logging-data-events-with-cloudtrail.html" }
+  ]
+}

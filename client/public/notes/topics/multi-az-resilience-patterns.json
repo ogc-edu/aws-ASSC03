@@ -1,0 +1,154 @@
+{
+  "slug": "multi-az-resilience-patterns",
+  "title": "Multi-AZ Resilience, Deployments & Recovery Controls",
+  "domain": 2,
+  "task": "2.2",
+  "summary": "Static stability, zonal shift, safe deployments and fault injection for highly available workloads.",
+  "services": [
+    "Amazon EC2 Auto Scaling",
+    "Elastic Load Balancing",
+    "Amazon Application Recovery Controller (ARC)",
+    "AWS Fault Injection Service",
+    "Amazon ECS",
+    "AWS Global Accelerator",
+    "Service Quotas"
+  ],
+  "tldr": [
+    "Spread every tier across **at least two AZs**: Auto Scaling groups, load balancer subnets, NAT gateways (one per AZ), Lambda VPC subnets, databases and file systems.",
+    "**Static stability**: pre-provision enough capacity that losing one AZ needs no new launches (e.g. ~150% of peak across 3 AZs, so any 2 AZs carry full load).",
+    "Move traffic away from an impaired AZ with **ARC zonal shift / zonal autoshift**; move it between Regions with **ARC routing controls** or Global Accelerator **traffic dials**.",
+    "Deploy safely with **immutable** releases (new AMI + instance refresh), **blue/green**, and the ECS **deployment circuit breaker**; test it with **AWS Fault Injection Service**."
+  ],
+  "keyFacts": [
+    {
+      "value": "Min = Max = 1",
+      "text": "A single-instance legacy app across AZs: an Auto Scaling group with capacity 1 spanning several AZs relaunches it anywhere after a failure."
+    },
+    {
+      "value": "Same instance ID",
+      "text": "**Simplified automatic recovery** brings an instance back on new hardware with the same ID, private IP, Elastic IP and EBS data, which suits license-bound servers."
+    },
+    {
+      "value": "ELB health checks",
+      "text": "Turn on ELB health checks for the Auto Scaling group, with a grace period, so instances that pass EC2 status checks but fail the app are replaced."
+    },
+    {
+      "value": "Cross-zone",
+      "text": "Turn on **cross-zone load balancing** (off by default on NLB) when target counts per AZ are uneven, so traffic spreads across all targets."
+    },
+    {
+      "value": "Per Region",
+      "text": "**Service Quotas** are per Region and account. A standby Region must have quotas raised to production size before failover."
+    }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: tools that move traffic or test failure",
+      "columns": [
+        "Tool",
+        "Scope",
+        "Pick it when…"
+      ],
+      "rows": [
+        [
+          "ARC zonal shift / autoshift",
+          "One AZ, behind ALB/NLB",
+          "Instances in an AZ pass health checks but are slow (gray failure)"
+        ],
+        [
+          "ARC routing controls",
+          "Cells or Regions, via Route 53 health checks",
+          "Humans decide failover; safety rules stop both Regions going off"
+        ],
+        [
+          "Global Accelerator traffic dial",
+          "Endpoint group (Region)",
+          "Shift traffic gradually with no DNS cache delay"
+        ],
+        [
+          "Route 53 failover records",
+          "DNS",
+          "Automatic active-passive failover; TTL delay is acceptable"
+        ],
+        [
+          "AWS Fault Injection Service",
+          "Experiments",
+          "Chaos tests: stop instances, disrupt an AZ, fail over Aurora"
+        ]
+      ],
+      "highlightRow": 0
+    }
+  ],
+  "keywords": [
+    {
+      "cue": "remaining AZs must handle full load without launching instances",
+      "answer": "Static stability: over-provision across AZs"
+    },
+    {
+      "cue": "AZ partially impaired, instances pass health checks",
+      "answer": "ARC zonal shift or zonal autoshift"
+    },
+    {
+      "cue": "shift Region traffic without DNS TTL",
+      "answer": "ARC routing controls or Global Accelerator traffic dial"
+    },
+    {
+      "cue": "license tied to instance ID and IP",
+      "answer": "EC2 simplified automatic recovery"
+    },
+    {
+      "cue": "only one instance allowed, recover in another AZ",
+      "answer": "Auto Scaling group min/max/desired 1 across AZs"
+    },
+    {
+      "cue": "instances drift after in-place patching",
+      "answer": "Immutable: new AMI + launch template + instance refresh"
+    },
+    {
+      "cue": "failed ECS deployment should roll back automatically",
+      "answer": "ECS deployment circuit breaker with rollback"
+    },
+    {
+      "cue": "test new version before switching all traffic at once",
+      "answer": "ECS blue/green with test listener and bake time"
+    },
+    {
+      "cue": "controlled chaos experiments without scripts",
+      "answer": "AWS Fault Injection Service"
+    },
+    {
+      "cue": "uneven targets per AZ on NLB",
+      "answer": "Enable cross-zone load balancing"
+    }
+  ],
+  "traps": [
+    "Scaling policies that launch instances *during* an AZ event aren't static stability. Capacity must already be running.",
+    "One NAT gateway or one Lambda subnet in a single AZ is a hidden single point of failure.",
+    "EFS **One Zone** and FSx **Single-AZ** don't survive an AZ failure. Pick Regional EFS or Multi-AZ FSx.",
+    "EBS volumes and Multi-Attach are tied to one AZ. They can't share data across AZs.",
+    "Rolling updates with min 100% / max 200% still mix old and new versions. Use blue/green when traffic must switch all at once.",
+    "An Auto Scaling replacement is a *new* instance with a new ID and IP. When the license is bound to the instance, use EC2 automatic recovery instead."
+  ],
+  "relatedNotes": [
+    "auto-scaling-elb",
+    "disaster-recovery-strategies",
+    "route53-routing-failover",
+    "global-accelerator-edge-locations",
+    "containers-ecs-eks-fargate",
+    "efs-fsx-file-storage"
+  ],
+  "sources": [
+    {
+      "title": "Static stability - AWS Fault Isolation Boundaries",
+      "url": "https://docs.aws.amazon.com/whitepapers/latest/aws-fault-isolation-boundaries/static-stability.html"
+    },
+    {
+      "title": "Zonal shift in Amazon Application Recovery Controller",
+      "url": "https://docs.aws.amazon.com/r53recovery/latest/dg/arc-zonal-shift.html"
+    },
+    {
+      "title": "What is AWS Fault Injection Service?",
+      "url": "https://docs.aws.amazon.com/fis/latest/userguide/what-is.html"
+    }
+  ]
+}

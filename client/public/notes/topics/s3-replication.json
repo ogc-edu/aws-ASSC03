@@ -1,0 +1,159 @@
+{
+  "slug": "s3-replication",
+  "title": "S3 Versioning & Replication",
+  "domain": 2,
+  "task": "2.2",
+  "summary": "Copy objects across Regions or accounts, with predictable timing and multi-Region endpoints.",
+  "services": [
+    "Amazon S3",
+    "S3 Replication (CRR/SRR)",
+    "S3 Replication Time Control",
+    "S3 Batch Replication",
+    "S3 Multi-Region Access Points",
+    "Amazon EFS replication"
+  ],
+  "tldr": [
+    "S3 Replication copies new objects asynchronously to another bucket: **CRR** across Regions, **SRR** in the same Region. **Versioning must be on in both buckets.**",
+    "Need a guaranteed time? Turn on **S3 Replication Time Control (RTC)**: 99.99% of objects in 15 minutes, with SLA, metrics and missed-threshold events.",
+    "Replication only applies to objects written *after* the rule exists. Existing or **FAILED** objects need **S3 Batch Replication**.",
+    "**Multi-Region Access Points** give one global endpoint over buckets in several Regions, with active-passive failover controls."
+  ],
+  "keyFacts": [
+    {
+      "value": "15 min",
+      "text": "**RTC** replicates 99.99% of new objects within 15 minutes under an SLA, and emits events when an object misses the threshold or fails."
+    },
+    {
+      "value": "Versioning",
+      "text": "Required on source and destination. Replication copies metadata, tags and version IDs; delete markers replicate only if you enable it."
+    },
+    {
+      "value": "SSE-KMS",
+      "text": "Objects encrypted with KMS replicate only if the rule opts in and names a destination key; the replication role needs `kms:Decrypt` on source and `kms:Encrypt` on destination."
+    },
+    {
+      "value": "Two-way",
+      "text": "For active-active buckets, create rules in both directions and turn on **replica modification sync** so metadata changes flow back."
+    },
+    {
+      "value": "15 min RPO",
+      "text": "**EFS replication** keeps a read-only copy in another Region or AZ with a 15-minute RPO for most file systems. Delete the replication to make it writable."
+    }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: ways to get objects into another bucket",
+      "columns": [
+        "Option",
+        "Covers",
+        "Timing",
+        "Pick it when…"
+      ],
+      "rows": [
+        [
+          "CRR / SRR",
+          "New objects after the rule",
+          "Asynchronous, usually seconds–minutes, no SLA",
+          "DR copy, compliance copy, log aggregation"
+        ],
+        [
+          "CRR + RTC",
+          "New objects",
+          "99.99% in 15 min with SLA",
+          "Regulator or contract states a replication time"
+        ],
+        [
+          "S3 Batch Replication",
+          "Existing, already-replicated or FAILED objects",
+          "On-demand job",
+          "Backfill after enabling replication"
+        ],
+        [
+          "Multi-Region Access Point",
+          "Routing over replicated buckets",
+          "Failover in minutes",
+          "One global endpoint with active-passive control"
+        ],
+        [
+          "DataSync / aws s3 sync",
+          "Files, not versions",
+          "Scheduled",
+          "One-off migrations; doesn't preserve version IDs"
+        ]
+      ],
+      "highlightRow": 1
+    }
+  ],
+  "keywords": [
+    {
+      "cue": "copy in another Region within 15 minutes with SLA",
+      "answer": "S3 CRR with Replication Time Control"
+    },
+    {
+      "cue": "alert when objects don't replicate in time",
+      "answer": "RTC replication metrics and missed-threshold event notifications"
+    },
+    {
+      "cue": "existing objects were not replicated",
+      "answer": "S3 Batch Replication"
+    },
+    {
+      "cue": "replication status FAILED",
+      "answer": "S3 Batch Replication"
+    },
+    {
+      "cue": "deletes must not reach the DR bucket",
+      "answer": "Leave delete marker replication off"
+    },
+    {
+      "cue": "single global S3 endpoint with failover",
+      "answer": "S3 Multi-Region Access Point with failover controls"
+    },
+    {
+      "cue": "objects written to either bucket appear in the other",
+      "answer": "Two-way replication with replica modification sync"
+    },
+    {
+      "cue": "CloudFront keeps serving if S3 Region fails",
+      "answer": "CRR to second bucket + CloudFront origin group"
+    },
+    {
+      "cue": "cross-Region reads of the same dataset are expensive",
+      "answer": "Replicate to a bucket in the reading Region"
+    },
+    {
+      "cue": "DR copy of a shared Linux file system",
+      "answer": "EFS replication"
+    }
+  ],
+  "traps": [
+    "Deleting and recreating a replication rule does **not** replicate old objects. Use Batch Replication.",
+    "Transfer Acceleration speeds client uploads over the internet. It has nothing to do with replication time.",
+    "S3 Replication without RTC has no time SLA, so it can't satisfy \"within 15 minutes, backed by an SLA\".",
+    "SRR keeps the copy in the same Region, which doesn't protect against a Regional outage.",
+    "Lifecycle actions are not replicated, and replication doesn't make a destination immutable. Add Object Lock if deletions must be blocked.",
+    "Route 53 CNAMEs pointing to bucket REST endpoints don't work as failover. Use a Multi-Region Access Point or a CloudFront origin group."
+  ],
+  "relatedNotes": [
+    "s3-security-access-control",
+    "s3-storage-classes-lifecycle",
+    "disaster-recovery-strategies",
+    "cloudfront-caching-edge",
+    "efs-fsx-file-storage",
+    "kms-cloudhsm"
+  ],
+  "sources": [
+    {
+      "title": "Replicating objects within and across Regions - Amazon S3",
+      "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/replication.html"
+    },
+    {
+      "title": "Meeting compliance requirements with S3 Replication Time Control",
+      "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/replication-time-control.html"
+    },
+    {
+      "title": "Replicating EFS file systems",
+      "url": "https://docs.aws.amazon.com/efs/latest/ug/efs-replication.html"
+    }
+  ]
+}

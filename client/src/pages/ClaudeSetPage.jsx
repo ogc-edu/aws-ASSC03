@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, Grid3X3, RotateCcw, Trophy } from 'lucide-react';
+import { BookOpen, ChevronLeft, ChevronRight, Grid3X3, RotateCcw, Trophy } from 'lucide-react';
 import ClaudeHeader from '../components/ClaudeHeader.jsx';
 import QuestionCard from '../components/QuestionCard.jsx';
+import { fetchNotesIndex, notesForQuestion } from '../services/notesService.js';
 import {
   fetchSet,
   loadProgress,
@@ -22,9 +23,23 @@ export default function ClaudeSetPage({ setId }) {
   const [set, setSet] = useState(null);
   const [error, setError] = useState(null);
   const [progress, setProgress] = useState(() => loadProgress(setId));
-  const [currentId, setCurrentId] = useState(() => loadProgress(setId).lastLeftOff || 1);
+  // ?q=<id> (links from the notes) opens that question instead of the left-off one
+  const [currentId, setCurrentId] = useState(() => {
+    const q = parseInt(new URLSearchParams(window.location.search).get('q'), 10);
+    if (q > 0) {
+      window.history.replaceState({}, '', window.location.pathname);
+      return q;
+    }
+    return loadProgress(setId).lastLeftOff || 1;
+  });
   const [showGrid, setShowGrid] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [notesIndex, setNotesIndex] = useState(null);
+
+  useEffect(() => {
+    // Notes are optional here: without them the question page just shows no study links.
+    fetchNotesIndex().then(setNotesIndex).catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetchSet(setId)
@@ -62,6 +77,7 @@ export default function ClaudeSetPage({ setId }) {
   }, [base, progress]);
 
   const stats = useMemo(() => computeSetStats(questions, progress), [questions, progress]);
+  const studyNotes = useMemo(() => notesForQuestion(notesIndex, base), [notesIndex, base]);
 
   const handleAttempt = (qId, selected) => {
     const q = questions.find(x => x.id === qId);
@@ -128,6 +144,9 @@ export default function ClaudeSetPage({ setId }) {
       >
         <a href="/" className="hidden md:inline-flex items-center px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-400 hover:text-white transition">
           Main Bank
+        </a>
+        <a href="/notes" className="hidden md:inline-flex items-center px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-teal-300 hover:text-teal-200 transition">
+          <BookOpen className="w-4 h-4 mr-1.5" /> Notes
         </a>
       </ClaudeHeader>
 
@@ -236,6 +255,21 @@ export default function ClaudeSetPage({ setId }) {
                 )}
                 {currentQuestion.attempt && (currentQuestion.topics || []).map(t => (
                   <span key={t} className="px-2 py-1 rounded-md bg-white text-slate-500 border border-slate-200">{t}</span>
+                ))}
+              </div>
+            )}
+
+            {currentQuestion?.attempt && studyNotes.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 bg-teal-50 border border-teal-200 rounded-xl px-4 py-3">
+                <span className="text-sm font-semibold text-teal-900 mr-1">Study this topic:</span>
+                {studyNotes.map(n => (
+                  <a
+                    key={n.slug}
+                    href={`/notes/${n.slug}`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-white border border-teal-300 text-teal-900 hover:bg-teal-600 hover:border-teal-600 hover:text-white transition"
+                  >
+                    <BookOpen className="w-4 h-4" /> {n.title}
+                  </a>
                 ))}
               </div>
             )}

@@ -1,0 +1,66 @@
+{
+  "slug": "iam-policies-evaluation",
+  "title": "IAM Policies & Policy Evaluation",
+  "domain": 1,
+  "task": "1.1",
+  "summary": "How IAM decides allow or deny, and the tools that keep permissions at least privilege.",
+  "services": ["AWS IAM", "IAM Access Analyzer", "AWS STS", "AWS Organizations"],
+  "tldr": [
+    "Every request starts as an implicit deny. It needs an **Allow** somewhere and **no explicit Deny** anywhere; one explicit deny always wins.",
+    "Guardrail policies (SCPs, RCPs, **permissions boundaries**, session policies) never grant anything. Effective access is the **intersection** of them with the identity or resource policy that does grant.",
+    "Scale permissions with **ABAC**: one policy that compares `aws:PrincipalTag/x` with `aws:ResourceTag/x` instead of one policy per project.",
+    "**IAM Access Analyzer** finds external and unused access, generates least-privilege policies from CloudTrail, and runs policy checks in CI/CD."
+  ],
+  "keyFacts": [
+    { "value": "Deny > Allow", "text": "An explicit `Deny` in any applicable policy (identity, resource, SCP, RCP, boundary, session) overrides every `Allow`. With no allow at all, the result is an implicit deny." },
+    { "value": "Intersection", "text": "With a **permissions boundary**, the role can do only what both its identity policy and the boundary allow. A boundary listing an action does not grant it." },
+    { "value": "ViaAWSService", "text": "Add `aws:ViaAWSService: false` to an IP-restriction deny so that calls AWS services make on your behalf (CloudFormation, Athena) are not blocked." },
+    { "value": "Root user", "text": "Lock it away: MFA (ideally a FIDO2 key), **no access keys**, no daily use. In Organizations, **centralized root access** can remove member-account root credentials entirely." },
+    { "value": "Policy checks", "text": "Access Analyzer `CheckAccessNotGranted`, `CheckNoNewAccess` and `CheckNoPublicAccess` run in a pipeline and fail the build before a risky policy is deployed." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: policy types in an evaluation",
+      "columns": ["Policy type", "Attached to", "Can grant?", "Typical exam use"],
+      "rows": [
+        ["Identity-based policy", "User, group or role", "Yes", "Normal permissions for a principal"],
+        ["Resource-based policy", "Bucket, queue, key, function, secret", "Yes, including cross-account", "Let another account or service in without assuming a role"],
+        ["Permissions boundary", "User or role", "No (ceiling)", "Let developers create roles that can never exceed an approved set"],
+        ["Session policy", "Passed in `AssumeRole`", "No (ceiling)", "Per-request scoping, e.g. one tenant's S3 prefix"],
+        ["SCP / RCP", "Org root, OU or account", "No (ceiling)", "Org-wide guardrails on principals (SCP) or resources (RCP)"]
+      ],
+      "highlightRow": 2
+    }
+  ],
+  "keywords": [
+    { "cue": "developers create roles but can never exceed approved permissions", "answer": "Permissions boundary enforced with the iam:PermissionsBoundary condition" },
+    { "cue": "new projects weekly, no policy updates", "answer": "ABAC: aws:ResourceTag equals aws:PrincipalTag" },
+    { "cue": "deny unless from corporate IP, even if other policies allow", "answer": "Explicit Deny with NotIpAddress on aws:SourceIp" },
+    { "cue": "IP restriction breaks CloudFormation", "answer": "Add aws:ViaAWSService false to the deny" },
+    { "cue": "least privilege from actual usage over 90 days", "answer": "IAM Access Analyzer policy generation from CloudTrail" },
+    { "cue": "org-wide view of unused roles, keys and permissions", "answer": "Access Analyzer unused access analyzer, organization zone of trust" },
+    { "cue": "resources shared outside the organization", "answer": "Access Analyzer external access analyzer" },
+    { "cue": "block risky IAM policies in the pull request", "answer": "Access Analyzer custom policy checks in CI/CD" },
+    { "cue": "per-tenant credentials without per-tenant roles", "answer": "AssumeRole with an inline session policy" },
+    { "cue": "stop users retagging themselves into access", "answer": "Deny TagResource/UntagResource and iam:TagRole on the tag key" }
+  ],
+  "traps": [
+    "A permissions boundary or SCP that lists an action does **not** grant it; something else must allow it.",
+    "Rotating root access keys is wrong. The best practice is to **delete** them and use roles.",
+    "An SCP denying root actions does not secure the root user of a standalone account, and SCPs never apply to the management account.",
+    "Access Analyzer *policy validation* only lints syntax and best practice; blocking specific actions or new access needs the **custom policy checks**.",
+    "ABAC without denying tag changes lets users edit tags to gain access."
+  ],
+  "sections": [
+    {
+      "heading": "Evaluation order in one pass (same account)",
+      "body": "1. Any explicit **Deny** in any policy? Deny.\n2. Do SCPs and RCPs allow it? If not, deny.\n3. Does a resource-based policy allow it? Allow (within boundary/session limits for roles).\n4. Does the identity policy allow it, and also the permissions boundary and session policy if present? Allow.\n5. Otherwise implicit deny.\n\nCross-account: the caller's account **and** the resource's account must both allow the request (identity policy on one side, resource policy or role trust on the other)."
+    }
+  ],
+  "relatedNotes": ["iam-roles-sts-cross-account", "organizations-scps-control-tower", "identity-center-federation", "cloudtrail-logging-audit"],
+  "sources": [
+    { "title": "Policy evaluation logic - IAM User Guide", "url": "https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html" },
+    { "title": "Permissions boundaries for IAM entities", "url": "https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_boundaries.html" },
+    { "title": "Using AWS IAM Access Analyzer", "url": "https://docs.aws.amazon.com/IAM/latest/UserGuide/what-is-access-analyzer.html" }
+  ]
+}

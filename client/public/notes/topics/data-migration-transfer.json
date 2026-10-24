@@ -1,0 +1,57 @@
+{
+  "slug": "data-migration-transfer",
+  "title": "DMS, DataSync, Transfer Family & AppFlow",
+  "domain": 3,
+  "task": "3.5",
+  "summary": "Move databases, files and SaaS data into AWS, once or continuously.",
+  "services": ["AWS DMS", "DMS Schema Conversion", "AWS DataSync", "AWS Transfer Family", "Amazon AppFlow"],
+  "tldr": [
+    "Match the *kind* of data to the service: **databases → DMS**, **files on NFS/SMB/HDFS → DataSync**, **partners using SFTP/FTPS/AS2 → Transfer Family**, **SaaS apps such as Salesforce → AppFlow**.",
+    "**DMS** does a full load followed by **change data capture (CDC)** so the source stays online. Changing engines (Oracle → Aurora PostgreSQL) also needs **DMS Schema Conversion** for schema and code.",
+    "**DataSync** is managed online file transfer: an agent on premises, scheduled incremental runs, metadata preserved and integrity verified, into S3, EFS or FSx over the internet or Direct Connect."
+  ],
+  "keyFacts": [
+    { "value": "Full load + CDC", "text": "The DMS pattern for minimal downtime: copy existing data, then stream ongoing inserts, updates and deletes until cutover. Targets include RDS, Aurora, S3 (Parquet) and Redshift." },
+    { "value": "≈ 100 TB/day", "text": "Rough ceiling of a fully used 10 Gbps link. If the deadline fits, an online DataSync transfer over Direct Connect beats shipping devices." },
+    { "value": "S3 or EFS backend", "text": "Transfer Family servers store files directly in S3 or EFS. Partners keep their SFTP clients; a custom hostname can point at the server endpoint." },
+    { "value": "Snowball for new customers: closed", "text": "AWS no longer offers Snow Family devices to new customers. AWS now steers online transfers to DataSync." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: which migration service?",
+      "columns": ["Option", "Moves", "Ongoing sync", "Pick it when…"],
+      "rows": [
+        ["AWS DMS", "Database tables", "Yes, CDC", "Migrate or replicate a database with minimal downtime"],
+        ["DMS Schema Conversion", "Schema, views, procedures", "No", "Engine change, for example Oracle to Aurora PostgreSQL"],
+        ["AWS DataSync", "Files and objects (NFS, SMB, HDFS, S3-compatible)", "Scheduled incremental tasks", "Bulk or recurring file copy into S3, EFS or FSx"],
+        ["AWS Transfer Family", "Files pushed by external users", "Continuous", "Partners must keep using SFTP/FTPS/FTP/AS2"],
+        ["Amazon AppFlow", "SaaS records", "Scheduled or event-driven flows", "Salesforce, SAP, Zendesk and similar into S3 or Redshift with no code"],
+        ["Storage Gateway", "Files used by on-premises apps", "Continuous hybrid access", "Apps on premises keep using a local share backed by AWS"]
+      ],
+      "highlightRow": 2
+    }
+  ],
+  "keywords": [
+    { "cue": "migrate database with minimal downtime, keep replicating changes", "answer": "AWS DMS full load plus CDC" },
+    { "cue": "eliminate Oracle licensing, willing to change SQL", "answer": "DMS Schema Conversion to Aurora PostgreSQL, then DMS" },
+    { "cue": "MySQL changes into an S3 data lake as Parquet within minutes", "answer": "DMS task with S3 target and CDC" },
+    { "cue": "copy hundreds of TB from NFS over Direct Connect with integrity checks", "answer": "AWS DataSync" },
+    { "cue": "external partners upload via SFTP, land in S3, no servers", "answer": "AWS Transfer Family SFTP server" },
+    { "cue": "per-partner folders on a managed SFTP service", "answer": "Transfer Family users with home directories and scoped IAM roles" },
+    { "cue": "Salesforce records into S3 hourly without integration code", "answer": "Amazon AppFlow" },
+    { "cue": "final incremental sync during the cutover weekend", "answer": "Rerun the DataSync task" }
+  ],
+  "traps": [
+    "DataSync copies files, not live database transactions; copying a MySQL data directory is never a valid database migration.",
+    "A Glue crawler only reads schemas into the catalog; it does not replicate data or capture changes.",
+    "`aws s3 sync` and rsync scripts lack managed scheduling, retries and integrity verification, so they lose to DataSync on operational overhead.",
+    "S3 File Gateway is for ongoing hybrid access, not for external partners uploading over SFTP.",
+    "Rehosting Oracle on EC2 or RDS for Oracle keeps license costs; only an engine change removes them."
+  ],
+  "relatedNotes": ["storage-gateway-hybrid", "hybrid-connectivity-dx-vpn", "athena-glue-data-lake", "efs-fsx-file-storage", "database-engine-selection"],
+  "sources": [
+    { "title": "What is AWS Database Migration Service?", "url": "https://docs.aws.amazon.com/dms/latest/userguide/Welcome.html" },
+    { "title": "What is AWS DataSync?", "url": "https://docs.aws.amazon.com/datasync/latest/userguide/what-is-datasync.html" },
+    { "title": "AWS Snowball Edge availability change", "url": "https://docs.aws.amazon.com/snowball/latest/developer-guide/snowball-edge-availability-change.html" }
+  ]
+}

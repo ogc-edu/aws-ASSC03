@@ -1,0 +1,57 @@
+{
+  "slug": "acm-tls-encryption-in-transit",
+  "title": "ACM, TLS & Encryption in Transit",
+  "domain": 1,
+  "task": "1.3",
+  "summary": "Public and private certificates, TLS termination points and end-to-end encryption choices.",
+  "services": ["AWS Certificate Manager (ACM)", "AWS Private CA", "Elastic Load Balancing", "Amazon CloudFront"],
+  "tldr": [
+    "**ACM** issues free public TLS certificates for integrated services (ALB, NLB, CloudFront, API Gateway) and **renews them automatically** when they are DNS-validated and in use.",
+    "Internal hostnames such as `*.corp.internal` can't get public certificates. Use **AWS Private CA** and request private certificates through ACM.",
+    "To *force* encryption in transit, enforce it at the resource: an S3 bucket policy on `aws:SecureTransport`, `require_secure_transport` on RDS MySQL, or an HTTP-to-HTTPS redirect on the ALB."
+  ],
+  "keyFacts": [
+    { "value": "us-east-1", "text": "A certificate used by **CloudFront** must be requested or imported in US East (N. Virginia). ALB and NLB certificates live in the load balancer's own Region." },
+    { "value": "DNS validation", "text": "Keeping the validation CNAME record in DNS (for example Route 53) lets ACM renew managed certificates with **no human step**. Email validation needs someone to approve." },
+    { "value": "Imported certs", "text": "ACM **never** renews certificates you import from a third-party CA. You must reimport them yourself before they expire." },
+    { "value": "Security policy", "text": "The TLS versions and ciphers an ALB or NLB accepts are set by the **listener security policy**, not by the certificate." },
+    { "value": "Field-level", "text": "**CloudFront field-level encryption** encrypts chosen form fields at the edge with a public key, so only the service with the private key can read them." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: which certificate source?",
+      "columns": ["Option", "Trusted by", "Renewal", "Pick it when…"],
+      "rows": [
+        ["ACM public cert, DNS validation", "Browsers and public clients", "Automatic", "Public site on ALB, CloudFront or API Gateway"],
+        ["ACM public cert, email validation", "Browsers and public clients", "Needs an approval email", "Rarely the best answer; DNS can't be edited"],
+        ["ACM private cert from AWS Private CA", "Clients that trust your private CA", "Automatic", "Internal names, mTLS, service-to-service TLS"],
+        ["Imported third-party cert", "Depends on the CA", "Manual reimport", "You must use a specific CA (e.g. EV)"]
+      ],
+      "highlightRow": 0
+    }
+  ],
+  "keywords": [
+    { "cue": "certificates expired, renew automatically with no manual steps", "answer": "ACM public certificate with DNS validation" },
+    { "cue": "TLS certificate for a CloudFront distribution", "answer": "ACM certificate in us-east-1" },
+    { "cue": "private domain such as corp.internal, trusted by internal clients", "answer": "AWS Private CA with private certificates issued through ACM" },
+    { "cue": "reject any S3 request over plain HTTP", "answer": "Bucket policy Deny when aws:SecureTransport is false" },
+    { "cue": "RDS must reject unencrypted connections", "answer": "require_secure_transport (MySQL) or rds.force_ssl (PostgreSQL) in a parameter group" },
+    { "cue": "require TLS 1.2 or later on the ALB", "answer": "HTTPS listener with a TLS 1.2/1.3 security policy" },
+    { "cue": "users typing http:// must be sent to HTTPS", "answer": "ALB HTTP listener redirect action to port 443" },
+    { "cue": "only one microservice may ever see a sensitive form field", "answer": "CloudFront field-level encryption" },
+    { "cue": "offload TLS from the web servers", "answer": "Terminate TLS on the ALB or CloudFront with an ACM certificate" }
+  ],
+  "traps": [
+    "A CloudWatch alarm or Config rule on certificate expiry only **warns** you. It doesn't renew anything.",
+    "You can't get an ACM **public** certificate for a private, non-routable domain name.",
+    "Encryption at rest (SSE-KMS, RDS storage encryption) does nothing for data **in transit**.",
+    "End-to-end HTTPS still decrypts at every hop. If intermediate services must not see a field, use field-level encryption.",
+    "Removing port 80 from a security group doesn't redirect users. Browsers just fail to connect."
+  ],
+  "relatedNotes": ["kms-cloudhsm", "cloudfront-origin-security", "load-balancer-selection", "s3-security-access-control"],
+  "sources": [
+    { "title": "AWS Certificate Manager User Guide: Managed certificate renewal", "url": "https://docs.aws.amazon.com/acm/latest/userguide/managed-renewal.html" },
+    { "title": "Amazon CloudFront: Requirements for using SSL/TLS certificates", "url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/cnames-and-https-requirements.html" },
+    { "title": "AWS Private CA User Guide", "url": "https://docs.aws.amazon.com/privateca/latest/userguide/PcaWelcome.html" }
+  ]
+}

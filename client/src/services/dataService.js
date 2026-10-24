@@ -1,6 +1,8 @@
 // client/src/services/dataService.js
 // Client-side JSON database and localStorage service for Amazon S3 Static Hosting and Local usage
 
+import { CLOUD, fetchData, pushProgress } from './cloud.js';
+
 const STORAGE_KEY = 'aws_saa_c03_user_progress';
 
 let cachedQuestions = null;
@@ -19,6 +21,15 @@ export async function initQuestions() {
   }
 
   try {
+    if (CLOUD) {
+      const res = await fetchData('questions.json');
+      if (!res.ok) throw new Error(`Failed to load questions (${res.status})`);
+      const data = await res.json();
+      cachedQuestions = Array.isArray(data) ? data : (data.questions || []);
+      questionMap = new Map(cachedQuestions.map(q => [q.id, q]));
+      return cachedQuestions;
+    }
+
     // Attempt 1: Fetch static questions.json
     let res = await fetch(getQuestionsUrl());
     if (!res.ok) {
@@ -94,6 +105,12 @@ export async function initProgress() {
     console.warn('Error reading localStorage:', e);
   }
 
+  // In cloud mode pullProgress() already filled localStorage from the server (including the
+  // imported user_progress.json), so localStorage is the whole story.
+  if (CLOUD) {
+    return normalizeProgress(localData);
+  }
+
   const local = localData ? normalizeProgress(localData) : null;
   const remote = await fetchRemoteProgress();
   if (!remote) return local || normalizeProgress(null);
@@ -130,6 +147,11 @@ export function saveLocalProgress(progress) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
   } catch (e) {
     console.error('Failed to save progress to localStorage:', e);
+  }
+
+  if (CLOUD) {
+    pushProgress(STORAGE_KEY, progress);
+    return;
   }
 
   // Optional background sync to Express backend if available

@@ -1,0 +1,57 @@
+{
+  "slug": "cost-management-tools",
+  "title": "Cost Visibility: Cost Explorer, Budgets & Tags",
+  "domain": 4,
+  "task": "4.1",
+  "summary": "See, allocate and alert on spend with Cost Explorer, Budgets, CUR/Data Exports and cost allocation tags.",
+  "services": ["AWS Cost Explorer", "AWS Budgets", "AWS Cost Anomaly Detection", "AWS Data Exports (CUR 2.0)", "AWS Trusted Advisor", "AWS Organizations consolidated billing", "Tag policies"],
+  "tldr": [
+    "**See** spend: Cost Explorer (charts, grouping, forecasts). **Allocate** spend: activate **cost allocation tags** in the management account and enforce them with **tag policies**. **Analyze line items with SQL**: **AWS Data Exports** (CUR 2.0) to S3, queried with Athena.",
+    "**Alert and act**: AWS Budgets for fixed or forecast thresholds, with **budget actions** that apply an IAM policy or SCP or stop EC2/RDS instances. **Cost Anomaly Detection** uses ML, needs no thresholds and reports likely root cause.",
+    "**Consolidated billing** in AWS Organizations pools usage for volume tiers and shares Reserved Instance and Savings Plans discounts across member accounts."
+  ],
+  "keyFacts": [
+    { "value": "Activate in payer account", "text": "User-defined tags appear in Cost Explorer, Budgets and CUR only after you activate them as cost allocation tags in the management (payer) account." },
+    { "value": "Budget actions", "text": "When a threshold is hit, Budgets can attach an IAM policy, attach an SCP, or stop specific EC2 or RDS instances, automatically or after approval." },
+    { "value": "CUR 2.0", "text": "Data Exports delivers hourly line items with resource IDs and tags to S3 in Parquet. It is the source for SQL with Athena or joins with business data." },
+    { "value": "No fixed thresholds", "text": "Cost Anomaly Detection monitors accounts, services, cost categories or tags, learns normal patterns, and alerts through email or SNS." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: which cost tool?",
+      "columns": ["Tool", "Does", "Granularity", "Pick it when…"],
+      "rows": [
+        ["Cost Explorer", "Visualize, group by tag/account/service, forecast", "Monthly, daily (hourly opt-in)", "Interactive view of trends and RI/SP utilization"],
+        ["AWS Budgets", "Threshold alerts on actual or forecast; budget actions", "Per budget", "Notify or block when spend exceeds a limit"],
+        ["Cost Anomaly Detection", "ML-based unusual-spend alerts with root cause", "Continuous", "Spend varies too much for fixed thresholds"],
+        ["Data Exports (CUR 2.0)", "Detailed line-item export to S3", "Hourly, per resource", "SQL analysis, chargeback, long-term retention"],
+        ["Trusted Advisor", "Best-practice checks, e.g. idle resources", "Per check", "Quick list of waste such as idle load balancers or unattached volumes"],
+        ["Compute Optimizer", "ML rightsizing recommendations", "Per resource", "Choose smaller or Graviton instance types"]
+      ],
+      "highlightRow": 1
+    }
+  ],
+  "keywords": [
+    { "cue": "see costs per project by tag in Cost Explorer", "answer": "Activate the tag as a cost allocation tag" },
+    { "cue": "email when forecasted monthly cost exceeds a limit", "answer": "AWS Budgets with a forecasted alert" },
+    { "cue": "automatically block new EC2 launches when a sandbox hits its budget", "answer": "Budget action that attaches an SCP denying ec2:RunInstances" },
+    { "cue": "inconsistent tag keys like costcenter and Cost-Center", "answer": "Organizations tag policy with enforcement" },
+    { "cue": "hourly line items with resource IDs, query with SQL", "answer": "AWS Data Exports (CUR 2.0) to S3 with Athena" },
+    { "cue": "alert on unusual spend without maintaining thresholds", "answer": "AWS Cost Anomaly Detection" },
+    { "cue": "share unused Savings Plan with newly acquired accounts", "answer": "Join them to the organization (consolidated billing, discount sharing on)" },
+    { "cue": "find idle or unattached resources quickly", "answer": "Trusted Advisor cost optimization checks" }
+  ],
+  "traps": [
+    "Tagging resources isn't enough; until the tag is activated as a cost allocation tag it won't appear in billing tools.",
+    "Cost allocation tags are activated in the management account, not separately in each member account.",
+    "Budgets alerts only notify unless you configure a **budget action**; an alert alone never stops spending.",
+    "Savings Plans can't be shared with AWS RAM or resold on the RI Marketplace; sharing comes from consolidated billing.",
+    "CloudTrail and S3 Storage Class Analysis don't produce cost reports by tag."
+  ],
+  "relatedNotes": ["ec2-purchasing-options", "compute-rightsizing-graviton", "organizations-scps-control-tower", "athena-glue-data-lake"],
+  "sources": [
+    { "title": "Using AWS cost allocation tags", "url": "https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/cost-alloc-tags.html" },
+    { "title": "Configuring AWS Budgets actions", "url": "https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-controls.html" },
+    { "title": "What is AWS Data Exports?", "url": "https://docs.aws.amazon.com/cur/latest/userguide/what-is-data-exports.html" }
+  ]
+}

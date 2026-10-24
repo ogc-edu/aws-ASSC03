@@ -1,0 +1,54 @@
+{
+  "slug": "network-firewall-inspection",
+  "title": "AWS Network Firewall & Traffic Inspection",
+  "domain": 1,
+  "task": "1.2",
+  "summary": "Stateful VPC firewalls, centralized inspection VPCs and DNS-layer filtering.",
+  "services": ["AWS Network Firewall", "Gateway Load Balancer", "AWS Transit Gateway", "Amazon Route 53 Resolver DNS Firewall"],
+  "tldr": [
+    "**AWS Network Firewall** is a managed, stateful VPC firewall with IDS/IPS (**Suricata-compatible** rules) and domain allow/deny lists. Traffic reaches it by **routing** to its endpoints.",
+    "Many VPCs? Build one **inspection VPC** on Transit Gateway with the firewall (and NAT gateways) and route spoke egress through it.",
+    "Must use a **third-party appliance** vendor? Put the appliances behind a **Gateway Load Balancer** and route to GWLB endpoints.",
+    "Blocking malicious domains or DNS tunneling at resolution time is **Route 53 Resolver DNS Firewall**."
+  ],
+  "keyFacts": [
+    { "value": "Ingress routing", "text": "An **edge route table** on the internet gateway sends inbound traffic to the firewall endpoint before it reaches the ALB subnets." },
+    { "value": "Domain lists", "text": "Stateful rule groups can allow only listed FQDNs (from TLS SNI or HTTP Host) for egress filtering." },
+    { "value": "GENEVE 6081", "text": "Gateway Load Balancer uses GENEVE encapsulation on port 6081 to pass traffic transparently to appliances, and scales them as a target group." },
+    { "value": "Per AZ", "text": "Deploy firewall endpoints in each AZ and keep routing AZ-symmetric so stateful inspection sees both directions." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: which inspection tool?",
+      "columns": ["Option", "Layer", "Pick it when…"],
+      "rows": [
+        ["AWS Network Firewall", "L3–L7 stateful, IDS/IPS", "Managed IPS, domain filtering, centralized egress"],
+        ["Gateway Load Balancer + appliances", "Transparent L3", "Existing vendor firewalls must be used"],
+        ["Route 53 Resolver DNS Firewall", "DNS queries", "Block C2 domains, DNS exfiltration"],
+        ["AWS WAF", "HTTP(S) L7", "SQLi, XSS, bots on web endpoints"],
+        ["Security groups / NACLs", "L3/L4", "Port and IP filtering only"]
+      ],
+      "highlightRow": 0
+    }
+  ],
+  "keywords": [
+    { "cue": "IDS/IPS for all outbound traffic from 40 VPCs", "answer": "Inspection VPC with Network Firewall on Transit Gateway" },
+    { "cue": "outbound only to an allow list of FQDNs", "answer": "Network Firewall stateful domain list rule group" },
+    { "cue": "Suricata-compatible rules for inbound traffic", "answer": "Network Firewall with ingress routing" },
+    { "cue": "third-party next-generation firewall appliances, scale and HA", "answer": "Gateway Load Balancer with GWLB endpoints" },
+    { "cue": "malware resolving command-and-control domains", "answer": "Route 53 Resolver DNS Firewall with managed domain lists" },
+    { "cue": "inspect east-west traffic between VPCs", "answer": "Transit Gateway routing through an inspection VPC" }
+  ],
+  "traps": [
+    "Security groups and NACLs can't filter by domain name or do deep packet inspection.",
+    "WAF only sees HTTP(S) to supported resources; it can't inspect general egress traffic.",
+    "Deploying a firewall in every spoke VPC works but is not the central, lowest-overhead answer when there are dozens of VPCs.",
+    "Asymmetric routing across AZs breaks stateful inspection."
+  ],
+  "relatedNotes": ["vpc-security-groups-nacls", "waf-shield-ddos", "vpc-connectivity-tgw-lattice", "threat-detection-security-hub"],
+  "sources": [
+    { "title": "What is AWS Network Firewall?", "url": "https://docs.aws.amazon.com/network-firewall/latest/developerguide/what-is-aws-network-firewall.html" },
+    { "title": "What is a Gateway Load Balancer?", "url": "https://docs.aws.amazon.com/elasticloadbalancing/latest/gateway/introduction.html" },
+    { "title": "Route 53 Resolver DNS Firewall", "url": "https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver-dns-firewall.html" }
+  ]
+}

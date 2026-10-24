@@ -1,0 +1,57 @@
+{
+  "slug": "vpc-endpoints-privatelink",
+  "title": "VPC Endpoints & AWS PrivateLink",
+  "domain": 1,
+  "task": "1.2",
+  "summary": "Reach AWS services and partner services privately, without internet, NAT or public IPs.",
+  "services": ["Gateway VPC endpoints", "Interface VPC endpoints (AWS PrivateLink)", "VPC endpoint services", "Network Load Balancer"],
+  "tldr": [
+    "**Gateway endpoints** exist only for **S3 and DynamoDB**, are free, and work through route table entries. They are the cheapest way to cut NAT gateway charges for S3/DynamoDB traffic.",
+    "**Interface endpoints** (PrivateLink) put ENIs with private IPs in your subnets for most other services, cost per hour per AZ plus per GB, and are reachable from on-premises over VPN or Direct Connect.",
+    "To publish your own service to many VPCs, even with **overlapping CIDRs**, put it behind an NLB and create a **VPC endpoint service**; consumers create interface endpoints.",
+    "Lock down both sides: an **endpoint policy** limits what can be reached through the endpoint, and an `aws:SourceVpce` condition in the bucket or API policy limits who can reach the resource."
+  ],
+  "keyFacts": [
+    { "value": "S3 + DynamoDB", "text": "The only services with gateway endpoints. Gateway endpoints can't be used from on-premises, peered VPCs or through Transit Gateway." },
+    { "value": "Private DNS", "text": "With private DNS on, the standard service hostname resolves to the endpoint's private IPs, so SDKs need no code change." },
+    { "value": "SourceVpce", "text": "Deny access to a bucket unless `aws:SourceVpce` equals your endpoint ID to force all access through one endpoint." },
+    { "value": "One-way", "text": "PrivateLink lets consumers start connections to the provider only; no routing between VPCs, so CIDR overlap doesn't matter." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: gateway vs interface endpoint",
+      "columns": ["Feature", "Gateway endpoint", "Interface endpoint"],
+      "rows": [
+        ["Services", "S3, DynamoDB", "Most AWS services, S3 too, plus partner/your own endpoint services"],
+        ["How it works", "Prefix-list route in the route table", "ENI with private IPs in your subnets"],
+        ["Cost", "No charge", "Hourly per AZ plus per GB processed"],
+        ["From on-premises / other VPCs", "No", "Yes, over DX, VPN, peering or TGW"],
+        ["Security", "Endpoint policy", "Endpoint policy and security groups"]
+      ],
+      "highlightRow": 0
+    }
+  ],
+  "keywords": [
+    { "cue": "private subnets to S3 without internet, lowest cost", "answer": "S3 gateway endpoint" },
+    { "cue": "NAT gateway charges for S3 traffic", "answer": "S3 gateway endpoint" },
+    { "cue": "Lambda in VPC with no NAT must reach Secrets Manager", "answer": "Interface endpoint with private DNS" },
+    { "cue": "only approved buckets through the endpoint", "answer": "VPC endpoint policy" },
+    { "cue": "bucket accessible only through one endpoint", "answer": "Bucket policy deny unless aws:SourceVpce matches" },
+    { "cue": "SaaS to hundreds of VPCs with overlapping CIDRs", "answer": "PrivateLink endpoint service behind an NLB" },
+    { "cue": "on-premises to S3 over Direct Connect with private IPs", "answer": "S3 interface endpoint" },
+    { "cue": "API reachable only from one VPC", "answer": "Private API Gateway, execute-api interface endpoint, resource policy" },
+    { "cue": "ECR pulls through NAT are expensive", "answer": "ecr.api and ecr.dkr interface endpoints plus S3 gateway endpoint" },
+    { "cue": "same interface endpoints duplicated in 40 VPCs", "answer": "Centralize in a shared services VPC with Route 53 private hosted zones" }
+  ],
+  "traps": [
+    "A gateway endpoint doesn't work for traffic arriving from on-premises; use an interface endpoint for that.",
+    "VPC peering or Transit Gateway with overlapping CIDRs fails; PrivateLink is the fix.",
+    "ECR image layers are stored in S3, so ECR endpoints alone still send layer downloads through NAT without an S3 gateway endpoint.",
+    "Security groups don't apply to gateway endpoints; control them with the endpoint policy."
+  ],
+  "relatedNotes": ["vpc-security-groups-nacls", "nat-ipv4-ipv6-costs", "s3-security-access-control", "hybrid-connectivity-dx-vpn", "vpc-connectivity-tgw-lattice"],
+  "sources": [
+    { "title": "Gateway endpoints", "url": "https://docs.aws.amazon.com/vpc/latest/privatelink/gateway-endpoints.html" },
+    { "title": "What is AWS PrivateLink?", "url": "https://docs.aws.amazon.com/vpc/latest/privatelink/what-is-privatelink.html" }
+  ]
+}

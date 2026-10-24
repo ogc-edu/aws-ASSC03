@@ -1,0 +1,54 @@
+{
+  "slug": "global-accelerator-edge-locations",
+  "title": "Global Accelerator, Local Zones & Wavelength",
+  "domain": 3,
+  "task": "3.4",
+  "summary": "Improve global TCP/UDP performance with anycast IPs, and push compute closer to users.",
+  "services": ["AWS Global Accelerator", "AWS Local Zones", "AWS Wavelength", "AWS Outposts"],
+  "tldr": [
+    "**Global Accelerator** gives you **static anycast IP addresses**. Users enter the AWS network at the nearest edge location and ride the backbone to healthy ALB, NLB, EC2 or Elastic IP endpoints in one or more Regions.",
+    "Pick it for **non-HTTP (UDP/TCP) traffic**, **fixed IPs to allowlist or hard-code**, and **regional failover in seconds without DNS caching**. It doesn't cache; that's CloudFront.",
+    "To move the *compute* closer: **Local Zones** (metro areas), **Wavelength** (inside a carrier's 5G network), **Outposts** (your own building)."
+  ],
+  "keyFacts": [
+    { "value": "2 static IPs", "text": "A standard accelerator provides two static anycast IPv4 addresses from separate network zones. They stay the same while endpoints change behind them." },
+    { "value": "Traffic dial", "text": "Each endpoint group has a **traffic dial** (0–100%) to shift traffic between Regions gradually, for example to drain a Region during maintenance." },
+    { "value": "Custom routing", "text": "A **custom routing accelerator** maps an accelerator port deterministically to one EC2 instance IP and port in a VPC subnet, for matchmaking-style game sessions." },
+    { "value": "No DNS TTL", "text": "Failover happens inside the AWS network based on health checks, so clients don't wait for DNS caches to expire as with Route 53 failover." },
+    { "value": "Single-digit ms", "text": "Local Zones and Wavelength Zones run EC2, EBS and other services as extensions of a parent Region's VPC, using the same APIs and tools." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: Global Accelerator, CloudFront, Route 53",
+      "columns": ["Service", "Layer", "Static IPs", "Pick it when…"],
+      "rows": [
+        ["Global Accelerator", "TCP/UDP (layer 4)", "Yes, anycast", "Gaming, VoIP, IoT, fixed allowlist IPs, fast multi-Region failover"],
+        ["CloudFront", "HTTP/HTTPS (layer 7)", "No", "Caching static or dynamic web content near users"],
+        ["Route 53 latency / failover", "DNS", "No", "Cheap multi-Region routing where DNS TTL delay is acceptable"]
+      ],
+      "highlightRow": 0
+    }
+  ],
+  "keywords": [
+    { "cue": "UDP game backend, fixed IPs, failover in seconds without DNS", "answer": "Global Accelerator standard accelerator with NLB endpoints" },
+    { "cue": "packet loss and jitter over the public internet, two static IPs", "answer": "AWS Global Accelerator" },
+    { "cue": "send each player to a specific instance and port", "answer": "Global Accelerator custom routing accelerator" },
+    { "cue": "shift traffic away from a Region gradually, no client change", "answer": "Lower the endpoint group traffic dial" },
+    { "cue": "single-digit ms for users in a city, no hardware on site", "answer": "AWS Local Zone subnet in the existing VPC" },
+    { "cue": "5G devices, traffic must not leave the carrier network", "answer": "AWS Wavelength Zone" },
+    { "cue": "process data on premises with AWS-managed hardware", "answer": "AWS Outposts" }
+  ],
+  "traps": [
+    "CloudFront doesn't proxy arbitrary UDP protocols; game traffic over UDP points to Global Accelerator.",
+    "Route 53 failover with a low TTL still depends on resolvers and clients honoring the TTL; it isn't \"within seconds without DNS caching\".",
+    "Moving Elastic IPs between Regions is impossible; EIPs are Regional.",
+    "A standard accelerator load-balances to healthy endpoints; it can't pin a player to a specific instance port. That needs custom routing.",
+    "Wavelength is for mobile 5G clients; a studio on a wired office network wants a Local Zone."
+  ],
+  "relatedNotes": ["cloudfront-caching-edge", "route53-routing-failover", "load-balancer-selection", "ec2-instances-placement-hpc", "disaster-recovery-strategies"],
+  "sources": [
+    { "title": "What is AWS Global Accelerator?", "url": "https://docs.aws.amazon.com/global-accelerator/latest/dg/what-is-global-accelerator.html" },
+    { "title": "What is AWS Local Zones?", "url": "https://docs.aws.amazon.com/local-zones/latest/ug/what-is-aws-local-zones.html" },
+    { "title": "What is AWS Wavelength?", "url": "https://docs.aws.amazon.com/wavelength/latest/developerguide/what-is-wavelength.html" }
+  ]
+}

@@ -1,0 +1,152 @@
+{
+  "slug": "cloudwatch-observability",
+  "title": "CloudWatch & X-Ray Observability",
+  "domain": 2,
+  "task": "2.2",
+  "summary": "Metrics, alarms, logs and traces that drive scaling, failover and troubleshooting.",
+  "services": [
+    "Amazon CloudWatch",
+    "CloudWatch Logs",
+    "CloudWatch agent",
+    "AWS X-Ray",
+    "CloudWatch Container Insights"
+  ],
+  "tldr": [
+    "**CloudWatch metrics + alarms** drive automation: Auto Scaling, Route 53 health checks, ECS rollbacks, SNS notifications and EC2 actions.",
+    "Memory, disk usage and app logs from inside an instance need the **CloudWatch agent**; the hypervisor can't see them.",
+    "**X-Ray** traces one request end to end across API Gateway, Lambda, and downstream calls, and draws a **service map** to find the slow component.",
+    "Pick metrics that match the business objective: ALB 5XX for errors, `HealthyHostCount` for capacity, SQS `ApproximateAgeOfOldestMessage` for processing delay."
+  ],
+  "keyFacts": [
+    {
+      "value": "5 min → 1 min",
+      "text": "EC2 sends basic metrics every 5 minutes. **Detailed monitoring** sends them every minute for faster scaling and alarms."
+    },
+    {
+      "value": "1 s",
+      "text": "**High-resolution custom metrics** can be published at 1-second granularity for alarms that react within seconds."
+    },
+    {
+      "value": "Composite",
+      "text": "A **composite alarm** combines other alarms with AND/OR logic, which reduces alarm noise and false pages."
+    },
+    {
+      "value": "Backlog / instance",
+      "text": "Scale SQS workers on a custom **backlog-per-instance** metric (queue depth ÷ running instances), not on CPU."
+    },
+    {
+      "value": "Logs Insights",
+      "text": "**CloudWatch Logs Insights** runs ad hoc queries over log groups; metric filters turn log patterns into metrics you can alarm on."
+    }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: which signal answers which question",
+      "columns": [
+        "Need",
+        "Use",
+        "Not this"
+      ],
+      "rows": [
+        [
+          "Which component in a request is slow?",
+          "X-Ray traces and service map",
+          "CloudTrail or average Lambda Duration alarms"
+        ],
+        [
+          "Who changed this resource?",
+          "CloudTrail",
+          "CloudWatch metrics"
+        ],
+        [
+          "Memory or disk use on EC2",
+          "CloudWatch agent custom metrics",
+          "Default EC2 metrics"
+        ],
+        [
+          "Are customers getting server errors?",
+          "ALB `HTTPCode_Target_5XX_Count` and `HTTPCode_ELB_5XX_Count`",
+          "`ActiveConnectionCount`"
+        ],
+        [
+          "Is work being processed in time?",
+          "SQS `ApproximateAgeOfOldestMessage`",
+          "`NumberOfEmptyReceives`"
+        ],
+        [
+          "Containers per task / pod",
+          "Container Insights",
+          "Instance-level CPU only"
+        ]
+      ],
+      "highlightRow": 0
+    }
+  ],
+  "keywords": [
+    {
+      "cue": "end-to-end path of individual requests",
+      "answer": "AWS X-Ray active tracing"
+    },
+    {
+      "cue": "identify which microservice adds latency",
+      "answer": "X-Ray service map"
+    },
+    {
+      "cue": "monitor memory utilization on EC2",
+      "answer": "CloudWatch agent"
+    },
+    {
+      "cue": "orders must start processing within 10 minutes",
+      "answer": "Alarm on SQS ApproximateAgeOfOldestMessage"
+    },
+    {
+      "cue": "customers must not see server errors",
+      "answer": "Alarm on ALB 5XX metrics"
+    },
+    {
+      "cue": "enough healthy capacity in web tier",
+      "answer": "Alarm on target group HealthyHostCount"
+    },
+    {
+      "cue": "scale workers on pending work",
+      "answer": "Target tracking on backlog per instance"
+    },
+    {
+      "cue": "roll back ECS deployment when errors rise",
+      "answer": "CloudWatch alarms in ECS deployment configuration"
+    },
+    {
+      "cue": "health check for a private resource",
+      "answer": "Route 53 health check on a CloudWatch alarm"
+    },
+    {
+      "cue": "reduce alarm noise from many alarms",
+      "answer": "Composite alarm"
+    }
+  ],
+  "traps": [
+    "CloudTrail records API calls, not request latency. It can't show where a request spent its time.",
+    "VPC Flow Logs show IP traffic metadata, not application-level timing.",
+    "An average metric hides intermittent slow requests. Traces or percentiles (p99) reveal them.",
+    "EC2 status checks don't see an app that hangs. Use ELB health checks or app-level metrics.",
+    "To investigate a live instance without it being replaced or receiving traffic, put it in Auto Scaling **Standby**, rather than detaching it or suspending processes."
+  ],
+  "relatedNotes": [
+    "auto-scaling-elb",
+    "sqs-sns-decoupling",
+    "cloudtrail-logging-audit",
+    "route53-routing-failover",
+    "multi-az-resilience-patterns",
+    "lambda-event-processing"
+  ],
+  "sources": [
+    {
+      "title": "What is Amazon CloudWatch?",
+      "url": "https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/WhatIsCloudWatch.html"
+    },
+    {
+      "title": "What is AWS X-Ray?",
+      "url": "https://docs.aws.amazon.com/xray/latest/devguide/aws-xray.html"
+    }
+  ]
+}

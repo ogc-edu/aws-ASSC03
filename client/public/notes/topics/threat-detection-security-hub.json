@@ -1,0 +1,59 @@
+{
+  "slug": "threat-detection-security-hub",
+  "title": "GuardDuty, Inspector, Security Hub & Detective",
+  "domain": 1,
+  "task": "1.2",
+  "summary": "Managed threat detection, vulnerability scanning and finding aggregation, with automated response.",
+  "services": ["Amazon GuardDuty", "Amazon Inspector", "AWS Security Hub", "Amazon Detective", "Amazon Security Lake", "Amazon EventBridge"],
+  "tldr": [
+    "**GuardDuty** detects threats (crypto-mining, credential misuse, suspicious S3 access, malware) from CloudTrail, VPC Flow Logs, DNS logs and runtime agents. No agents or log setup needed for the core feature.",
+    "**Inspector** scans EC2, ECR images and Lambda for **CVEs** and network exposure, and rescans automatically when new CVEs are published.",
+    "**Security Hub** aggregates and prioritizes findings across accounts and Regions and runs best-practice checks; **Detective** investigates a finding; **Security Lake** stores security logs in **OCSF** in your own S3 data lake.",
+    "Automated response = **EventBridge rule** on the finding, targeting Lambda or an SSM Automation runbook."
+  ],
+  "keyFacts": [
+    { "value": "Delegated admin", "text": "Each service supports an Organizations delegated administrator that **auto-enables** member accounts, including new ones." },
+    { "value": "Runtime", "text": "GuardDuty **Runtime Monitoring** watches OS-level behavior in EKS, ECS (including Fargate) and EC2 via a managed agent." },
+    { "value": "Malware for S3", "text": "GuardDuty Malware Protection for S3 scans new objects and can tag them; a bucket policy can deny reads until the tag says `NO_THREATS_FOUND`." },
+    { "value": "CSPM", "text": "The original Security Hub (controls, FSBP standard, ASFF findings) is now called **Security Hub CSPM**; a newer Security Hub correlates GuardDuty, Inspector and CSPM signals." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: which security service answers the question?",
+      "columns": ["Service", "Answers", "Pick it when…"],
+      "rows": [
+        ["GuardDuty", "Is something malicious happening?", "Threat detection, compromised credentials, crypto-mining"],
+        ["Inspector", "Which software has known CVEs?", "Vulnerability scanning of EC2, ECR, Lambda"],
+        ["Macie", "Where is sensitive data in S3?", "PII discovery in buckets"],
+        ["Security Hub (CSPM)", "Where do I see and prioritize all findings?", "Central view, compliance standards, cross-Region aggregation"],
+        ["Detective", "What is the scope of this incident?", "Root-cause investigation with graphs of related activity"],
+        ["Security Lake", "Where do I keep normalized security logs?", "OCSF data lake for SIEM and Athena"]
+      ],
+      "highlightRow": 0
+    }
+  ],
+  "keywords": [
+    { "cue": "crypto-mining domains, unusual credential use, across all accounts", "answer": "GuardDuty with delegated admin and auto-enable" },
+    { "cue": "suspicious S3 data access patterns", "answer": "GuardDuty S3 Protection" },
+    { "cue": "scan uploaded objects for malware before processing", "answer": "GuardDuty Malware Protection for S3 with tag-based bucket policy" },
+    { "cue": "suspicious processes inside containers", "answer": "GuardDuty Runtime Monitoring" },
+    { "cue": "continuous CVE scanning of EC2, ECR and Lambda", "answer": "Amazon Inspector" },
+    { "cue": "single view of findings across accounts and Regions", "answer": "Security Hub with central configuration and cross-Region aggregation" },
+    { "cue": "determine scope of a GuardDuty finding", "answer": "Amazon Detective" },
+    { "cue": "normalize security logs to OCSF in our own data lake", "answer": "Amazon Security Lake" },
+    { "cue": "automatically isolate a compromised instance", "answer": "EventBridge rule to Lambda that swaps in an isolation security group" },
+    { "cue": "unusual spike in API call rates", "answer": "CloudTrail Insights" }
+  ],
+  "traps": [
+    "GuardDuty detects; it doesn't fix. Remediation needs EventBridge plus Lambda or SSM Automation.",
+    "Inspector finds vulnerabilities, not active attacks; Detective investigates, it doesn't detect first.",
+    "Macie is for sensitive data discovery, not malware scanning.",
+    "Running these services from the management account is discouraged; use a delegated administrator."
+  ],
+  "relatedNotes": ["macie-config-compliance", "cloudtrail-logging-audit", "organizations-scps-control-tower", "eventbridge-event-driven"],
+  "sources": [
+    { "title": "What is Amazon GuardDuty?", "url": "https://docs.aws.amazon.com/guardduty/latest/ug/what-is-guardduty.html" },
+    { "title": "What is Amazon Inspector?", "url": "https://docs.aws.amazon.com/inspector/latest/user/what-is-inspector.html" },
+    { "title": "What is AWS Security Hub CSPM?", "url": "https://docs.aws.amazon.com/securityhub/latest/userguide/what-is-securityhub.html" }
+  ]
+}

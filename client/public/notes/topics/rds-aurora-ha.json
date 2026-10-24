@@ -1,0 +1,170 @@
+{
+  "slug": "rds-aurora-ha",
+  "title": "RDS & Aurora High Availability",
+  "domain": 2,
+  "task": "2.2",
+  "summary": "Multi-AZ, read replicas, Aurora replicas and Global Database for resilient relational data.",
+  "services": [
+    "Amazon RDS",
+    "Amazon Aurora",
+    "Amazon RDS Proxy",
+    "Aurora Global Database",
+    "AWS Backup"
+  ],
+  "tldr": [
+    "**Multi-AZ** is for availability: a synchronous standby in another AZ with automatic failover. A classic Multi-AZ *instance* standby can't serve reads.",
+    "**Read replicas** are for read scaling (and cross-Region DR): asynchronous, readable, and promoted *manually*.",
+    "**Aurora** keeps six copies of data across three AZs. Add **Aurora Replicas** in other AZs so failover takes about a minute or less; use **Global Database** for cross-Region DR with sub-second lag.",
+    "Logical mistakes (bad UPDATE, corruption) need **point-in-time restore** or **Aurora Backtrack**, not replicas, which copy the mistake."
+  ],
+  "keyFacts": [
+    {
+      "value": "< 35 s",
+      "text": "Typical failover for an **RDS Multi-AZ DB cluster** (one writer + two *readable* standbys in three AZs), versus 1–2 minutes for a Multi-AZ DB instance."
+    },
+    {
+      "value": "Up to 15",
+      "text": "Aurora Replicas per cluster. Each has a **promotion tier 0–15**; Aurora promotes the lowest tier first, so put a full-size replica in tier 0."
+    },
+    {
+      "value": "≈ 1 s / < 1 min",
+      "text": "**Aurora Global Database**: storage-level replication with typical lag under a second and cross-Region failover in about a minute. Up to 10 secondary Regions."
+    },
+    {
+      "value": "1–35 days",
+      "text": "Automated backup retention for RDS and Aurora, giving point-in-time restore to a *new* instance or cluster. Longer retention needs manual snapshots or AWS Backup."
+    },
+    {
+      "value": "72 h",
+      "text": "Longest **Aurora Backtrack** window (Aurora MySQL only). It rewinds the *same* cluster in minutes, with no new endpoint."
+    }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: HA and DR options for relational data",
+      "columns": [
+        "Option",
+        "Readable?",
+        "Failover",
+        "Pick it when…"
+      ],
+      "rows": [
+        [
+          "RDS Multi-AZ DB instance",
+          "No (standby is passive)",
+          "Automatic, ~1–2 min",
+          "Remove the single-AZ point of failure"
+        ],
+        [
+          "RDS Multi-AZ DB cluster",
+          "Yes, 2 standbys",
+          "Automatic, typically < 35 s",
+          "Faster failover and readable standbys while staying on RDS"
+        ],
+        [
+          "RDS read replica",
+          "Yes",
+          "Manual promotion",
+          "Offload reporting; cross-Region DR for RDS"
+        ],
+        [
+          "Aurora Replica",
+          "Yes (reader endpoint)",
+          "Automatic, by promotion tier",
+          "Aurora HA and read scaling (with Aurora Auto Scaling)"
+        ],
+        [
+          "Aurora Global Database",
+          "Yes, in each secondary Region",
+          "Managed failover or switchover",
+          "Cross-Region RPO ≈ 1 s, RTO < 1 min, local reads"
+        ],
+        [
+          "Cross-Region automated backups",
+          "No running DB",
+          "Restore (hours)",
+          "Point-in-time restore in another Region with no standby cost"
+        ]
+      ],
+      "highlightRow": 1
+    }
+  ],
+  "keywords": [
+    {
+      "cue": "standby must serve reads and failover under 35 seconds",
+      "answer": "RDS Multi-AZ DB cluster"
+    },
+    {
+      "cue": "reporting queries slow the primary",
+      "answer": "Read replica (RDS) or Aurora Replica with reader endpoint"
+    },
+    {
+      "cue": "Aurora single writer took 10 minutes to recover",
+      "answer": "Add an Aurora Replica in another AZ"
+    },
+    {
+      "cue": "too many connections from Lambda, slow failover",
+      "answer": "Amazon RDS Proxy"
+    },
+    {
+      "cue": "RPO 1 second, RTO under 1 minute across Regions",
+      "answer": "Aurora Global Database"
+    },
+    {
+      "cue": "planned Region move with no data loss",
+      "answer": "Aurora Global Database switchover"
+    },
+    {
+      "cue": "rewind cluster to just before a bad DELETE",
+      "answer": "Aurora Backtrack"
+    },
+    {
+      "cue": "analysts' queries must not hit the app replica",
+      "answer": "Aurora custom endpoints"
+    },
+    {
+      "cue": "wrong replica promoted during failover",
+      "answer": "Set promotion tiers (tier 0 for the full-size replica)"
+    },
+    {
+      "cue": "restore in another Region, no running DB there",
+      "answer": "RDS cross-Region automated backup replication"
+    }
+  ],
+  "traps": [
+    "The standby of a Multi-AZ **DB instance** can't take read traffic. Reporting tools need a read replica or a Multi-AZ DB cluster.",
+    "A read replica is **not** automatic failover. It needs manual promotion and gets a new endpoint.",
+    "Global Database is Aurora-only. You can't add an RDS for PostgreSQL instance to it; use a cross-Region read replica instead.",
+    "**Managed failover** is for an unplanned outage. A planned Region move with zero data loss is a **switchover**.",
+    "Replicas and Multi-AZ copy bad writes instantly. Recovering from human error needs PITR, snapshots or Backtrack.",
+    "Increasing `max_connections` or the instance size doesn't fix connection storms from Lambda. RDS Proxy pools connections and also shortens failover."
+  ],
+  "sections": [
+    {
+      "heading": "Aurora endpoints",
+      "body": "- **Cluster (writer) endpoint**: always points to the current writer.\n- **Reader endpoint**: load-balances across all Aurora Replicas.\n- **Custom endpoint**: a group of instances you choose, for example small replicas for analysts only.\n- **Instance endpoint**: one specific instance, rarely the right exam answer."
+    }
+  ],
+  "relatedNotes": [
+    "disaster-recovery-strategies",
+    "aws-backup",
+    "database-engine-selection",
+    "database-cost-optimization",
+    "elasticache-in-memory",
+    "secrets-parameter-store"
+  ],
+  "sources": [
+    {
+      "title": "Configuring and managing a Multi-AZ deployment for Amazon RDS",
+      "url": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.MultiAZ.html"
+    },
+    {
+      "title": "High availability for Amazon Aurora",
+      "url": "https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Concepts.AuroraHighAvailability.html"
+    },
+    {
+      "title": "Using Amazon Aurora Global Database",
+      "url": "https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-global-database.html"
+    }
+  ]
+}

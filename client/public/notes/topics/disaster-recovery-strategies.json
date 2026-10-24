@@ -1,0 +1,159 @@
+{
+  "slug": "disaster-recovery-strategies",
+  "title": "Disaster Recovery Strategies: RPO & RTO",
+  "domain": 2,
+  "task": "2.2",
+  "summary": "Backup and restore, pilot light, warm standby and active-active, and how to pick one.",
+  "services": [
+    "AWS Elastic Disaster Recovery",
+    "AWS Backup",
+    "Amazon RDS",
+    "Amazon Aurora Global Database",
+    "Amazon DynamoDB global tables",
+    "Amazon Route 53",
+    "Service Quotas"
+  ],
+  "tldr": [
+    "**RPO** = how much data you can lose (time since the last good copy). **RTO** = how long you can be down. Read both numbers first, then pick the *cheapest* strategy that meets them.",
+    "The four strategies, cheapest to most expensive: **backup and restore** → **pilot light** → **warm standby** → **multi-site active-active**.",
+    "The difference between pilot light and warm standby is the app tier: pilot light keeps only *data* live in the DR Region; warm standby also runs a *scaled-down, working* copy of the app.",
+    "Servers you can't rebuild (legacy, custom OS config, on premises) with an RPO of seconds → **AWS Elastic Disaster Recovery (DRS)**."
+  ],
+  "keyFacts": [
+    {
+      "value": "Hours / hours",
+      "text": "**Backup and restore**: RPO and RTO in hours. Copy backups to another Region (AWS Backup copy rules) and rebuild from IaC when disaster strikes."
+    },
+    {
+      "value": "Minutes / tens of min",
+      "text": "**Pilot light**: data replicated continuously (cross-Region read replica, Global Database), AMIs and templates ready, but no app servers running until failover."
+    },
+    {
+      "value": "Seconds–min / minutes",
+      "text": "**Warm standby**: a smaller but fully working stack already serves health checks in the DR Region. Scale it out and switch DNS on failover."
+    },
+    {
+      "value": "≈ 0 / ≈ 0",
+      "text": "**Multi-site active-active**: both Regions take live traffic. Needs multi-writer data such as DynamoDB global tables and health-checked latency routing."
+    },
+    {
+      "value": "Seconds / minutes",
+      "text": "**Elastic Disaster Recovery** replicates block storage continuously into a low-cost staging area and launches full-size recovery instances only for drills or failover."
+    }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: the four DR strategies",
+      "columns": [
+        "Strategy",
+        "Running in DR Region",
+        "Typical RPO / RTO",
+        "Pick it when…"
+      ],
+      "rows": [
+        [
+          "Backup and restore",
+          "Only backups and templates",
+          "Hours / hours (e.g. 24 h)",
+          "Lowest cost and the business accepts a day of loss or downtime"
+        ],
+        [
+          "Pilot light",
+          "Live data copy (replica); no app servers",
+          "Minutes / tens of minutes to hours",
+          "Tight RPO, looser RTO, and \"no servers may run until a disaster is declared\""
+        ],
+        [
+          "Warm standby",
+          "Data copy + scaled-down working app tier",
+          "Seconds–minutes / minutes",
+          "RTO of ~10–15 minutes; standby must already serve traffic"
+        ],
+        [
+          "Multi-site active-active",
+          "Full production in every Region",
+          "Near zero / near zero",
+          "No downtime tolerated, users write in the nearest Region"
+        ],
+        [
+          "Elastic Disaster Recovery",
+          "Staging area (small instances + cheap volumes)",
+          "Seconds / minutes",
+          "Many servers that can't be rebuilt; recovery drills without touching the source"
+        ]
+      ],
+      "highlightRow": 2
+    }
+  ],
+  "keywords": [
+    {
+      "cue": "RPO 24 hours, RTO 24 hours, lowest cost",
+      "answer": "Backup and restore with cross-Region backup copies"
+    },
+    {
+      "cue": "no app servers in the recovery Region until disaster",
+      "answer": "Pilot light"
+    },
+    {
+      "cue": "scaled-down but fully functional copy",
+      "answer": "Warm standby"
+    },
+    {
+      "cue": "RPO seconds, RTO minutes, servers cannot be modified",
+      "answer": "AWS Elastic Disaster Recovery"
+    },
+    {
+      "cue": "non-disruptive recovery drills",
+      "answer": "AWS Elastic Disaster Recovery drill instances"
+    },
+    {
+      "cue": "read and write in both Regions, no promotion step",
+      "answer": "DynamoDB global tables + Route 53 latency routing"
+    },
+    {
+      "cue": "standby Region launches fail with vCPU limit error",
+      "answer": "Request Service Quotas increase in the DR Region"
+    },
+    {
+      "cue": "decrypt replicated data in DR Region",
+      "answer": "KMS multi-Region keys"
+    },
+    {
+      "cue": "DR copy of secrets that rotate",
+      "answer": "Secrets Manager multi-Region secret replication"
+    }
+  ],
+  "traps": [
+    "**Multi-AZ is not DR for a Regional outage.** A Multi-AZ standby lives in the same Region.",
+    "Pilot light and warm standby both keep a live database copy. If the question says no app servers may run, it is pilot light; if a small app fleet already runs, it is warm standby.",
+    "Don't pay for active-active or a warm standby when the stated RPO/RTO is hours. The question usually asks for the *most cost-effective* option that still meets the numbers.",
+    "Snapshots or DLM copies every 15 minutes can't give an RPO of seconds. Continuous replication (DRS, Global Database, global tables) can.",
+    "Service quotas are per Region. A DR Region with low vCPU or other quotas can't scale to production size, so raise the quotas before you need them and check them in DR tests.",
+    "Remember the dependencies: AMIs, KMS keys, secrets and network routes must all exist in the DR Region, not only the data."
+  ],
+  "sections": [
+    {
+      "heading": "Reading a DR question in 20 seconds",
+      "body": "1. Underline the **RPO** and the **RTO**.\n2. Check what may run in the DR Region (nothing, data only, small app tier, full app).\n3. Check whether the source can be rebuilt from IaC. If not, think **Elastic Disaster Recovery** or AMIs.\n4. Pick the cheapest strategy that still meets both numbers, then add the routing (Route 53 failover, ARC routing controls, Global Accelerator) and the data replication that strategy needs."
+    }
+  ],
+  "relatedNotes": [
+    "aws-backup",
+    "rds-aurora-ha",
+    "route53-routing-failover",
+    "s3-replication",
+    "multi-az-resilience-patterns",
+    "kms-cloudhsm",
+    "secrets-parameter-store"
+  ],
+  "sources": [
+    {
+      "title": "Disaster recovery options in the cloud (Disaster Recovery of Workloads on AWS whitepaper)",
+      "url": "https://docs.aws.amazon.com/whitepapers/latest/disaster-recovery-workloads-on-aws/disaster-recovery-options-in-the-cloud.html"
+    },
+    {
+      "title": "What is AWS Elastic Disaster Recovery?",
+      "url": "https://docs.aws.amazon.com/drs/latest/userguide/what-is-drs.html"
+    }
+  ]
+}

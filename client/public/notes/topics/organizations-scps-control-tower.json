@@ -1,0 +1,59 @@
+{
+  "slug": "organizations-scps-control-tower",
+  "title": "AWS Organizations, SCPs & Control Tower",
+  "domain": 1,
+  "task": "1.1",
+  "summary": "Multi-account governance: guardrails with SCPs and RCPs, landing zones with Control Tower.",
+  "services": ["AWS Organizations", "AWS Control Tower", "AWS Resource Access Manager", "AWS Service Catalog"],
+  "tldr": [
+    "**SCPs** cap what principals in member accounts can do; **RCPs** cap what anyone (even outside the org) can do to resources in member accounts. Neither ever grants a permission.",
+    "**Declarative policies** enforce service settings (IMDSv2 defaults, block public AMIs/snapshots) that account admins can't change.",
+    "**Control Tower** builds a landing zone in days: log archive and audit accounts, preventive/detective/proactive controls, and **Account Factory** for new accounts.",
+    "Run security services from a **delegated administrator** account, not the management account."
+  ],
+  "keyFacts": [
+    { "value": "Mgmt account", "text": "SCPs and RCPs **never** apply to the management account. Keep workloads out of it, because a Region-deny SCP won't stop anyone there." },
+    { "value": "Allow-list", "text": "If `FullAWSAccess` is replaced at an OU, only actions the OU's SCP allows remain available. Add the service to the allow-list to unblock it." },
+    { "value": "PrincipalOrgID", "text": "`aws:PrincipalOrgID` in a bucket, ECR or KMS policy admits every current and future account in the org; `aws:PrincipalOrgPaths` narrows it to an OU." },
+    { "value": "Service-linked", "text": "SCPs and RCPs don't restrict service-linked roles, and RCPs don't apply to AWS managed KMS keys." },
+    { "value": "3 control types", "text": "Control Tower controls are **preventive** (SCP/RCP), **detective** (AWS Config rules) and **proactive** (CloudFormation hooks that block noncompliant resources before creation)." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: organization policy types",
+      "columns": ["Policy", "Restricts", "Example", "Pick it when…"],
+      "rows": [
+        ["SCP", "Principals in member accounts", "Deny actions outside approved Regions", "Limit what your own users and roles can do"],
+        ["RCP", "Resources in member accounts", "Deny access unless `aws:PrincipalOrgID` matches", "Data perimeter even if a resource policy is too open"],
+        ["Declarative policy", "Service configuration", "IMDSv2 by default, block public snapshots", "A durable setting admins cannot switch off"],
+        ["Tag policy", "Tag keys and values", "Standard `CostCenter` capitalization", "Consistent tags for cost allocation"],
+        ["Backup policy", "AWS Backup plans", "Daily backups org-wide", "Central backup baseline"]
+      ],
+      "highlightRow": 1
+    }
+  ],
+  "keywords": [
+    { "cue": "workloads only in approved Regions for all member accounts", "answer": "SCP denying when aws:RequestedRegion is not in the list" },
+    { "cue": "resources never accessible outside the organization", "answer": "RCP using aws:PrincipalOrgID" },
+    { "cue": "multi-account baseline within days with log archive and audit accounts", "answer": "AWS Control Tower landing zone" },
+    { "cue": "self-service new accounts with baseline", "answer": "Control Tower Account Factory via Service Catalog" },
+    { "cue": "account requests as code, Terraform GitOps", "answer": "Account Factory for Terraform (AFT)" },
+    { "cue": "stop noncompliant CloudFormation resources before creation", "answer": "Control Tower proactive controls" },
+    { "cue": "nobody except the security role may change the audit role", "answer": "SCP with aws:PrincipalArn exception" },
+    { "cue": "security team should not use the management account", "answer": "Delegated administrator in a security tooling account" },
+    { "cue": "share central subnets with application accounts", "answer": "AWS RAM VPC sharing" },
+    { "cue": "remove root credentials from hundreds of member accounts", "answer": "IAM centralized root access management" }
+  ],
+  "traps": [
+    "An SCP that allows an action does not grant it; the account still needs an IAM policy that allows it.",
+    "Instances launched from the **management account** escape every SCP, so a Region-deny there is useless.",
+    "An SCP can't stop someone outside your org from using an over-permissive bucket policy; that is what an RCP is for.",
+    "Detective controls (Config rules) only report after creation; to block creation pick preventive or **proactive** controls."
+  ],
+  "relatedNotes": ["iam-policies-evaluation", "identity-center-federation", "threat-detection-security-hub", "cloudtrail-logging-audit", "cost-management-tools"],
+  "sources": [
+    { "title": "Service control policies (SCPs)", "url": "https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps.html" },
+    { "title": "Resource control policies (RCPs)", "url": "https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_rcps.html" },
+    { "title": "What is AWS Control Tower?", "url": "https://docs.aws.amazon.com/controltower/latest/userguide/what-is-control-tower.html" }
+  ]
+}

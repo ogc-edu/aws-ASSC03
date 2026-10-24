@@ -1,0 +1,58 @@
+{
+  "slug": "s3-security-access-control",
+  "title": "S3 Security: Access Control, Encryption & Object Lock",
+  "domain": 1,
+  "task": "1.3",
+  "summary": "Bucket policies, Block Public Access, Object Ownership, encryption options and WORM retention for S3.",
+  "services": ["Amazon S3", "S3 Block Public Access", "S3 Object Ownership", "S3 Access Points", "S3 Object Lock", "AWS KMS"],
+  "tldr": [
+    "**Bucket policies** with condition keys do most of the work: `aws:SecureTransport` (HTTPS only), `aws:PrincipalOrgID` / `aws:PrincipalOrgPaths` (whole org or OU), `aws:SourceVpce` (one VPC endpoint only).",
+    "**Block Public Access** at the account level (protected by an SCP) is the guard that stops anything becoming public. **Object Ownership: bucket owner enforced** disables ACLs and makes the bucket owner own every object.",
+    "**Object Lock compliance mode** is true WORM: nobody, not even root, can delete objects or shorten retention. **Governance mode** can be bypassed by users with a special permission."
+  ],
+  "keyFacts": [
+    { "value": "SSE-S3 default", "text": "Since January 2023 every new object is encrypted at rest with SSE-S3 automatically. Choose **SSE-KMS** when key use must be audited in CloudTrail and governed by a key policy." },
+    { "value": "Secure defaults", "text": "New buckets have **Block Public Access on and ACLs disabled** (bucket owner enforced) by default since April 2023." },
+    { "value": "20 KB", "text": "Maximum bucket policy size. When many apps need different prefix rules, delegate to **S3 access points**, each with its own policy and optional VPC-only origin." },
+    { "value": "Versioning", "text": "Object Lock requires **S3 Versioning**. Retention applies to object versions; a default retention period can be set on the bucket, and **legal holds** have no expiry." },
+    { "value": "Two policies", "text": "Cross-account reads of SSE-KMS objects need S3 permission **and** `kms:Decrypt` allowed in both the key policy and the caller's IAM policy." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: protecting objects from deletion",
+      "columns": ["Option", "Who can still delete or shorten?", "Pick it when…"],
+      "rows": [
+        ["Object Lock, compliance mode", "No one, including root, until retention ends", "SEC 17a-4, FINRA, \"no one under any circumstances\""],
+        ["Object Lock, governance mode", "Users with `s3:BypassGovernanceRetention`", "Protect against most users but allow admin override"],
+        ["Legal hold", "Users with `s3:PutObjectLegalHold` can remove it", "Indefinite hold for litigation, no fixed date"],
+        ["Versioning + MFA Delete", "Root user with MFA", "Guard against accidental deletes; not regulatory WORM"]
+      ],
+      "highlightRow": 0
+    }
+  ],
+  "keywords": [
+    { "cue": "no one, including root, can delete or shorten retention", "answer": "S3 Object Lock compliance mode" },
+    { "cue": "reject any request over plain HTTP", "answer": "Bucket policy Deny when aws:SecureTransport is false" },
+    { "cue": "all current and future accounts in the organization can read", "answer": "Bucket policy with aws:PrincipalOrgID" },
+    { "cue": "only accounts in one OU", "answer": "Bucket policy with aws:PrincipalOrgPaths" },
+    { "cue": "access only through a specific VPC endpoint", "answer": "Bucket policy Deny unless aws:SourceVpce matches" },
+    { "cue": "nothing in any account can ever be made public", "answer": "Account-level Block Public Access plus SCP denying changes" },
+    { "cue": "bucket owner must own partner-uploaded objects without ACLs", "answer": "Object Ownership: bucket owner enforced" },
+    { "cue": "bucket policy near size limit, many apps with different prefixes", "answer": "S3 access points with per-app policies" },
+    { "cue": "KMS costs and throttling from SSE-KMS", "answer": "S3 Bucket Keys" },
+    { "cue": "upload one object for 10 minutes without AWS credentials", "answer": "S3 presigned URL" }
+  ],
+  "traps": [
+    "Governance mode plus an SCP is not regulatory WORM; the root user and bypass permission can still remove protection.",
+    "MFA Delete and lifecycle transitions don't stop a privileged user from deleting data.",
+    "Default encryption with SSE-KMS doesn't enforce HTTPS; encryption in transit needs `aws:SecureTransport`.",
+    "Turning on Block Public Access in each account isn't enough if admins can turn it off; add an SCP.",
+    "Using ACLs to fix cross-account object ownership is the legacy approach. Prefer bucket owner enforced."
+  ],
+  "relatedNotes": ["kms-cloudhsm", "s3-replication", "vpc-endpoints-privatelink", "iam-policies-evaluation", "organizations-scps-control-tower"],
+  "sources": [
+    { "title": "Amazon S3 User Guide: Object Lock", "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html" },
+    { "title": "Amazon S3 User Guide: Controlling ownership of objects", "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/about-object-ownership.html" },
+    { "title": "Amazon S3 User Guide: Blocking public access", "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html" }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "slug": "vpc-security-groups-nacls",
+  "title": "VPC Security: Security Groups, NACLs & Flow Logs",
+  "domain": 1,
+  "task": "1.2",
+  "summary": "Stateful and stateless traffic filtering, subnet design and network visibility inside a VPC.",
+  "services": ["Amazon VPC", "Security groups", "Network ACLs", "VPC Flow Logs", "Managed prefix lists"],
+  "tldr": [
+    "**Security groups** are stateful, attach to ENIs, and have allow rules only. **NACLs** are stateless, attach to subnets, support **deny** rules and evaluate in rule-number order.",
+    "Need to block one bad CIDR range? Only a **NACL deny** can do it; security groups can't deny.",
+    "Tier-to-tier access should reference the **source security group** (DB allows 5432 from the app SG), not CIDR ranges.",
+    "Put only load balancers in public subnets; app and DB tiers go in private subnets with no route to an internet gateway."
+  ],
+  "keyFacts": [
+    { "value": "1024–65535", "text": "Ephemeral port range. A custom NACL must allow outbound (or inbound) traffic to these ports, or return traffic is silently dropped." },
+    { "value": "Lowest first", "text": "NACL rules are processed from the lowest rule number; the first match wins, so a deny must have a lower number than the broad allow." },
+    { "value": "Prefix list", "text": "A customer-managed prefix list groups CIDRs, can be shared with AWS RAM, and is referenced in many security groups; update it once." },
+    { "value": "REJECT", "text": "VPC Flow Logs record ACCEPT/REJECT with IPs and ports, not payloads. Query REJECT records in CloudWatch Logs Insights to find a blocking SG or NACL." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: security group vs network ACL",
+      "columns": ["Feature", "Security group", "Network ACL"],
+      "rows": [
+        ["Applies to", "Network interface (instance, RDS, Lambda ENI)", "Every resource in the subnet"],
+        ["State", "Stateful: return traffic allowed automatically", "Stateless: return traffic needs its own rule"],
+        ["Rule types", "Allow only", "Allow and deny"],
+        ["Evaluation", "All rules together", "In order by rule number, first match wins"],
+        ["Sources", "CIDR, prefix list, or another security group", "CIDR only"],
+        ["Default (new custom one)", "Denies all inbound, allows all outbound", "Custom NACL denies everything until you add rules"]
+      ]
+    }
+  ],
+  "keywords": [
+    { "cue": "block a specific malicious CIDR immediately", "answer": "NACL inbound deny rule with a low rule number" },
+    { "cue": "DB reachable only from the app tier", "answer": "DB security group references the app security group" },
+    { "cue": "custom NACL added, responses never arrive", "answer": "Allow outbound ephemeral ports 1024-65535" },
+    { "cue": "partner CIDR list used in many SGs across accounts", "answer": "Customer-managed prefix list shared with AWS RAM" },
+    { "cue": "find which traffic is being rejected", "answer": "VPC Flow Logs to CloudWatch Logs, query REJECT" },
+    { "cue": "only the load balancer is internet-facing", "answer": "ALB in public subnets, app and DB in private subnets" },
+    { "cue": "subnets out of IP addresses", "answer": "Add a secondary CIDR block and new subnets" }
+  ],
+  "traps": [
+    "Security groups **cannot** contain deny rules; any answer that 'denies a CIDR in the security group' is wrong.",
+    "Flow logs show metadata only; they can't inspect packet contents (use Traffic Mirroring or Network Firewall).",
+    "Adding NACL inbound rules alone isn't enough because NACLs are stateless.",
+    "AWS WAF can't be attached to an internet gateway or VPC; it protects ALB, CloudFront, API Gateway, AppSync and similar."
+  ],
+  "relatedNotes": ["vpc-endpoints-privatelink", "network-firewall-inspection", "secure-remote-access", "nat-ipv4-ipv6-costs", "vpc-connectivity-tgw-lattice"],
+  "sources": [
+    { "title": "Security groups for your VPC", "url": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html" },
+    { "title": "Control subnet traffic with network ACLs", "url": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-network-acls.html" },
+    { "title": "Logging IP traffic using VPC Flow Logs", "url": "https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs.html" }
+  ]
+}

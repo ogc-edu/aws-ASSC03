@@ -1,0 +1,57 @@
+{
+  "slug": "sqs-fifo-ordering",
+  "title": "FIFO Queues, Ordering & Exactly-Once Processing",
+  "domain": 2,
+  "task": "2.1",
+  "summary": "When order and deduplication matter: SQS FIFO, SNS FIFO, message groups and idempotency.",
+  "services": ["Amazon SQS FIFO", "Amazon SNS FIFO", "Amazon DynamoDB"],
+  "tldr": [
+    "**SQS FIFO** keeps strict order *within a message group* and drops duplicates sent within the deduplication interval. Standard queues are at-least-once and best-effort order.",
+    "Set the **message group ID** to the entity that needs ordering (account, trader, instrument). Different groups are processed in parallel; one group for everything kills throughput.",
+    "Need ordered **fan-out** to several services? Publish to an **SNS FIFO** topic and subscribe one SQS FIFO queue per service."
+  ],
+  "keyFacts": [
+    { "value": "5 minutes", "text": "The FIFO **deduplication interval**. A message with the same deduplication ID (or same body, with content-based deduplication) is accepted but not delivered again." },
+    { "value": "300 / s", "text": "Default FIFO throughput per API action without batching; batching 10 messages per call gives up to 3,000 messages per second." },
+    { "value": "High throughput", "text": "**High throughput mode** scopes deduplication and throughput to the message group, raising limits far above 300/s. Spread load across many group IDs." },
+    { "value": ".fifo", "text": "FIFO queue and topic names must end in `.fifo`. You can't convert an existing standard queue to FIFO; create a new queue." },
+    { "value": "Idempotency", "text": "With a standard queue, make consumers **idempotent**: record each request ID with a DynamoDB conditional write and skip ones already processed." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: getting order and no duplicates",
+      "columns": ["Option", "Ordering", "Duplicates", "Pick it when…"],
+      "rows": [
+        ["SQS standard", "Best effort", "Possible (at-least-once)", "Order doesn't matter and consumers are idempotent"],
+        ["SQS FIFO, one group ID", "Global", "Removed within 5 min", "Small volume that truly needs global order"],
+        ["SQS FIFO, group ID per entity", "Per group", "Removed within 5 min", "Per-account order with parallel consumers"],
+        ["SQS FIFO + high throughput mode", "Per group", "Removed per group", "Thousands of messages/s across many groups"],
+        ["SNS FIFO → SQS FIFO queues", "Per group, every subscriber", "Removed", "Several services each need every event in order"]
+      ],
+      "highlightRow": 2
+    }
+  ],
+  "keywords": [
+    { "cue": "process in order per account, in parallel across accounts", "answer": "SQS FIFO with message group ID = account ID" },
+    { "cue": "never process twice even if the producer retries", "answer": "FIFO deduplication ID or content-based deduplication" },
+    { "cue": "FIFO producers throttled at high volume", "answer": "Enable FIFO high throughput mode" },
+    { "cue": "three services each need every event, in order, no duplicates", "answer": "SNS FIFO topic with an SQS FIFO queue per service" },
+    { "cue": "duplicate charges from a standard queue, can't change queue type", "answer": "Idempotent consumer with DynamoDB conditional write" },
+    { "cue": "exactly-once processing", "answer": "SQS FIFO" },
+    { "cue": "strict ordering of trades per trader", "answer": "SQS FIFO with MessageGroupId per trader" }
+  ],
+  "traps": [
+    "A single message group ID for all messages forces one-at-a-time processing and caps throughput.",
+    "Content-based deduplication exists only on **FIFO** queues, not standard queues.",
+    "A longer visibility timeout reduces redelivery but does **not** guarantee exactly-once processing.",
+    "An SNS **standard** topic in front of SQS FIFO queues loses the ordering guarantee; the topic must be FIFO too.",
+    "Several services polling **one** queue compete for messages; each message goes to only one of them.",
+    "Reserved concurrency of 1 slows everything down and still doesn't remove duplicates."
+  ],
+  "relatedNotes": ["sqs-sns-decoupling", "lambda-event-processing", "eventbridge-event-driven", "kinesis-streaming-ingestion"],
+  "sources": [
+    { "title": "Amazon SQS Developer Guide: FIFO queues", "url": "https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-fifo-queues.html" },
+    { "title": "Amazon SQS Developer Guide: High throughput for FIFO queues", "url": "https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/high-throughput-fifo.html" },
+    { "title": "Amazon SNS Developer Guide: FIFO topics", "url": "https://docs.aws.amazon.com/sns/latest/dg/sns-fifo-topics.html" }
+  ]
+}

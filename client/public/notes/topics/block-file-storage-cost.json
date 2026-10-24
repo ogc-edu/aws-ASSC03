@@ -1,0 +1,60 @@
+{
+  "slug": "block-file-storage-cost",
+  "title": "Cutting EBS, EFS, FSx & Log Storage Costs",
+  "domain": 4,
+  "task": "4.1",
+  "summary": "Cheaper volume types, snapshot archiving, file system tiering and log retention.",
+  "services": ["Amazon EBS", "Amazon Data Lifecycle Manager", "Amazon EFS", "Amazon FSx", "AWS Backup", "Amazon CloudWatch Logs", "Amazon OpenSearch Service"],
+  "tldr": [
+    "**EBS:** move gp2 to **gp3** in place with Elastic Volumes (cheaper per GB, performance set independently of size). Large sequential reads go to **st1**; rarely read sequential data goes to **sc1**.",
+    "**Snapshots and backups:** archive long-kept EBS snapshots to **EBS Snapshots Archive** with Data Lifecycle Manager, and move long-retention AWS Backup recovery points to **cold storage**.",
+    "**File systems tier themselves:** EFS lifecycle to **Infrequent Access** and **Archive**, FSx for ONTAP **capacity pool** with a tiering policy, FSx for Windows **HDD + deduplication**. Same mount path, no data moves by hand.",
+    "**Logs:** set retention instead of *Never expire*, use the CloudWatch Logs **Infrequent Access** class for rarely queried logs, and use OpenSearch **UltraWarm / cold** tiers with ISM policies."
+  ],
+  "keyFacts": [
+    { "value": "3,000 IOPS · 125 MiB/s", "text": "gp3 baseline at any size, with IOPS and throughput provisioned separately. Usually cheaper than gp2 or io2 when needs are moderate." },
+    { "value": "Up to 75% less", "text": "EBS Snapshots Archive storage cost versus standard tier. Minimum 90 days archived; restoring can take up to 72 hours." },
+    { "value": "500 vs 250 MiB/s", "text": "Maximum throughput of st1 versus sc1. Both are HDD, can't be boot volumes, and suit large sequential I/O only." },
+    { "value": "IA → Archive", "text": "EFS lifecycle moves files by days since last access, and can move them back to Standard on first access. Namespace and Multi-AZ stay unchanged." },
+    { "value": "Storage autoscaling", "text": "RDS grows allocated storage automatically up to a maximum threshold, so you can start small instead of paying for years of headroom." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: EBS volume types for cost",
+      "columns": ["Volume", "Media", "Performance model", "Pick it when…"],
+      "rows": [
+        ["gp3", "SSD", "3,000 IOPS / 125 MiB/s baseline, add more independently", "Default for most workloads; replace gp2"],
+        ["gp2", "SSD", "IOPS tied to size (3 IOPS per GiB)", "Legacy; migrate to gp3 to save money"],
+        ["io2 Block Express", "SSD", "Provisioned IOPS, sub-millisecond latency", "Only when IOPS or latency exceed gp3"],
+        ["st1", "HDD", "Throughput-optimized, up to 500 MiB/s", "Big sequential reads such as log processing"],
+        ["sc1", "HDD", "Lowest cost, up to 250 MiB/s", "Cold data read sequentially a few times"]
+      ],
+      "highlightRow": 0
+    }
+  ],
+  "keywords": [
+    { "cue": "reduce gp2 cost without downtime or losing performance", "answer": "Elastic Volumes change to gp3" },
+    { "cue": "sequential large-block reads, about 400 MiB/s, low IOPS", "answer": "Throughput Optimized HDD (st1)" },
+    { "cue": "block device read once a week, lowest cost", "answer": "Cold HDD (sc1)" },
+    { "cue": "keep EBS snapshots for years, restore within 72 hours", "answer": "EBS Snapshots Archive via Data Lifecycle Manager" },
+    { "cue": "EFS files not read after 30 days but any file may be requested", "answer": "EFS lifecycle management to IA and Archive" },
+    { "cue": "FSx ONTAP mostly cold data, same paths, SSD for hot data", "answer": "Capacity pool storage with Auto tiering policy" },
+    { "cue": "FSx for Windows duplicate files, latency-tolerant shares", "answer": "Data deduplication and HDD storage" },
+    { "cue": "monthly backups kept 7 years, almost never restored", "answer": "AWS Backup lifecycle to cold storage" },
+    { "cue": "verbose logs queried occasionally, not needed after 90 days", "answer": "CloudWatch Logs Infrequent Access class with 90-day retention" },
+    { "cue": "older OpenSearch indexes searchable but cheaper", "answer": "UltraWarm and cold storage with ISM policy" }
+  ],
+  "traps": [
+    "EBS snapshots are not in a bucket you own, so S3 Lifecycle rules can't archive them; use Data Lifecycle Manager or the archive API.",
+    "Increasing a gp3 volume's size doesn't raise its throughput; provision throughput directly with Elastic Volumes.",
+    "EFS One Zone or FSx Single-AZ cuts cost but breaks any requirement to stay Multi-AZ.",
+    "Unattached EBS volumes keep billing; snapshot them, delete them, and set `DeleteOnTermination` to true in launch templates.",
+    "Moving cold files out of a file system to S3 Glacier breaks the requirement to open them through the same mount path."
+  ],
+  "relatedNotes": ["ebs-volumes-performance", "efs-fsx-file-storage", "s3-storage-classes-lifecycle", "aws-backup", "cloudwatch-observability"],
+  "sources": [
+    { "title": "Amazon EBS volume types", "url": "https://docs.aws.amazon.com/ebs/latest/userguide/ebs-volume-types.html" },
+    { "title": "Archive Amazon EBS snapshots", "url": "https://docs.aws.amazon.com/ebs/latest/userguide/snapshot-archive.html" },
+    { "title": "Amazon EFS lifecycle management", "url": "https://docs.aws.amazon.com/efs/latest/ug/lifecycle-management-efs.html" }
+  ]
+}

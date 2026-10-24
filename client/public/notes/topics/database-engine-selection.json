@@ -1,0 +1,59 @@
+{
+  "slug": "database-engine-selection",
+  "title": "Choosing a Database Engine",
+  "domain": 3,
+  "task": "3.3",
+  "summary": "Relational, key-value, document, graph, wide-column and ledger: which purpose-built database fits.",
+  "services": ["Amazon Aurora", "Amazon RDS", "Amazon DynamoDB", "Amazon DocumentDB", "Amazon Keyspaces", "Amazon Neptune", "Amazon Redshift", "Amazon Timestream"],
+  "tldr": [
+    "Start from the **data shape and query**: joins and transactions → relational (RDS/Aurora); key lookups at any scale → DynamoDB; JSON documents with MongoDB drivers → DocumentDB; CQL → Keyspaces; multi-hop relationships → Neptune; analytics → Redshift.",
+    "\"Minimize code changes\" means **match the wire protocol**: MongoDB → DocumentDB, Cassandra → Keyspaces, PostgreSQL extensions such as **PostGIS** → Aurora PostgreSQL or RDS for PostgreSQL.",
+    "Within relational, **Aurora** gives up to 15 low-lag replicas, auto-growing storage, Global Database and Serverless v2; plain **RDS** is cheaper and simpler for modest workloads."
+  ],
+  "keyFacts": [
+    { "value": "15", "text": "Maximum **Aurora Replicas** per cluster, sharing the cluster storage volume so replica lag is usually well under a second." },
+    { "value": "6 copies / 3 AZs", "text": "Aurora storage keeps six copies of data across three AZs and grows automatically, with no volume to size." },
+    { "value": "Local NVMe", "text": "**RDS Optimized Reads** puts temporary tables on instance-local NVMe storage (\"d\" instance classes), speeding queries that spill sorts and GROUP BYs to disk." },
+    { "value": "Gremlin / openCypher / SPARQL", "text": "**Neptune** query languages. Use it for friends-of-friends, fraud rings and knowledge graphs where recursive SQL joins are too slow." },
+    { "value": "End of support", "text": "Amazon **QLDB** reached end of support in July 2025. Don't pick it for new designs; AWS points ledger workloads to Aurora PostgreSQL." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: purpose-built databases",
+      "columns": ["Data model", "Service", "Clue in the question", "Pick it when…"],
+      "rows": [
+        ["Relational (OLTP)", "Aurora / RDS", "SQL joins, transactions, existing MySQL/PostgreSQL", "Structured data with relationships and ACID transactions"],
+        ["Key-value", "DynamoDB", "Massive scale, single-digit ms, serverless", "Known access patterns by key at any scale"],
+        ["Document", "DocumentDB", "MongoDB drivers, flexible JSON", "Moving MongoDB workloads with minimal change"],
+        ["Wide-column", "Keyspaces", "Cassandra drivers, CQL", "Moving Cassandra workloads, serverless"],
+        ["Graph", "Neptune", "Relationships several hops deep", "Recommendations, social graphs, fraud detection"],
+        ["Time series", "Timestream", "Timestamped metrics, IoT telemetry", "Time-window queries over sensor or ops data"],
+        ["Data warehouse (OLAP)", "Redshift", "Aggregations over TBs, BI dashboards", "Analytics separate from the OLTP database"]
+      ],
+      "highlightRow": 4
+    }
+  ],
+  "keywords": [
+    { "cue": "MongoDB drivers, JSON documents, minimal code change", "answer": "Amazon DocumentDB" },
+    { "cue": "Cassandra drivers and CQL, managed", "answer": "Amazon Keyspaces" },
+    { "cue": "people you may know, multi-hop relationships", "answer": "Amazon Neptune" },
+    { "cue": "PostGIS geospatial, auto-scaling storage, 15 read replicas", "answer": "Aurora PostgreSQL-Compatible" },
+    { "cue": "temp tables spill to disk, storage latency is the bottleneck", "answer": "RDS Optimized Reads on an instance class with local NVMe" },
+    { "cue": "drop Oracle licensing costs, willing to change SQL", "answer": "DMS Schema Conversion + DMS to Aurora PostgreSQL" },
+    { "cue": "heavy analytics slow the OLTP database", "answer": "Amazon Redshift (zero-ETL from Aurora)" },
+    { "cue": "unpredictable load, near idle at night, MySQL-compatible", "answer": "Aurora Serverless v2" }
+  ],
+  "traps": [
+    "DynamoDB is not a drop-in for MongoDB; switching to its API means rewriting data access code.",
+    "Aurora MySQL doesn't support PostGIS; that's a PostgreSQL extension.",
+    "Adding read replicas or bigger instances doesn't fix temp-table I/O latency; Optimized Reads does.",
+    "Running heavy analytics on the production OLTP database (or a replica of it) is the wrong answer when the question stresses TB-scale aggregations; use Redshift.",
+    "A Multi-AZ standby (non-cluster RDS) doesn't serve reads; it exists only for failover."
+  ],
+  "relatedNotes": ["rds-aurora-ha", "dynamodb-design-performance", "redshift-data-warehouse", "data-migration-transfer", "database-cost-optimization"],
+  "sources": [
+    { "title": "Choosing an AWS database service", "url": "https://docs.aws.amazon.com/decision-guides/latest/databases-on-aws-how-to-choose/databases-on-aws-how-to-choose.html" },
+    { "title": "Improving query performance for RDS for MySQL with Amazon RDS Optimized Reads", "url": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/rds-optimized-reads.html" },
+    { "title": "What is Amazon Aurora?", "url": "https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/CHAP_AuroraOverview.html" }
+  ]
+}

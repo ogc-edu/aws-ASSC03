@@ -1,0 +1,153 @@
+{
+  "slug": "aws-backup",
+  "title": "AWS Backup & Snapshot Management",
+  "domain": 2,
+  "task": "2.2",
+  "summary": "Centralized, policy-driven backups with cross-Region, cross-account and immutable vaults.",
+  "services": [
+    "AWS Backup",
+    "AWS Backup Vault Lock",
+    "Logically air-gapped vault",
+    "Amazon Data Lifecycle Manager",
+    "AWS Organizations",
+    "AWS RAM"
+  ],
+  "tldr": [
+    "**AWS Backup** centralizes backups for EC2, EBS, RDS, Aurora, DynamoDB, EFS, FSx, S3 and more with **backup plans** (schedule, retention, lifecycle, copy rules) applied by tag.",
+    "Ransomware or \"even an admin can't delete\" → **Vault Lock in compliance mode**, plus copies to a vault in a **separate backup account** (or a **logically air-gapped vault**).",
+    "Organization-wide → **backup policies** in AWS Organizations. Cross-Region / cross-account → **copy rules** in the plan.",
+    "EBS snapshots or EBS-backed AMIs only, by tag, on a schedule → **Amazon Data Lifecycle Manager (DLM)** is the simpler native answer."
+  ],
+  "keyFacts": [
+    {
+      "value": "≥ 72 h grace",
+      "text": "A **compliance-mode** Vault Lock can be changed only during its grace time (at least 3 days). After that nobody, not root and not AWS, can remove it or delete recovery points early."
+    },
+    {
+      "value": "Governance",
+      "text": "**Governance-mode** locks can be removed by users with the right IAM permissions. They protect against accidents, not against a compromised admin."
+    },
+    {
+      "value": "90 days",
+      "text": "Backups moved to **cold storage** must stay there at least 90 days. Use it for long-retention monthly or yearly backups that are rarely restored."
+    },
+    {
+      "value": "Continuous",
+      "text": "**Continuous backup** gives point-in-time restore for RDS, Aurora and S3 (up to 35 days). Combine it with snapshot rules for long retention."
+    },
+    {
+      "value": "Restore testing",
+      "text": "**Restore testing plans** restore recovery points on a schedule, record restore time, and clean up afterward, proving backups actually work."
+    }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: protecting backups from deletion",
+      "columns": [
+        "Option",
+        "Who can delete early",
+        "Pick it when…"
+      ],
+      "rows": [
+        [
+          "Vault access policy",
+          "Anyone allowed by IAM and the policy",
+          "Basic guardrails inside one account"
+        ],
+        [
+          "Vault Lock, governance mode",
+          "Users with special IAM permissions",
+          "Stop accidental deletes; admins may still override"
+        ],
+        [
+          "Vault Lock, compliance mode",
+          "Nobody after grace time",
+          "WORM retention, SEC 17a-4 style rules, ransomware"
+        ],
+        [
+          "Copy to vault in separate backup account",
+          "Only the backup account",
+          "Production account might be fully compromised"
+        ],
+        [
+          "Logically air-gapped vault (shared via AWS RAM)",
+          "Nobody (locked); restore from another account",
+          "Fast restore into a clean recovery account without copying first"
+        ]
+      ],
+      "highlightRow": 2
+    }
+  ],
+  "keywords": [
+    {
+      "cue": "centrally managed backups across accounts",
+      "answer": "AWS Backup with Organizations backup policies"
+    },
+    {
+      "cue": "backups cannot be deleted even by root",
+      "answer": "AWS Backup Vault Lock in compliance mode"
+    },
+    {
+      "cue": "recoverable even if production account is compromised",
+      "answer": "Copy rule to a vault in a separate backup account"
+    },
+    {
+      "cue": "restore quickly into a clean recovery account",
+      "answer": "Logically air-gapped vault shared with AWS RAM"
+    },
+    {
+      "cue": "prove monthly that backups can be restored",
+      "answer": "AWS Backup restore testing plan"
+    },
+    {
+      "cue": "PITR 30 days plus monthly backup for 7 years",
+      "answer": "Backup plan: continuous rule + monthly rule with long retention"
+    },
+    {
+      "cue": "reduce cost of rarely restored long-term backups",
+      "answer": "Lifecycle to cold storage"
+    },
+    {
+      "cue": "EBS snapshots every 6 hours with cross-Region copy, no code",
+      "answer": "Amazon Data Lifecycle Manager policy"
+    },
+    {
+      "cue": "cheapest storage for snapshots kept for years",
+      "answer": "EBS Snapshots Archive via DLM"
+    },
+    {
+      "cue": "restore DynamoDB table in another Region",
+      "answer": "AWS Backup daily backup with cross-Region copy rule"
+    }
+  ],
+  "traps": [
+    "RDS automated backups can't be kept for 7 years (maximum 35 days). Long retention needs AWS Backup or manual snapshots.",
+    "Deletion protection on RDS or DynamoDB stops the *resource* being deleted. It doesn't protect backups.",
+    "Governance mode is not enough when the requirement says *no one* can delete backups.",
+    "Copying backups to another vault in the **same** account doesn't survive an account compromise.",
+    "Don't replicate backup vaults with S3 CRR. AWS Backup storage isn't a bucket you control; use copy rules.",
+    "Audit Manager checks that resources *are* backed up. Restore testing checks that backups *can be restored*."
+  ],
+  "relatedNotes": [
+    "disaster-recovery-strategies",
+    "rds-aurora-ha",
+    "ebs-volumes-performance",
+    "kms-cloudhsm",
+    "organizations-scps-control-tower",
+    "block-file-storage-cost"
+  ],
+  "sources": [
+    {
+      "title": "AWS Backup Vault Lock",
+      "url": "https://docs.aws.amazon.com/aws-backup/latest/devguide/vault-lock.html"
+    },
+    {
+      "title": "Logically air-gapped vaults - AWS Backup",
+      "url": "https://docs.aws.amazon.com/aws-backup/latest/devguide/logicallyairgappedvault.html"
+    },
+    {
+      "title": "Amazon Data Lifecycle Manager",
+      "url": "https://docs.aws.amazon.com/ebs/latest/userguide/snapshot-lifecycle.html"
+    }
+  ]
+}

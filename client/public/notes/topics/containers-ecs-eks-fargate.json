@@ -1,0 +1,60 @@
+{
+  "slug": "containers-ecs-eks-fargate",
+  "title": "Containers: ECS, EKS, Fargate & App Runner",
+  "domain": 2,
+  "task": "2.1",
+  "summary": "Run containers with the right orchestrator and launch type, and scale them.",
+  "services": ["Amazon ECS", "Amazon EKS", "AWS Fargate", "Amazon ECR", "AWS Cloud Map", "AWS App Runner"],
+  "tldr": [
+    "**ECS** is AWS's own orchestrator and the simplest answer. **EKS** is managed Kubernetes: pick it when the question mentions existing Kubernetes manifests, Helm or portability.",
+    "**Fargate** removes the servers: no nodes to patch or scale, each task or pod gets its own isolated compute. **Fargate Spot** cuts cost for interruptible tasks.",
+    "Scale in two layers: tasks/pods (**ECS Service Auto Scaling**, Kubernetes HPA) and, on EC2, the nodes (**ECS capacity providers with managed scaling**, Cluster Autoscaler or Karpenter)."
+  ],
+  "keyFacts": [
+    { "value": "Base + weight", "text": "A capacity provider strategy such as `FARGATE base 2, weight 1` + `FARGATE_SPOT weight 3` keeps 2 tasks on regular capacity and puts ~75% of extra tasks on Spot." },
+    { "value": "Fargate profiles", "text": "On EKS, a **Fargate profile** selects pods by namespace and labels to run on Fargate. Fargate pods don't support DaemonSets or GPUs." },
+    { "value": "Cloud Map", "text": "ECS **service discovery** registers tasks in AWS Cloud Map and a Route 53 private hosted zone, so services find each other by DNS name without a load balancer each." },
+    { "value": "Circuit breaker", "text": "The ECS **deployment circuit breaker** with rollback stops a failing rolling update and returns to the last working task definition automatically." },
+    { "value": "App Runner", "text": "App Runner closed to new customers on 30 April 2026. AWS points new users to **ECS Express Mode** (Fargate service, ALB and scaling from one call)." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: where should the containers run?",
+      "columns": ["Option", "You manage", "Pick it when…"],
+      "rows": [
+        ["ECS on Fargate", "Task definitions only", "Least operational overhead for new container apps"],
+        ["ECS on EC2 (capacity provider)", "Instances, AMIs, ASG", "GPUs, specific instance types, maximum control or Reserved/Savings pricing on EC2"],
+        ["EKS on Fargate", "Kubernetes objects, no nodes", "Keep Kubernetes manifests, stop managing worker nodes"],
+        ["EKS managed node groups", "Node group settings; AWS handles node lifecycle", "Kubernetes with DaemonSets, GPUs or EBS-backed stateful pods"],
+        ["App Runner / ECS Express Mode", "Source or image only", "Simple web app with HTTPS and autoscaling, no VPC or ALB setup"]
+      ],
+      "highlightRow": 0
+    }
+  ],
+  "keywords": [
+    { "cue": "containers, no servers or control plane to manage", "answer": "ECS on Fargate behind an ALB" },
+    { "cue": "keep Kubernetes manifests and Helm, no worker nodes", "answer": "EKS with Fargate profiles" },
+    { "cue": "at least 2 tasks uninterruptible, rest as cheap as possible", "answer": "Capacity provider strategy FARGATE base 2 plus FARGATE_SPOT" },
+    { "cue": "ECS tasks stuck in PROVISIONING, cluster needs more EC2", "answer": "ASG capacity provider with managed scaling" },
+    { "cue": "pods Pending, nodes full", "answer": "Cluster Autoscaler or Karpenter, plus HPA for pods" },
+    { "cue": "microservices find each other by DNS without a load balancer each", "answer": "ECS service discovery with AWS Cloud Map" },
+    { "cue": "CPU stays low but latency rises with traffic", "answer": "Target tracking on ALBRequestCountPerTarget" },
+    { "cue": "failed deployment should roll back automatically", "answer": "ECS deployment circuit breaker with rollback" },
+    { "cue": "shared POSIX storage for Fargate tasks across AZs", "answer": "Amazon EFS volume in the task definition" },
+    { "cue": "pull ECR images from private subnets without NAT", "answer": "ECR api and dkr interface endpoints plus S3 gateway endpoint" },
+    { "cue": "per-pod IAM permissions on EKS", "answer": "EKS Pod Identity (or IRSA)" }
+  ],
+  "traps": [
+    "Fargate Spot tasks can be interrupted; keep a `base` on regular FARGATE for capacity that must stay up.",
+    "ECS Service Auto Scaling adds tasks, not EC2 instances. On the EC2 launch type you also need a capacity provider with managed scaling.",
+    "Lambda is not a fit for a 2-hour, 8-vCPU job. Run it as a scheduled Fargate task.",
+    "EBS volumes are AZ-bound. Stateful EKS pods need a node group per AZ so the autoscaler adds nodes in the right zone.",
+    "ECR image layers are stored in S3, so pulling privately needs the **S3 gateway endpoint** as well as the ECR endpoints."
+  ],
+  "relatedNotes": ["auto-scaling-elb", "load-balancer-selection", "efs-fsx-file-storage", "compute-rightsizing-graviton", "vpc-endpoints-privatelink"],
+  "sources": [
+    { "title": "Amazon ECS Developer Guide: Capacity providers for Fargate", "url": "https://docs.aws.amazon.com/AmazonECS/latest/developerguide/fargate-capacity-providers.html" },
+    { "title": "Amazon EKS User Guide: AWS Fargate", "url": "https://docs.aws.amazon.com/eks/latest/userguide/fargate.html" },
+    { "title": "AWS App Runner availability change", "url": "https://docs.aws.amazon.com/apprunner/latest/dg/apprunner-availability-change.html" }
+  ]
+}

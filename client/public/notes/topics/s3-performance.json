@@ -1,0 +1,149 @@
+{
+  "slug": "s3-performance",
+  "title": "S3 Performance & Low-Latency Access",
+  "domain": 3,
+  "task": "3.1",
+  "summary": "Request rates, multipart upload, Transfer Acceleration, byte-range fetches and S3 Express One Zone.",
+  "services": [
+    "Amazon S3",
+    "S3 Transfer Acceleration",
+    "S3 multipart upload",
+    "Amazon S3 Express One Zone",
+    "Mountpoint for Amazon S3"
+  ],
+  "tldr": [
+    "S3 scales **per prefix**: spread hot keys across more prefixes to get more requests per second.",
+    "Big or unreliable uploads → **multipart upload** (parallel, retry only failed parts). Far-away users → **Transfer Acceleration** through CloudFront edge locations.",
+    "Big downloads → parallel **byte-range GETs**. Millions of small requests with single-digit-ms latency in one AZ → **S3 Express One Zone** directory buckets.",
+    "An app that needs a file path over S3 data, read-heavy and writing new files only → **Mountpoint for Amazon S3**."
+  ],
+  "keyFacts": [
+    {
+      "value": "3,500 / 5,500",
+      "text": "Requests per second **per prefix**: 3,500 PUT/COPY/POST/DELETE and 5,500 GET/HEAD. HTTP 503 Slow Down means spread keys across more prefixes."
+    },
+    {
+      "value": "100 MB / 5 GB",
+      "text": "Consider multipart above about 100 MB; a single PUT can't exceed 5 GB. Up to 10,000 parts per upload."
+    },
+    {
+      "value": "50 TB",
+      "text": "Maximum S3 object size since December 2025 (it was 5 TB). Objects that large must use multipart upload."
+    },
+    {
+      "value": "Single-digit ms",
+      "text": "**S3 Express One Zone** stores data in one AZ in a *directory bucket*, with much lower latency and lower request cost than S3 Standard."
+    },
+    {
+      "value": "Strong",
+      "text": "S3 gives strong read-after-write consistency for PUTs and DELETEs. No extra wait or setting is needed."
+    }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: what speeds up which S3 problem",
+      "columns": [
+        "Feature",
+        "Fixes",
+        "Pick it when…"
+      ],
+      "rows": [
+        [
+          "More prefixes",
+          "503 Slow Down, request-rate ceilings",
+          "Thousands of PUT/GET per second on one prefix"
+        ],
+        [
+          "Multipart upload",
+          "Slow or failing large uploads",
+          "Files over ~100 MB; resume after failures"
+        ],
+        [
+          "Transfer Acceleration",
+          "Long-distance internet uploads",
+          "Users on other continents upload to one bucket"
+        ],
+        [
+          "Byte-range GETs",
+          "Slow large downloads",
+          "Start processing part of a multi-GB object early"
+        ],
+        [
+          "S3 Express One Zone",
+          "Per-request latency and request cost",
+          "ML training or pipelines with millions of small objects in one AZ"
+        ],
+        [
+          "Mountpoint for Amazon S3",
+          "Apps that need a local path",
+          "Read-heavy tools; write new files only"
+        ]
+      ],
+      "highlightRow": 4
+    }
+  ],
+  "keywords": [
+    {
+      "cue": "503 Slow Down at peak writes",
+      "answer": "Distribute keys across more prefixes"
+    },
+    {
+      "cue": "uploads from Asia to us-east-1 are slow",
+      "answer": "S3 Transfer Acceleration"
+    },
+    {
+      "cue": "large uploads fail partway and restart",
+      "answer": "Multipart upload with parallel parts"
+    },
+    {
+      "cue": "start processing a multi-GB file sooner",
+      "answer": "Parallel byte-range GETs"
+    },
+    {
+      "cue": "consistent single-digit millisecond latency",
+      "answer": "S3 Express One Zone directory bucket"
+    },
+    {
+      "cue": "request charges dominate for small temporary files",
+      "answer": "S3 Express One Zone in the compute AZ"
+    },
+    {
+      "cue": "tool can only read from a local path, data in S3",
+      "answer": "Mountpoint for Amazon S3"
+    },
+    {
+      "cue": "incomplete multipart parts waste storage",
+      "answer": "Lifecycle AbortIncompleteMultipartUpload"
+    }
+  ],
+  "traps": [
+    "Transfer Acceleration helps long internet paths, not in-Region EC2 reads or request-rate limits.",
+    "Versioning doesn't increase throughput; it only keeps old versions.",
+    "S3 Express One Zone lives in one AZ, so use it for data you can regenerate or that has another copy.",
+    "Mountpoint isn't a full POSIX file system. It doesn't support editing existing files in place, so don't pick it for shared read-write workloads (use EFS or FSx).",
+    "A gateway VPC endpoint gives private routing and avoids NAT cost; it doesn't add bandwidth.",
+    "Glacier storage classes can't be mounted or read directly at low latency."
+  ],
+  "relatedNotes": [
+    "s3-storage-classes-lifecycle",
+    "s3-replication",
+    "cloudfront-caching-edge",
+    "efs-fsx-file-storage",
+    "data-migration-transfer",
+    "s3-security-access-control"
+  ],
+  "sources": [
+    {
+      "title": "Best practices design patterns: optimizing Amazon S3 performance",
+      "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/optimizing-performance.html"
+    },
+    {
+      "title": "S3 Express One Zone",
+      "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-one-zone.html"
+    },
+    {
+      "title": "Amazon S3 increases the maximum object size to 50 TB",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2025/12/amazon-s3-maximum-object-size-50-tb/"
+    }
+  ]
+}

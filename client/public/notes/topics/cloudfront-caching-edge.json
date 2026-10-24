@@ -1,0 +1,54 @@
+{
+  "slug": "cloudfront-caching-edge",
+  "title": "CloudFront Caching & Edge Compute",
+  "domain": 3,
+  "task": "3.4",
+  "summary": "Cache content close to users and run code at the edge with CloudFront Functions or Lambda@Edge.",
+  "services": ["Amazon CloudFront", "CloudFront Functions", "Lambda@Edge", "CloudFront Origin Shield"],
+  "tldr": [
+    "**CloudFront** caches static and dynamic content at edge locations and carries cache misses over the AWS backbone. One distribution can front S3 for `/static/*` and an ALB for the API.",
+    "Low cache hit ratio? Shrink the **cache key** with a **cache policy** (only the query strings, headers and cookies that change the response), and send everything else the origin needs with an **origin request policy**.",
+    "Lightweight header or URL logic → **CloudFront Functions** (sub-millisecond, cheapest). Network calls, body access or origin selection from data → **Lambda@Edge**. Many edges hammering one origin → **Origin Shield**."
+  ],
+  "keyFacts": [
+    { "value": "Cache key", "text": "Every header, cookie or query string in the cache key splits the cache. Values the origin needs but that don't change the response belong in the **origin request policy**." },
+    { "value": "< 1 ms", "text": "**CloudFront Functions** run JavaScript on viewer request and viewer response only, with no network or body access, at millions of requests per second." },
+    { "value": "us-east-1", "text": "**Lambda@Edge** functions are authored in N. Virginia and replicated. They run on viewer or origin events, can call other services, but have no VPC access or arm64." },
+    { "value": "Extra cache layer", "text": "**Origin Shield** adds one regional cache in front of the origin, so duplicate misses from many edge locations collapse into one origin fetch." },
+    { "value": "Origin group", "text": "**Origin failover** retries a secondary origin when the primary returns chosen 5xx/4xx codes or times out. It applies to GET, HEAD and OPTIONS requests." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: edge compute options",
+      "columns": ["Option", "Events", "Can do", "Pick it when…"],
+      "rows": [
+        ["CloudFront Functions", "Viewer request / response", "Header changes, URL rewrites, redirects, cache key normalization", "Simple logic, lowest latency and cost at huge volume"],
+        ["Lambda@Edge", "Viewer and origin request / response", "Network calls, body access, longer run time, choose origin dynamically", "Logic needs data lookups or third-party calls"],
+        ["Regional Lambda behind an ALB", "Origin only", "Anything", "Not edge; adds a round trip to the Region"]
+      ],
+      "highlightRow": 0
+    }
+  ],
+  "keywords": [
+    { "cue": "add security headers and rewrite URLs, lowest cost, sub-millisecond", "answer": "CloudFront Functions" },
+    { "cue": "pick the origin per user from a DynamoDB lookup", "answer": "Lambda@Edge origin request function" },
+    { "cue": "cache hit ratio below 5%, all headers and cookies forwarded", "answer": "Narrow cache policy + origin request policy for what the origin needs" },
+    { "cue": "origin overloaded by duplicate requests from many edge locations", "answer": "CloudFront Origin Shield" },
+    { "cue": "keep serving if the S3 bucket's Region fails, no DNS change", "answer": "S3 CRR + CloudFront origin group failover" },
+    { "cue": "global users, slow static assets, private bucket", "answer": "CloudFront with S3 origin and origin access control (OAC)" },
+    { "cue": "cheaper Lambda@Edge for simple viewer logic", "answer": "Rewrite as a CloudFront Function" }
+  ],
+  "traps": [
+    "Increasing TTLs doesn't help when the cache key includes every cookie and header; nearly every request is still unique.",
+    "CloudFront Functions can't make network calls, so they can't read DynamoDB.",
+    "Origin Shield reduces origin load; it isn't failover. Failover needs an **origin group**.",
+    "S3 Transfer Acceleration speeds uploads to one bucket; it doesn't cache content for global readers.",
+    "Global Accelerator doesn't cache. For repeated content downloads, CloudFront is the right edge service."
+  ],
+  "relatedNotes": ["cloudfront-origin-security", "global-accelerator-edge-locations", "lambda-performance", "s3-performance", "data-transfer-costs"],
+  "sources": [
+    { "title": "Control the cache key with a policy", "url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/controlling-the-cache-key.html" },
+    { "title": "Differences between CloudFront Functions and Lambda@Edge", "url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/edge-functions-choosing.html" },
+    { "title": "Use Amazon CloudFront Origin Shield", "url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/origin-shield.html" }
+  ]
+}

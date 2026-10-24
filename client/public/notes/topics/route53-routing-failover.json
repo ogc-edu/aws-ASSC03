@@ -1,0 +1,166 @@
+{
+  "slug": "route53-routing-failover",
+  "title": "Route 53 Routing Policies & Health Checks",
+  "domain": 2,
+  "task": "2.2",
+  "summary": "DNS-based failover, weighting and latency routing for multi-AZ and multi-Region designs.",
+  "services": [
+    "Amazon Route 53",
+    "Route 53 health checks",
+    "Amazon Application Recovery Controller (ARC)",
+    "Amazon CloudWatch"
+  ],
+  "tldr": [
+    "Route 53 routing policies decide **which** answer a DNS query gets: failover, weighted, latency, geolocation, geoproximity, multivalue, IP-based or simple.",
+    "Attach **health checks** (or set **Evaluate Target Health** on alias records) so Route 53 stops returning unhealthy endpoints.",
+    "Use **alias records** for AWS targets (ALB, CloudFront, S3 website, API Gateway). They work at the zone apex and queries to AWS resources are free.",
+    "DNS failover depends on client TTLs. When the question says *don't depend on DNS changes* or wants a manual, safe switch, use **ARC routing controls** (or Global Accelerator)."
+  ],
+  "keyFacts": [
+    {
+      "value": "Private IPs",
+      "text": "Route 53 health checkers run on the internet and can't reach private IPs. For private resources, check a **CloudWatch alarm** instead."
+    },
+    {
+      "value": "Calculated",
+      "text": "A **calculated health check** combines other health checks, for example \"healthy if at least 2 of 3 children are healthy\"."
+    },
+    {
+      "value": "Up to 8",
+      "text": "**Multivalue answer** routing returns up to eight healthy records per query. It is simple client-side load spreading, not a load balancer."
+    },
+    {
+      "value": "Weight 0–255",
+      "text": "**Weighted** records split traffic by ratio. Use them for canary releases and gradual migrations; weight 0 stops traffic to a record."
+    },
+    {
+      "value": "Bias",
+      "text": "**Geoproximity** routing grows or shrinks a Region's geographic area with a bias value instead of listing countries."
+    }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: routing policies",
+      "columns": [
+        "Policy",
+        "How it chooses",
+        "Pick it when…"
+      ],
+      "rows": [
+        [
+          "Failover",
+          "Primary while healthy, else secondary",
+          "Active-passive DR or a static S3 maintenance page"
+        ],
+        [
+          "Weighted",
+          "By ratio of weights",
+          "Send 5% to the new stack, blue/green, gradual migration"
+        ],
+        [
+          "Latency-based",
+          "Lowest measured latency to an AWS Region",
+          "Identical stacks in several Regions; send users to the fastest one"
+        ],
+        [
+          "Geolocation",
+          "By user's continent, country or US state",
+          "Content, language or legal rules per country; always add a default record"
+        ],
+        [
+          "Geoproximity",
+          "By distance, adjusted with bias",
+          "Shift more users toward a Region with spare capacity"
+        ],
+        [
+          "Multivalue answer",
+          "Up to 8 healthy records at random",
+          "Several IPs with health checks, no load balancer"
+        ],
+        [
+          "Simple",
+          "Returns all values; no health checks",
+          "Single resource; never for failover"
+        ]
+      ],
+      "highlightRow": 0
+    }
+  ],
+  "keywords": [
+    {
+      "cue": "show S3 maintenance page when site is down",
+      "answer": "Failover routing: primary ALB alias, secondary S3 website alias"
+    },
+    {
+      "cue": "send 5% of users to the new environment",
+      "answer": "Weighted routing with health checks"
+    },
+    {
+      "cue": "lowest latency for users worldwide",
+      "answer": "Latency-based routing with Evaluate Target Health"
+    },
+    {
+      "cue": "route by country for legal or language reasons",
+      "answer": "Geolocation routing"
+    },
+    {
+      "cue": "shift a larger area to one Region with one value",
+      "answer": "Geoproximity routing with bias"
+    },
+    {
+      "cue": "return several healthy IPs without a load balancer",
+      "answer": "Multivalue answer routing"
+    },
+    {
+      "cue": "fail over only if 2 of 3 components fail",
+      "answer": "Calculated health check"
+    },
+    {
+      "cue": "health check on a private IP always fails",
+      "answer": "Health check that monitors a CloudWatch alarm"
+    },
+    {
+      "cue": "zone apex to CloudFront or ALB",
+      "answer": "Alias record"
+    },
+    {
+      "cue": "operator-controlled failover without editing DNS records",
+      "answer": "ARC routing controls with a safety rule"
+    }
+  ],
+  "traps": [
+    "A **CNAME can't be created at the zone apex**. Use an alias record.",
+    "**Simple routing** with several values does no health checking, so it can't fail over.",
+    "Latency-based routing picks the fastest Region, not the closest country. Use geolocation when the rule is about *where the user is*.",
+    "Raising a health check's failure threshold to avoid false failovers still leaves failover automatic. If people must decide, use ARC routing controls.",
+    "Adding Route 53 health-checker IP ranges to a security group doesn't help a private-only endpoint. The checkers can't route to private IPs.",
+    "Global Accelerator traffic dials and ARC routing controls move traffic without waiting for DNS caches. Editing weighted records does not."
+  ],
+  "sections": [
+    {
+      "heading": "Health check types",
+      "body": "- **Endpoint** check: HTTP, HTTPS or TCP against a public IP or domain name, optionally matching a string in the response.\n- **Calculated** check: combines child checks with AND, OR or \"at least N healthy\".\n- **CloudWatch alarm** check: healthy while the alarm is OK. Use it for private resources or any custom metric.\n- On an **alias** record that targets an AWS resource, turn on **Evaluate Target Health** instead of creating a separate check."
+    }
+  ],
+  "relatedNotes": [
+    "disaster-recovery-strategies",
+    "multi-az-resilience-patterns",
+    "global-accelerator-edge-locations",
+    "cloudwatch-observability",
+    "load-balancer-selection"
+  ],
+  "sources": [
+    {
+      "title": "Choosing a routing policy - Amazon Route 53",
+      "url": "https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy.html"
+    },
+    {
+      "title": "Types of Amazon Route 53 health checks",
+      "url": "https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/health-checks-types.html"
+    },
+    {
+      "title": "Routing control in Amazon Application Recovery Controller",
+      "url": "https://docs.aws.amazon.com/r53recovery/latest/dg/routing-control.html"
+    }
+  ]
+}

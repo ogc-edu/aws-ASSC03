@@ -1,0 +1,57 @@
+{
+  "slug": "redshift-data-warehouse",
+  "title": "Amazon Redshift Data Warehousing",
+  "domain": 3,
+  "task": "3.3",
+  "summary": "Columnar analytics at scale: distribution and sort keys, concurrency scaling, Spectrum and zero-ETL.",
+  "services": ["Amazon Redshift", "Amazon Redshift Serverless", "Amazon Redshift Spectrum", "Zero-ETL integrations"],
+  "tldr": [
+    "**Redshift** is the columnar, massively parallel data warehouse for complex SQL over TBs to PBs. Move BI and aggregation queries here instead of loading the OLTP database.",
+    "Tune with **distribution style** (co-locate join keys, `ALL` for small dimensions) and **sort keys** (on the column you filter by, usually a date). Add **concurrency scaling** and **materialized views** for bursts of repeated dashboard queries.",
+    "Avoid ETL with **zero-ETL** from Aurora, RDS and DynamoDB; query S3 in place with **Spectrum**; give teams isolated compute over the same data with **data sharing**."
+  ],
+  "keyFacts": [
+    { "value": "AUTO / EVEN / KEY / ALL", "text": "Distribution styles. **KEY** on the join column co-locates matching rows; **ALL** copies a small table to every node. Both cut data redistribution during joins." },
+    { "value": "Sort key", "text": "Rows stored in sort-key order let Redshift skip blocks outside a filter range, so a `sale_date` sort key turns full scans into small range reads." },
+    { "value": "RPU", "text": "**Redshift Serverless** bills in Redshift Processing Unit-hours only while queries run. Set a **base capacity** for performance and **usage limits** to cap spend." },
+    { "value": "Free credits", "text": "**Concurrency scaling** adds transient clusters for queued read queries; a cluster earns up to one hour of free concurrency-scaling credit per day." },
+    { "value": "Seconds", "text": "**Aurora zero-ETL** keeps Redshift copies of Aurora tables within seconds of the source, with no pipeline to build and little load on the database." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: getting data into Redshift queries",
+      "columns": ["Option", "Data lives", "Freshness", "Pick it when…"],
+      "rows": [
+        ["COPY from S3", "Loaded into Redshift", "Batch", "Regular bulk loads of files"],
+        ["Zero-ETL integration", "Replicated into Redshift", "Near real time", "Analyze Aurora, RDS or DynamoDB data without building ETL"],
+        ["Streaming ingestion", "Materialized view over a stream", "Seconds", "Query Kinesis Data Streams or MSK data directly"],
+        ["Redshift Spectrum", "Stays in S3", "Whatever is in S3", "Join warehouse tables with rarely used S3 history, no load"],
+        ["Data sharing", "Producer warehouse", "Live", "Other teams' warehouses query the same data with isolated compute"]
+      ],
+      "highlightRow": 1
+    }
+  ],
+  "keywords": [
+    { "cue": "complex aggregations over TBs slow the RDS database", "answer": "Amazon Redshift" },
+    { "cue": "joins shuffle data between nodes, full scans on date filter", "answer": "KEY distribution on the join column, sort key on the date" },
+    { "cue": "Monday-morning dashboard queue, same expensive aggregations", "answer": "Concurrency scaling + materialized views with auto refresh" },
+    { "cue": "seconds-fresh Aurora data in Redshift, no ETL pipeline", "answer": "Aurora zero-ETL integration with Redshift" },
+    { "cue": "join Redshift with Parquet history in S3, don't load it", "answer": "Redshift Spectrum external schema" },
+    { "cue": "teams need isolated compute on the same live data, no copies", "answer": "Data sharing to Redshift Serverless workgroups" },
+    { "cue": "ad hoc queries a few hours a month on a 24/7 cluster", "answer": "Redshift Serverless" },
+    { "cue": "cap daily Redshift Serverless spend", "answer": "Usage limits on RPU-hours" }
+  ],
+  "traps": [
+    "Redshift has no \"read replica\"; scale reads with concurrency scaling, data sharing or a bigger cluster.",
+    "Separate WLM queues prioritize workloads on one cluster but don't give teams isolated compute or separate billing.",
+    "Distributing a fact table on a date column skews data and doesn't help joins on customer ID.",
+    "Resizing the cluster every week for a predictable peak is high effort; concurrency scaling does it automatically.",
+    "Spectrum queries S3 in place; DMS or COPY into the cluster is wrong when the requirement is \"don't load the data\"."
+  ],
+  "relatedNotes": ["athena-glue-data-lake", "database-engine-selection", "kinesis-streaming-ingestion", "emr-big-data-processing", "database-cost-optimization"],
+  "sources": [
+    { "title": "Data distribution for query optimization", "url": "https://docs.aws.amazon.com/redshift/latest/dg/t_Distributing_data.html" },
+    { "title": "Concurrency scaling", "url": "https://docs.aws.amazon.com/redshift/latest/dg/concurrency-scaling.html" },
+    { "title": "Zero-ETL integrations", "url": "https://docs.aws.amazon.com/redshift/latest/mgmt/zero-etl-using.html" }
+  ]
+}

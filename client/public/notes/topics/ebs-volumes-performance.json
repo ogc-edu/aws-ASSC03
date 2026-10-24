@@ -1,0 +1,158 @@
+{
+  "slug": "ebs-volumes-performance",
+  "title": "EBS Volume Types & Instance Store",
+  "domain": 3,
+  "task": "3.1",
+  "summary": "Pick the right block storage for IOPS, throughput, latency and shared access.",
+  "services": [
+    "Amazon EBS",
+    "Amazon EC2 instance store",
+    "EBS Elastic Volumes",
+    "EBS fast snapshot restore",
+    "AWS Lambda ephemeral storage"
+  ],
+  "tldr": [
+    "**gp3** is the default SSD: 3,000 IOPS and 125 MiB/s included at any size, with IOPS and throughput provisioned separately from capacity.",
+    "**io2 Block Express** when you need very high IOPS, sub-millisecond latency, 99.999% durability or **Multi-Attach**. **st1** for big sequential throughput, **sc1** for the cheapest cold sequential data.",
+    "**Instance store** is the fastest, cheapest local NVMe, but the data is lost when the instance stops or fails. Use it only for scratch, cache or data replicated elsewhere.",
+    "Change type, size, IOPS or throughput online with **Elastic Volumes**; the instance's own **EBS bandwidth limit** can still cap performance."
+  ],
+  "keyFacts": [
+    {
+      "value": "80,000 / 2,000",
+      "text": "Current gp3 maximums: 80,000 IOPS and 2,000 MiB/s per volume, up to 64 TiB. Baseline stays 3,000 IOPS and 125 MiB/s."
+    },
+    {
+      "value": "256,000 IOPS",
+      "text": "io2 Block Express maximum per volume, with 4,000 MiB/s, 64 TiB and under 500 µs average latency. Needs a Nitro-based instance."
+    },
+    {
+      "value": "Up to 16",
+      "text": "io1/io2 **Multi-Attach** attaches one volume to up to 16 Nitro instances in the *same AZ*; the app needs a cluster-aware file system."
+    },
+    {
+      "value": "500 / 250 MiB/s",
+      "text": "Maximum throughput of **st1** and **sc1**. Both are HDD, can't be boot volumes, and suit large sequential I/O only."
+    },
+    {
+      "value": "Fast snapshot restore",
+      "text": "Volumes restored from a snapshot load blocks lazily from S3. **FSR**, enabled per snapshot per AZ, gives full performance immediately."
+    }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: block storage choices",
+      "columns": [
+        "Option",
+        "Strength",
+        "Limits",
+        "Pick it when…"
+      ],
+      "rows": [
+        [
+          "gp3",
+          "Cheap SSD; IOPS and throughput tuned independently",
+          "Up to 80,000 IOPS; no Multi-Attach",
+          "Boot volumes, most databases, cost-cutting from gp2"
+        ],
+        [
+          "io2 Block Express",
+          "Highest IOPS, sub-ms latency, 99.999% durability",
+          "Most expensive",
+          "180,000 IOPS OLTP, Multi-Attach clusters"
+        ],
+        [
+          "st1",
+          "Throughput-optimized HDD",
+          "500 MiB/s; not bootable",
+          "Nightly sequential reads of large logs"
+        ],
+        [
+          "sc1",
+          "Lowest-cost HDD",
+          "250 MiB/s; not bootable",
+          "Cold data read sequentially once a week"
+        ],
+        [
+          "Instance store",
+          "Local NVMe, very high IOPS, no extra charge",
+          "Lost on stop, terminate or host failure",
+          "Scratch, caches, replicated temp data"
+        ]
+      ],
+      "highlightRow": 0
+    }
+  ],
+  "keywords": [
+    {
+      "cue": "180,000 IOPS sub-millisecond single volume",
+      "answer": "io2 Block Express"
+    },
+    {
+      "cue": "cut gp2 cost without downtime",
+      "answer": "Elastic Volumes change to gp3"
+    },
+    {
+      "cue": "gp3 throughput flat at 125 MiB/s",
+      "answer": "Provision more gp3 throughput with Elastic Volumes"
+    },
+    {
+      "cue": "large sequential reads, about 400 MiB/s, cheapest",
+      "answer": "st1 Throughput Optimized HDD"
+    },
+    {
+      "cue": "cold archive read once a week as block device",
+      "answer": "sc1 Cold HDD"
+    },
+    {
+      "cue": "concurrent read/write to one volume from several instances",
+      "answer": "io2 with Multi-Attach (same AZ)"
+    },
+    {
+      "cue": "volume not throttled but instance EBS limit reached",
+      "answer": "Larger instance with more EBS bandwidth"
+    },
+    {
+      "cue": "new instances slow after restoring from snapshot",
+      "answer": "EBS fast snapshot restore"
+    },
+    {
+      "cue": "highest random I/O for regenerable temp files",
+      "answer": "Instance store NVMe"
+    },
+    {
+      "cue": "Lambda No space left on device",
+      "answer": "Increase Lambda ephemeral storage (/tmp up to 10,240 MB)"
+    }
+  ],
+  "traps": [
+    "Multi-Attach doesn't cross AZs and isn't a shared file system. For shared files across AZs use EFS or FSx.",
+    "Growing a gp3 volume does **not** raise its throughput; gp3 performance is provisioned separately (that was gp2 behaviour).",
+    "RAID 0 of more volumes doesn't help when the *instance* EBS bandwidth is the bottleneck.",
+    "Instance store data does not survive a stop or hardware failure, so it never meets \"data must persist\".",
+    "The EBS Snapshots Archive tier is cheaper storage, not faster restore; restores take up to 72 hours.",
+    "You can't encrypt an existing volume in place. Snapshot it, create an encrypted copy, and swap volumes."
+  ],
+  "relatedNotes": [
+    "block-file-storage-cost",
+    "efs-fsx-file-storage",
+    "aws-backup",
+    "ec2-instances-placement-hpc",
+    "lambda-performance",
+    "kms-cloudhsm"
+  ],
+  "sources": [
+    {
+      "title": "Amazon EBS volume types",
+      "url": "https://docs.aws.amazon.com/ebs/latest/userguide/ebs-volume-types.html"
+    },
+    {
+      "title": "Amazon EBS General Purpose SSD volumes",
+      "url": "https://docs.aws.amazon.com/ebs/latest/userguide/general-purpose.html"
+    },
+    {
+      "title": "Amazon EC2 instance store",
+      "url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/InstanceStorage.html"
+    }
+  ]
+}

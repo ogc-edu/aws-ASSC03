@@ -1,0 +1,54 @@
+{
+  "slug": "cloudfront-origin-security",
+  "title": "CloudFront Origin Security & Private Content",
+  "domain": 1,
+  "task": "1.2",
+  "summary": "Lock origins behind CloudFront and serve private content with signed URLs, cookies and OAC.",
+  "services": ["Amazon CloudFront", "Origin access control (OAC)", "CloudFront VPC origins", "Amazon S3 presigned URLs"],
+  "tldr": [
+    "S3 behind CloudFront: keep the bucket **private**, use **origin access control (OAC)**, and allow only that distribution in the bucket policy. OAC replaces the legacy OAI and supports SSE-KMS.",
+    "ALB or EC2 that must not be internet-facing: use **CloudFront VPC origins** with an internal ALB in private subnets.",
+    "Paid or private content: **signed URLs** for one file, **signed cookies** for many files (HLS segments, a whole course). Upload/download directly to S3 from a browser: **S3 presigned URL**."
+  ],
+  "keyFacts": [
+    { "value": "Key groups", "text": "Signed URLs and cookies are verified with public keys in a **trusted key group**; use key groups, not the legacy root-user CloudFront key pairs." },
+    { "value": "Field-level", "text": "CloudFront **field-level encryption** encrypts chosen POST form fields at the edge with your public key, so only the holder of the private key can read them downstream." },
+    { "value": "Geo restriction", "text": "Allow or block lists by country at the distribution level; blocked viewers get HTTP 403." },
+    { "value": "us-east-1", "text": "An ACM certificate used by CloudFront must be requested in **us-east-1**, whatever Region the origin is in." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: controlling access to private content",
+      "columns": ["Mechanism", "Scope", "Pick it when…"],
+      "rows": [
+        ["CloudFront signed URL", "One object", "A single download link per purchase, or clients that don't support cookies"],
+        ["CloudFront signed cookies", "Many objects under a path", "Streaming segments or a members area, without changing URLs"],
+        ["S3 presigned URL", "One S3 object, GET or PUT", "Temporary direct upload or download to S3 without CloudFront"],
+        ["OAC", "CloudFront to origin", "Only CloudFront may read the bucket"],
+        ["VPC origins", "CloudFront to private ALB/NLB/EC2", "Origin must have no public exposure"]
+      ],
+      "highlightRow": 1
+    }
+  ],
+  "keywords": [
+    { "cue": "S3 bucket accessible only through CloudFront", "answer": "Origin access control (OAC) with bucket policy" },
+    { "cue": "ALB must not be internet-facing behind CloudFront", "answer": "Internal ALB as a CloudFront VPC origin" },
+    { "cue": "hundreds of HLS segments for paying users", "answer": "CloudFront signed cookies with a trusted key group" },
+    { "cue": "browser uploads large files directly to a private bucket", "answer": "S3 presigned PUT URL from the backend" },
+    { "cue": "encrypt one sensitive form field end to end", "answer": "CloudFront field-level encryption" },
+    { "cue": "block viewers from specific countries with 403", "answer": "CloudFront geographic restrictions" },
+    { "cue": "custom domain HTTPS on CloudFront", "answer": "ACM certificate in us-east-1" }
+  ],
+  "traps": [
+    "**OAI** is legacy; new answers use **OAC**, which also works with SSE-KMS encrypted objects.",
+    "Signed URLs for hundreds of segment files are impractical; signed cookies cover them all.",
+    "A presigned URL is S3's feature, not CloudFront's; it bypasses CloudFront caching.",
+    "Restricting an ALB security group to CloudFront IPs still leaves the ALB public; VPC origins remove that exposure."
+  ],
+  "relatedNotes": ["cloudfront-caching-edge", "waf-shield-ddos", "s3-security-access-control", "acm-tls-encryption-in-transit"],
+  "sources": [
+    { "title": "Restrict access to an Amazon S3 origin", "url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-restricting-access-to-s3.html" },
+    { "title": "Serve private content with signed URLs and signed cookies", "url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/PrivateContent.html" },
+    { "title": "Restrict access with VPC origins", "url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-vpc-origins.html" }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "slug": "secure-remote-access",
+  "title": "Secure Remote Access: Session Manager, Client VPN & Verified Access",
+  "domain": 1,
+  "task": "1.2",
+  "summary": "Admin and user access to private resources without bastion hosts or open SSH ports.",
+  "services": ["AWS Systems Manager Session Manager", "EC2 Instance Connect Endpoint", "AWS Client VPN", "AWS Verified Access"],
+  "tldr": [
+    "**Session Manager**: shell access with no inbound ports, no SSH keys and no bastion. Needs the SSM Agent, an instance profile with `AmazonSSMManagedInstanceCore`, and a path to SSM (NAT or VPC endpoints).",
+    "**EC2 Instance Connect Endpoint**: SSH/RDP to private instances with no public IP and no agent, controlled by IAM. Use it when the SSM Agent can't be installed.",
+    "**Client VPN**: managed OpenVPN for users who need network-level access to the VPC. **Verified Access**: zero-trust, per-application access without a VPN, checking user identity and device posture."
+  ],
+  "keyFacts": [
+    { "value": "ssm + ssmmessages", "text": "Interface endpoints Session Manager needs in a VPC with no internet path (older agents also used `ec2messages`)." },
+    { "value": "OpenTunnel", "text": "IAM permission `ec2-instance-connect:OpenTunnel` controls who can use an Instance Connect Endpoint; the instance SG must allow SSH from the endpoint's SG." },
+    { "value": "Logged", "text": "Session Manager can log session activity to S3 or CloudWatch Logs and every session start is in CloudTrail." },
+    { "value": "Trust providers", "text": "Verified Access evaluates each request against a user trust provider (such as IAM Identity Center) and an optional device trust provider." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: remote access options",
+      "columns": ["Option", "Who it's for", "Needs", "Pick it when…"],
+      "rows": [
+        ["Session Manager", "Admins", "SSM Agent + instance profile", "No bastion, no open ports, audit logs"],
+        ["EC2 Instance Connect Endpoint", "Admins", "SSH server; no agent", "Appliances where agents are forbidden"],
+        ["AWS Client VPN", "Remote employees", "VPN client, SAML or AD auth", "Users need broad network access to the VPC"],
+        ["AWS Verified Access", "Employees and contractors", "Identity + device trust providers", "Per-app zero-trust access without a VPN"],
+        ["Bastion host", "Admins", "Public instance, SSH keys", "Almost never the best exam answer"]
+      ],
+      "highlightRow": 0
+    }
+  ],
+  "keywords": [
+    { "cue": "remove bastion host and close inbound ports", "answer": "Session Manager" },
+    { "cue": "private VPC with no NAT, use Session Manager", "answer": "ssm and ssmmessages interface endpoints" },
+    { "cue": "no agents allowed, SSH without public IP or bastion", "answer": "EC2 Instance Connect Endpoint" },
+    { "cue": "remote employees, SAML IdP, access private subnets", "answer": "AWS Client VPN with SAML federation" },
+    { "cue": "replace VPN with per-application access and device posture", "answer": "AWS Verified Access" },
+    { "cue": "zero trust for internal web apps", "answer": "AWS Verified Access" }
+  ],
+  "traps": [
+    "Session Manager port forwarding still needs the SSM Agent; it won't help where agents are banned.",
+    "A hardened bastion with a restricted CIDR is still a bastion; the question usually wants Session Manager or Instance Connect Endpoint.",
+    "Client VPN grants network access, not per-application authorization; that is Verified Access.",
+    "Without an instance profile that allows SSM, the instance never shows up as a managed node."
+  ],
+  "relatedNotes": ["vpc-endpoints-privatelink", "vpc-security-groups-nacls", "identity-center-federation", "hybrid-connectivity-dx-vpn"],
+  "sources": [
+    { "title": "AWS Systems Manager Session Manager", "url": "https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager.html" },
+    { "title": "Connect using EC2 Instance Connect Endpoint", "url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/connect-using-eice.html" },
+    { "title": "What is AWS Verified Access?", "url": "https://docs.aws.amazon.com/verified-access/latest/ug/what-is-verified-access.html" }
+  ]
+}

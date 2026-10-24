@@ -1,0 +1,60 @@
+{
+  "slug": "data-transfer-costs",
+  "title": "Data Transfer Costs",
+  "domain": 4,
+  "task": "4.4",
+  "summary": "Where AWS charges for moving bytes, and the designs that avoid those charges.",
+  "services": ["Amazon VPC", "Amazon CloudFront", "AWS Direct Connect", "VPC peering", "AWS Transit Gateway", "S3 Replication"],
+  "tldr": [
+    "Rule of thumb: data **into** AWS is free; data **out** to the internet, **between Regions** and **between AZs** costs money; traffic inside one AZ over private IPs is free.",
+    "Cut internet egress with **CloudFront** (origin-to-CloudFront transfer from AWS origins is free and edge rates are lower) or **Direct Connect** for steady on-premises downloads.",
+    "Cut cross-AZ and inter-Region charges by keeping chatty components together: same-AZ routing, cluster placement groups for disposable clusters, and a **local replica** of data read repeatedly from another Region.",
+    "Large VPC-to-VPC flows through a Transit Gateway pay per-GB processing; a **VPC peering** connection for that pair avoids it."
+  ],
+  "keyFacts": [
+    { "value": "Free in-AZ", "text": "Traffic between instances in the same AZ over private IPs is free, including over VPC peering. Crossing AZs is billed in **both** directions." },
+    { "value": "AZ IDs", "text": "AZ names (us-east-1a) map to different physical zones per account. Use AZ IDs (use1-az1) to co-locate resources across accounts." },
+    { "value": "Price Class 100", "text": "CloudFront price classes exclude the most expensive edge locations. Viewers elsewhere are still served, just from a farther edge." },
+    { "value": "Lower DX egress", "text": "Data transfer out over Direct Connect is billed at a lower per-GB rate than over the internet or a Site-to-Site VPN." },
+    { "value": "DataTransfer-Regional-Bytes", "text": "The CUR usage type for cross-AZ traffic in a Region. A big line here points to chatty services spread across AZs." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: where the bytes go and what it costs",
+      "columns": ["Path", "Charged?", "Cheaper design", "Pick it when…"],
+      "rows": [
+        ["Internet → AWS", "No", "-", "-"],
+        ["Same AZ, private IP", "No", "Keep chatty tiers together", "Disposable or tightly coupled clusters"],
+        ["Across AZs in a Region", "Yes, both directions", "AZ-local routing, single-AZ for non-prod", "Inter-service RPC or shuffle traffic is large"],
+        ["Across Regions", "Yes", "Replicate once, read locally", "Same dataset read repeatedly from another Region"],
+        ["AWS → internet", "Yes", "CloudFront in front of S3/ALB", "Popular downloads or global audience"],
+        ["AWS → on premises", "Yes", "Direct Connect instead of VPN/internet", "Steady, large monthly volume"],
+        ["Through Transit Gateway", "Yes, per-GB processing", "VPC peering for the heavy pair", "One VPC pair dominates TGW traffic"]
+      ],
+      "highlightRow": 2
+    }
+  ],
+  "keywords": [
+    { "cue": "60 TB a month downloaded to on premises over VPN", "answer": "AWS Direct Connect" },
+    { "cue": "high DataTransfer-Regional-Bytes between microservices", "answer": "Co-locate services per AZ and route to same-AZ targets" },
+    { "cue": "disposable Spark cluster with heavy shuffle traffic", "answer": "Single AZ in a cluster placement group" },
+    { "cue": "two VPCs dominate Transit Gateway processing charges", "answer": "VPC peering between them, same AZ ID" },
+    { "cue": "nightly job reads the same dataset from another Region", "answer": "S3 Replication to a local bucket" },
+    { "cue": "same large files downloaded repeatedly worldwide from S3", "answer": "CloudFront with OAC in front of the bucket" },
+    { "cue": "most viewers in North America and Europe, reduce CloudFront cost", "answer": "CloudFront Price Class 100" },
+    { "cue": "resources in two accounts must be in the same physical AZ", "answer": "Match AZ IDs, not AZ names" }
+  ],
+  "traps": [
+    "S3 Transfer Acceleration speeds uploads over long distances but **adds** cost; it never reduces egress charges.",
+    "Using public IPs or an internet gateway between instances doesn't avoid cross-AZ charges and adds public IPv4 cost.",
+    "Global Accelerator improves performance and failover; it isn't a cheaper path for bulk data.",
+    "Geo-restriction blocks users; it is wrong when the question says the remaining viewers must still be served.",
+    "Matching AZ *names* across accounts doesn't guarantee the same physical AZ."
+  ],
+  "relatedNotes": ["nat-ipv4-ipv6-costs", "cloudfront-caching-edge", "vpc-connectivity-tgw-lattice", "hybrid-connectivity-dx-vpn", "s3-replication", "vpc-endpoints-privatelink"],
+  "sources": [
+    { "title": "Overview of data transfer costs for common architectures", "url": "https://aws.amazon.com/blogs/architecture/overview-of-data-transfer-costs-for-common-architectures/" },
+    { "title": "Availability Zone IDs for your AWS resources", "url": "https://docs.aws.amazon.com/ram/latest/userguide/working-with-az-ids.html" },
+    { "title": "Choose the price class for a CloudFront distribution", "url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/PriceClass.html" }
+  ]
+}

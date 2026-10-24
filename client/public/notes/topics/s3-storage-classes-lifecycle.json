@@ -1,0 +1,69 @@
+{
+  "slug": "s3-storage-classes-lifecycle",
+  "title": "S3 Storage Classes & Lifecycle",
+  "domain": 4,
+  "task": "4.1",
+  "summary": "Match access patterns to S3 storage classes and automate transitions and expiration.",
+  "services": ["Amazon S3", "S3 Intelligent-Tiering", "S3 Glacier storage classes", "S3 Lifecycle", "S3 Storage Lens", "S3 Batch Operations"],
+  "tldr": [
+    "Pick the class from three facts in the question: **how often** data is read, **how fast** it must come back (milliseconds, hours, 12–48 h) and whether it must **survive an AZ loss**.",
+    "Known pattern → **Lifecycle rules** (Standard → IA/Glacier IR → Flexible → Deep Archive, then expire). Unknown or changing pattern → **Intelligent-Tiering** (no retrieval fees, automatic).",
+    "Lifecycle also removes waste: **NoncurrentVersionExpiration** for old versions and **AbortIncompleteMultipartUpload** for orphaned parts. **Storage Lens** shows where that waste is."
+  ],
+  "keyFacts": [
+    { "value": "30 / 90 / 90 / 180 days", "text": "Minimum storage charge for Standard-IA and One Zone-IA / Glacier Instant Retrieval / Glacier Flexible Retrieval / Glacier Deep Archive. Deleting earlier still bills the minimum." },
+    { "value": "128 KB", "text": "Minimum billable object size in Standard-IA, One Zone-IA and Glacier IR. Lifecycle skips transitioning objects under 128 KB by default." },
+    { "value": "+40 KB per object", "text": "Metadata overhead billed for each object in Glacier Flexible Retrieval and Deep Archive. Bundle millions of tiny objects into large archives first." },
+    { "value": "1–5 min · 3–5 h · 5–12 h", "text": "Glacier Flexible Retrieval restore times for Expedited, Standard and Bulk. Deep Archive: Standard within 12 h, Bulk within 48 h." },
+    { "value": "No retrieval fee", "text": "Intelligent-Tiering moves objects between frequent, infrequent (30 days) and Archive Instant (90 days) tiers automatically. Optional Archive and Deep Archive Access tiers need restores." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: S3 storage classes",
+      "columns": ["Class", "Retrieval", "AZs", "Pick it when…"],
+      "rows": [
+        ["S3 Standard", "Milliseconds", "≥ 3", "Frequently accessed data"],
+        ["S3 Intelligent-Tiering", "Milliseconds (optional archive tiers: hours)", "≥ 3", "Unknown or changing access, no retrieval fees wanted"],
+        ["S3 Standard-IA", "Milliseconds, per-GB retrieval fee", "≥ 3", "Read roughly monthly, must survive an AZ loss"],
+        ["S3 One Zone-IA", "Milliseconds, per-GB retrieval fee", "1", "Infrequent, re-creatable data (thumbnails, replicas)"],
+        ["S3 Glacier Instant Retrieval", "Milliseconds, higher retrieval fee", "≥ 3", "Read about once a quarter but needed instantly"],
+        ["S3 Glacier Flexible Retrieval", "Minutes to 12 hours", "≥ 3", "Archive read once or twice a year"],
+        ["S3 Glacier Deep Archive", "12–48 hours", "≥ 3", "Compliance archives kept 7–10 years, lowest cost"],
+        ["S3 Express One Zone", "Single-digit milliseconds", "1 (directory bucket)", "Very high request rates near compute; lower request cost"]
+      ],
+      "highlightRow": 4
+    }
+  ],
+  "keywords": [
+    { "cue": "unpredictable access, no retrieval fees, no manual analysis", "answer": "S3 Intelligent-Tiering" },
+    { "cue": "accessed once a quarter, millisecond retrieval", "answer": "S3 Glacier Instant Retrieval" },
+    { "cue": "retain 10 years, retrieval within 48 hours, lowest cost", "answer": "S3 Glacier Deep Archive" },
+    { "cue": "retrieval within 3 to 5 hours, rarely accessed", "answer": "S3 Glacier Flexible Retrieval (Standard retrieval)" },
+    { "cue": "re-creatable data accessed infrequently", "answer": "S3 One Zone-IA" },
+    { "cue": "restore millions of archived objects cheaply without scripts", "answer": "S3 Batch Operations restore with Bulk tier" },
+    { "cue": "keep the two most recent previous versions only", "answer": "NoncurrentVersionExpiration with newer noncurrent versions = 2" },
+    { "cue": "incomplete multipart uploads consume storage", "answer": "AbortIncompleteMultipartUpload lifecycle action" },
+    { "cue": "partners download from your bucket, stop paying their transfer", "answer": "Requester Pays" },
+    { "cue": "billions of small short-lived files, request costs dominate", "answer": "S3 Express One Zone directory bucket" }
+  ],
+  "traps": [
+    "One Zone-IA fails any requirement to survive the loss of an Availability Zone; use it only for data you can regenerate.",
+    "Transitioning millions of tiny objects to Glacier or Deep Archive can cost more than leaving them, because of per-object transition requests and 40 KB overhead.",
+    "Suspending versioning does not delete existing noncurrent versions; only a lifecycle expiration rule or explicit deletes do.",
+    "Intelligent-Tiering does not delete anything and does not clean up multipart parts or old versions.",
+    "Standard-IA looks cheap, but frequent reads add retrieval fees; for unpredictable access choose Intelligent-Tiering.",
+    "Expedited retrieval for a large bulk restore is the expensive choice; Bulk is cheapest when the deadline is days."
+  ],
+  "sections": [
+    {
+      "heading": "Reading a lifecycle question",
+      "body": "Write the timeline from the question, then map each phase:\n\n- **Days 0–30, frequent** → S3 Standard.\n- **Rare but instant** → Glacier Instant Retrieval (quarterly) or Standard-IA (monthly).\n- **Rare, hours OK** → Glacier Flexible Retrieval.\n- **Almost never, 12–48 h OK** → Deep Archive.\n- **End of retention** → an Expiration action.\n\nRemember that a lifecycle rule can filter on prefix, tags or object size, so different data in one bucket can follow different paths."
+    }
+  ],
+  "relatedNotes": ["s3-performance", "s3-replication", "block-file-storage-cost", "storage-gateway-hybrid", "data-transfer-costs"],
+  "sources": [
+    { "title": "Understanding and managing Amazon S3 storage classes", "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html" },
+    { "title": "Transitioning objects using Amazon S3 Lifecycle", "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/lifecycle-transition-general-considerations.html" },
+    { "title": "Understanding archive retrieval options", "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/restoring-objects-retrieval-options.html" }
+  ]
+}

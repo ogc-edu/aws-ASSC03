@@ -1,0 +1,54 @@
+{
+  "slug": "waf-shield-ddos",
+  "title": "AWS WAF, Shield & Firewall Manager",
+  "domain": 1,
+  "task": "1.2",
+  "summary": "Layer 7 filtering, DDoS protection and central firewall policy across accounts.",
+  "services": ["AWS WAF", "AWS Shield Standard", "AWS Shield Advanced", "AWS Firewall Manager"],
+  "tldr": [
+    "**AWS WAF** filters HTTP(S) at layer 7 on CloudFront, ALB, API Gateway, AppSync, Cognito user pools and a few others. Use managed rule groups for SQLi/XSS, bots and account takeover.",
+    "**Shield Standard** is free and automatic against common L3/L4 attacks. **Shield Advanced** adds 24/7 Shield Response Team, cost protection for attack-driven scaling, and automatic L7 mitigation.",
+    "**Firewall Manager** pushes WAF, Shield, security group and Network Firewall policies to every account in the organization, including new ones."
+  ],
+  "keyFacts": [
+    { "value": "Min 10", "text": "Lowest rate limit a **rate-based rule** accepts. Evaluation windows are 1, 2, 5 (default) or 10 minutes; a scope-down statement limits it to a path." },
+    { "value": "ATP / ACFP", "text": "WAF Fraud Control managed rules detect credential stuffing on login (ATP) and fake sign-ups (ACFP), even from many IPs." },
+    { "value": "Bot Control", "text": "Managed rule group that labels bots by category and verifies search engines, so scrapers are blocked while Googlebot is allowed." },
+    { "value": "Auto L7", "text": "Shield Advanced **automatic application layer DDoS mitigation** writes and deploys WAF rules during a flood; it needs a web ACL associated." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: which protection fits?",
+      "columns": ["Need", "Service", "Notes"],
+      "rows": [
+        ["SQL injection, XSS in HTTP requests", "AWS WAF managed rules", "Associate the web ACL with ALB, CloudFront or API Gateway"],
+        ["Too many requests from one IP", "WAF rate-based rule", "Aggregate by IP, optional scope-down to a path"],
+        ["Large DDoS, 24/7 experts, cost protection", "Shield Advanced", "Protects CloudFront, Route 53, ALB, NLB/EIP, Global Accelerator"],
+        ["Same WAF baseline on every account", "Firewall Manager", "Requires Organizations; auto-remediates new resources"],
+        ["Block whole countries", "WAF geo match or CloudFront geo restriction", "CloudFront option returns 403 with no WAF cost"]
+      ],
+      "highlightRow": 2
+    }
+  ],
+  "keywords": [
+    { "cue": "SQL injection attempts in query strings", "answer": "WAF web ACL with SQL database managed rule group" },
+    { "cue": "HTTP flood on login endpoint", "answer": "WAF rate-based rule scoped to the path" },
+    { "cue": "credential stuffing from tens of thousands of IPs", "answer": "WAF account takeover prevention (ATP)" },
+    { "cue": "block scrapers, allow verified search engines", "answer": "WAF Bot Control" },
+    { "cue": "24/7 DDoS response team and scaling cost protection", "answer": "Shield Advanced" },
+    { "cue": "automatically create rules during L7 floods", "answer": "Shield Advanced automatic application layer mitigation" },
+    { "cue": "baseline WAF rules on all accounts, including new ones", "answer": "Firewall Manager WAF policy" }
+  ],
+  "traps": [
+    "Plain IP-based rate limiting fails against attacks spread across many IPs; use ATP or Bot Control.",
+    "WAF does not attach to an NLB, an internet gateway or EC2 directly.",
+    "Shield Standard gives no response team or cost protection; only Advanced does.",
+    "Security groups and NACLs can't inspect HTTP content, so they can't stop SQL injection."
+  ],
+  "relatedNotes": ["cloudfront-origin-security", "network-firewall-inspection", "organizations-scps-control-tower", "cognito-app-auth"],
+  "sources": [
+    { "title": "Rate-based rule high-level settings", "url": "https://docs.aws.amazon.com/waf/latest/developerguide/waf-rule-statement-type-rate-based-high-level-settings.html" },
+    { "title": "AWS Shield Advanced overview", "url": "https://docs.aws.amazon.com/waf/latest/developerguide/ddos-advanced-summary.html" },
+    { "title": "AWS Firewall Manager", "url": "https://docs.aws.amazon.com/waf/latest/developerguide/fms-chapter.html" }
+  ]
+}

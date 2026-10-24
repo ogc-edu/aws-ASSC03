@@ -1,0 +1,52 @@
+{
+  "slug": "msk-kafka",
+  "title": "Amazon MSK & Apache Kafka",
+  "domain": 3,
+  "task": "3.5",
+  "summary": "Managed Kafka for teams that already use Kafka APIs, provisioned or serverless.",
+  "services": ["Amazon MSK", "Amazon MSK Serverless", "MSK Connect", "MSK Replicator"],
+  "tldr": [
+    "**Amazon MSK** runs open-source Apache Kafka for you: AWS provisions and patches brokers, replicates across AZs and replaces failed nodes. Existing Kafka producers and consumers work with **no code change**.",
+    "**MSK Serverless** removes broker sizing and storage management entirely; capacity scales with throughput. Pick it when the question says \"don't provision brokers or plan capacity\".",
+    "If the scenario already uses Kafka, answer MSK. Moving to Kinesis means rewriting clients, so it fails \"no code change\" requirements."
+  ],
+  "keyFacts": [
+    { "value": "RF 3 · min ISR 2 · acks=all", "text": "The durable topic recipe: three replicas across AZs, writes need two in-sync copies, so one broker or AZ can fail without losing acknowledged data." },
+    { "value": "Tiered storage", "text": "Provisioned MSK can move older log segments to a low-cost tier while keeping hot data on broker storage. Consumers still replay with standard Kafka APIs." },
+    { "value": "IAM, mTLS, SASL/SCRAM", "text": "MSK provisioned supports IAM access control, mutual TLS and SASL/SCRAM. MSK Serverless uses IAM access control." },
+    { "value": "MSK Connect", "text": "Managed Kafka Connect workers that run source and sink connectors (for example an S3 sink) without servers to operate." }
+  ],
+  "comparisons": [
+    {
+      "title": "Compare: Kafka options on AWS",
+      "columns": ["Option", "You manage", "Scaling", "Pick it when…"],
+      "rows": [
+        ["Self-managed Kafka on EC2", "Brokers, ZooKeeper/KRaft, patching, storage", "Manual", "Rarely: only for unsupported versions or custom builds"],
+        ["MSK provisioned", "Broker count and size, topic settings", "Add brokers; storage auto scaling", "Steady high throughput, full Kafka configuration, tiered storage"],
+        ["MSK Serverless", "Topics only", "Automatic", "Kafka APIs with no capacity planning"],
+        ["Kinesis Data Streams", "Shards or on-demand", "On-demand or resharding", "New AWS-native streams, not existing Kafka clients"]
+      ],
+      "highlightRow": 2
+    }
+  ],
+  "keywords": [
+    { "cue": "existing Kafka producers and consumers, no code changes", "answer": "Amazon MSK" },
+    { "cue": "Kafka without provisioning brokers or managing storage", "answer": "MSK Serverless" },
+    { "cue": "replay 12 months of Kafka events cheaply", "answer": "MSK tiered storage" },
+    { "cue": "topic must survive loss of a broker or AZ without losing acknowledged messages", "answer": "Replication factor 3, min.insync.replicas 2, acks=all" },
+    { "cue": "stream Kafka topics to S3 with a managed connector", "answer": "MSK Connect with an S3 sink connector" },
+    { "cue": "replicate Kafka topics to another Region", "answer": "MSK Replicator" }
+  ],
+  "traps": [
+    "Adding brokers does not protect a topic with replication factor 1; each partition still has one copy.",
+    "`acks=1` acknowledges after the leader writes, so a leader failure can still lose data even with replicas.",
+    "Archiving to S3 with a sink connector breaks the requirement to replay with **Kafka APIs**; tiered storage keeps the data in the topic.",
+    "SQS, SNS and Amazon MQ for RabbitMQ do not speak the Kafka protocol, so they are wrong for \"no code change\" Kafka migrations."
+  ],
+  "relatedNotes": ["kinesis-streaming-ingestion", "sqs-sns-decoupling", "eventbridge-event-driven"],
+  "sources": [
+    { "title": "What is Amazon MSK?", "url": "https://docs.aws.amazon.com/msk/latest/developerguide/what-is-msk.html" },
+    { "title": "MSK Serverless", "url": "https://docs.aws.amazon.com/msk/latest/developerguide/serverless.html" },
+    { "title": "Tiered storage for Amazon MSK", "url": "https://docs.aws.amazon.com/msk/latest/developerguide/msk-tiered-storage.html" }
+  ]
+}
